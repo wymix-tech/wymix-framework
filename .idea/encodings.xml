@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding" defaultCharsetForPropertiesFiles="UTF-8">
+    <file url="file://$PROJECT_DIR$/sample/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_ai/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_cache/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_common/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_core/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_data_migration/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_decentralization_discovery/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_dynamic_datasource/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_jpa_repository/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_monitor/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_mybatis_repository/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_repository/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_security/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_test/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_threadpool/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_utils/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/travelsky_dev_web/src/main/java" charset="UTF-8" />
+  </component>
+</project>

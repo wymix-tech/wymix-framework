@@ -1,0 +1,9 @@
+security:
+  formsecurityLoginEnable: true
+  loginPage: /login
+  loginProcessingUrl: /login
+  ignoreUrls:
+  jwt:
+    # 32 位长度
+    secret: adfsdfasdfasdfasdfasdfasdfasd234
+    expiredTime: 86400

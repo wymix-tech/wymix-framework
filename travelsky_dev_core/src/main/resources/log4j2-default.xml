@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="INFO">
+
+    <properties>
+
+        <property name="DEFAULT_PATTERN_LAYOUT">%d{yyyy-mm-dd
+            HH:mm:ss.SSS}[%t][%-5level]%-36.36c{1.}(:%-5L)-[%X{customTraceId}]- %msg%n
+        </property>
+        <property name="TIME_BASED_TRIGGERING_POLICY">1440</property>
+        <property name="DEFAULT_ROLLOVER_STRATEGY">60</property>
+    </properties>
+
+    <Appenders>
+        <!--        <Console name="Default_Console" target="SYSTEM_OUT">-->
+        <!--            <PatternLayout pattern="${DEFAULT_PATTERN_LAYOUT}"/>-->
+        <!--        </Console>-->
+
+        <RollingRandomAccessFile name="Default_Log_File" fileName="${ctx:logHome}/${ctx:logFilename}.log"
+                                 filePattern="${ctx:logHome}/${ctx:logFilename}-%d{yyyy-MM-dd}.zip">
+            <PatternLayout pattern="${DEFAULT_PATTERN_LAYOUT}"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="${TIME_BASED_TRIGGERING_POLICY}" modulate="true"/>
+            </Policies>
+            <DefaultRolloverStrategy max="${DEFAULT_ROLLOVER_STRATEGY}">
+                <Delete basePath="${ctx:logHome}">
+                    <IfFileName glob="${ctx:logFilename}-.*.zip"/>
+                    <IfLastModified age="60d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <!--            <AppenderRef ref="Default_Console"/>-->
+            <AppenderRef ref="Default_Log_File"/>
+        </Root>
+    </Loggers>
+</Configuration>

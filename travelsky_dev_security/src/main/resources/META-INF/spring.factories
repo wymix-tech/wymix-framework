@@ -1,0 +1,1 @@
+org.springframework.boot.env.EnvironmentPostProcessor=com.travelsky.base.security.handler.DecryptEnvironmentPostProcessor

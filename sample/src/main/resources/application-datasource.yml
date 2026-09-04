@@ -1,0 +1,6 @@
+spring:
+  datasource:
+    name: adt_dev
+    url: jdbc:mysql://192.168.18.106:3306/adt_dev?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    username: adt_user
+    password: ENC(QWR0QDIwMjUh)

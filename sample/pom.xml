@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.travelsky.base</groupId>
+        <artifactId>travelsky_dev_parent3</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+    </parent>
+
+    <groupId>com.swcares</groupId>
+    <artifactId>sample</artifactId>
+    <version>2.0-SNAPSHOT</version>
+
+    <properties>
+        <java.version>17</java.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <travelsky.dev.version>3.0.0-SNAPSHOT</travelsky.dev.version>
+    </properties>
+
+    <dependencies>
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓最简启动依赖(必选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <dependency>
+            <groupId>com.travelsky.base</groupId>
+            <artifactId>travelsky_dev_web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑最简启动依赖(必选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加监控依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <dependency>
+            <groupId>com.travelsky.base</groupId>
+            <artifactId>travelsky_dev_monitor</artifactId>
+        </dependency>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加监控依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加认证依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <dependency>
+            <groupId>com.travelsky.base</groupId>
+            <artifactId>travelsky_dev_security</artifactId>
+        </dependency>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加认证依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加线程池管理依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <dependency>
+            <groupId>com.travelsky.base</groupId>
+            <artifactId>travelsky_dev_threadpool</artifactId>
+        </dependency>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加线程池管理依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.34</version> <!-- 建议使用最新稳定版 -->
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <profiles>
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓使用Mybatis作为ORM框架↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <profile>
+            <id>mybatis</id>
+            <activation>
+                <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓建议使用Mybatis↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.travelsky.base</groupId>
+                    <artifactId>travelsky_dev_mybatis_repository</artifactId>
+                </dependency>
+                <dependency>
+                    <groupId>mysql</groupId>
+                    <artifactId>mysql-connector-java</artifactId>
+                    <version>8.0.33</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑使用Mybatis作为ORM框架↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓使用jpa作为ORM框架↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <profile>
+            <id>jpa</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.travelsky.base</groupId>
+                    <artifactId>travelsky_dev_jpa_repository</artifactId>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑使用jpa作为ORM框架↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+        <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓使用jpa作为ORM框架↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
+        <profile>
+            <id>dynamicDatasource</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <dependencies>
+                <dependency>
+                    <groupId>com.zaxxer</groupId>
+                    <artifactId>HikariCP</artifactId>
+                    <version>7.0.2</version>
+                </dependency>
+            </dependencies>
+        </profile>
+        <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑使用jpa作为ORM框架↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
+    </profiles>
+
+</project>

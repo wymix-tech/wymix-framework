@@ -1,0 +1,20 @@
+# 修改spring 内置的线程池配置
+# 相关配置项参考com.travelsky.base.core.configuration。AsyncScheduleProperties
+async:
+  corePoolSize: 5
+  maxPoolSize: 10
+
+
+
+# 自定义新的线程池
+# 需要引入Maven依赖 com.travelsky.base.travelsky_dev_threadpool
+thread-pool:
+  pool:
+    # 自动创建BeanName=testThreadPool的线程池，在项目各处使用时，可以直接通过@Autowired的方式进行注入，注意需要通过@Qualifier对应beanName
+    testThreadPool:
+      corePoolSize: 5
+      maxPoolSize: 10
+  scheduled:
+    # 自动创建BeanName=testScheduledThreadPool的调度线程池，在项目各处使用时，可以直接通过@Autowired的方式进行注入，注意需要通过@Qualifier对应beanName
+    testScheduledThreadPool:
+      corePoolSize: 2

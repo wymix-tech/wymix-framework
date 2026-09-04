@@ -1,0 +1,10 @@
+http:
+  requests:
+    # 服务名
+    # 对应 com.swcares.sample.rpc.Test1Api
+    test1:
+      #请求地址，可以配置多个进行负载均衡
+      - uri: http://127.0.0.1:8080
+    # 对应 com.swcares.sample.rpc.Test2Api
+    test2:
+      - uri: http://127.0.0.1:8080
