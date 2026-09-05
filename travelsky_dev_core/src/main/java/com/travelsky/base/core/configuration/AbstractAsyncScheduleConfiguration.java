@@ -16,6 +16,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import java.util.concurrent.Executor;
 
 
+@Deprecated(since = "3.x", forRemoval = true)
 @EnableAsync(proxyTargetClass = true)
 @EnableScheduling
 @EnableConfigurationProperties(AsyncScheduleProperties.class)

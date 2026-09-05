@@ -1,7 +1,6 @@
 package com.travelsky.base.web.configuration;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.travelsky.base.core.configuration.AbstractAsyncScheduleConfiguration;
 import com.travelsky.base.utils.GlobalIdGenerator;
 import com.travelsky.base.utils.StringUtils;
 import com.travelsky.base.utils.json.NumberSerializer;
@@ -38,7 +37,7 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @Configuration
-public class WebConfiguration extends AbstractAsyncScheduleConfiguration implements WebMvcConfigurer {
+public class WebConfiguration implements WebMvcConfigurer {
 
     static {
         // 防止反射过度膨胀
@@ -49,7 +48,6 @@ public class WebConfiguration extends AbstractAsyncScheduleConfiguration impleme
     private Environment environment;
 
     @Bean
-    @Override
     public TaskDecorator taskDecorator() {
         return (runnable -> {
             String customTraceId = ThreadContext.get("customTraceId");
