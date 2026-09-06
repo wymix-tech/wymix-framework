@@ -11,5 +11,6 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Import(DataChangeLogConfiguration.class)
+@Deprecated(since = "3.x", forRemoval = true)
 public @interface EnableDataChangeLog {
 }

@@ -15,6 +15,8 @@ import com.travelsky.base.security.properties.CustomSecurityProperties;
 import com.travelsky.base.utils.HttpUtils;
 import com.travelsky.base.utils.StringUtils;
 import com.travelsky.base.utils.json.JsonUtils;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -43,9 +45,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@AutoConfiguration
+@ConditionalOnProperty(prefix = "security", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableWebSecurity
 @EnableConfigurationProperties(CustomSecurityProperties.class)
-public abstract class CustomSecurityConfiguration {
+public class CustomSecurityConfiguration {
 
     static {
         System.setProperty("security", "true");

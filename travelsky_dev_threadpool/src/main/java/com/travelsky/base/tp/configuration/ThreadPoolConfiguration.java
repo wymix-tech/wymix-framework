@@ -10,6 +10,8 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
 import org.springframework.context.annotation.Bean;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.ConfigurableEnvironment;
 
@@ -19,6 +21,8 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@AutoConfiguration
+@ConditionalOnProperty(prefix = "travelsky.threadpool", name = "enabled", havingValue = "true", matchIfMissing = true)
 @Configuration
 public class ThreadPoolConfiguration {
 
