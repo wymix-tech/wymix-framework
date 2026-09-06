@@ -18,13 +18,26 @@ import java.util.stream.Collectors;
 
 public class QueryParseHelper {
 
-    private static Boolean CAMEL_TO_UNDERLINE;
+    /**
+     * 列名风格策略：根据 {@code COLUMN_NAME_RULE} 系统属性决定是否做驼峰转下划线。
+     * <p>缓存只读快照，配置变更时通过 {@link #refresh()} 重建，避免静态可变状态带来的可见性问题。
+     */
+    private static volatile ColumnNameStyleStrategy strategy = ColumnNameStyleStrategy.fromSystemProperty();
 
-    protected static boolean isCamelToUnderline() {
-        if (CAMEL_TO_UNDERLINE == null) {
-            CAMEL_TO_UNDERLINE = "CAMEL_TO_UNDERLINE".equals(System.getProperty("COLUMN_NAME_RULE", "CAMEL_TO_UNDERLINE"));
-        }
-        return CAMEL_TO_UNDERLINE;
+    /**
+     * 兼容旧版本预留的入口：刷新列名风格策略（重新读取系统属性）。
+     * <p>仅当运行期通过 {@link System#setProperty(String, String)} 修改 {@code COLUMN_NAME_RULE} 后调用。
+     */
+    public static void refresh() {
+        strategy = ColumnNameStyleStrategy.fromSystemProperty();
+    }
+
+    static void setStrategy(ColumnNameStyleStrategy newStrategy) {
+        strategy = newStrategy == null ? ColumnNameStyleStrategy.fromSystemProperty() : newStrategy;
+    }
+
+    static boolean isCamelToUnderline() {
+        return strategy.camelToUnderline();
     }
 
     public static <T> QueryWrapper<T> parseToQueryWrapper(QueryWrapper<T> wrapper, DevQueryVO query, Class<T> clazz) {
@@ -166,15 +179,28 @@ public class QueryParseHelper {
         return (StringUtils.isNotEmpty(tableAlias)?tableAlias+".":"")+(isCamelToUnderline() ? StringUtils.camelToUnderline(field) : field);
     }
 
-    public static void main(String[] args) {
-        String input = "[[name,=,john],and,[[[age,>=,18],[bothDay,between,2023,2024]],OR,[[sex,=,man],OR,[work,in,it,kj],OR,[bbb,=,ddd]]]]";
-        String output = "where (name='john' and ((age>=18 and bothDay between 2023 and 2024) or (sex='man' or (work in ('it','kj')) or (bbb='ddd'))))";
+    /**
+     * 列名风格策略（任务4：原静态可变状态 CAMEL_TO_UNDERLINE 改为不可变策略对象）。
+     */
+    public static final class ColumnNameStyleStrategy {
 
+        private final boolean camelToUnderline;
 
-        List<Object> conditions = FilterStringParser.parse("[[[[[employeeId, CONTAINS, 610221], AND, [departmentId, =, 1785914 504454]]],OR,[employeeId, CONTAINS, 610221]]]");
+        private ColumnNameStyleStrategy(boolean camelToUnderline) {
+            this.camelToUnderline = camelToUnderline;
+        }
 
-        System.out.println(conditions);
+        public boolean camelToUnderline() {
+            return camelToUnderline;
+        }
 
+        public static ColumnNameStyleStrategy camelToUnderline(boolean camelToUnderline) {
+            return new ColumnNameStyleStrategy(camelToUnderline);
+        }
+
+        public static ColumnNameStyleStrategy fromSystemProperty() {
+            return new ColumnNameStyleStrategy("CAMEL_TO_UNDERLINE".equals(System.getProperty("COLUMN_NAME_RULE", "CAMEL_TO_UNDERLINE")));
+        }
     }
 
     public static class FilterStringParser {

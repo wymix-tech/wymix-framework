@@ -24,7 +24,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
-import org.springframework.cache.annotation.CachingConfigurerSupport;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
 @AutoConfiguration
 @ConditionalOnProperty(prefix = "cache", name = "enabled", havingValue = "true", matchIfMissing = true)
 @Configuration
-public class CacheManagerConfiguration extends CachingConfigurerSupport {
+public class CacheManagerConfiguration implements CachingConfigurer {
 
     private static final String SPLITTER = ":";
 
