@@ -1,4 +1,4 @@
-package com.travelsky.base.repository.datachangelog.configuration;
+package com.travelsky.base.repository.jpa.datachangelog.configuration;
 
 import com.travelsky.base.repository.datachangelog.listener.DataChangeLogEventListener;
 import com.travelsky.base.repository.datachangelog.supports.BatchDeleteAspect;

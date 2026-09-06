@@ -4,7 +4,7 @@ import com.swcares.sample.dao.SampleUserDao;
 import com.swcares.sample.entity.SampleUserEntity;
 import com.swcares.sample.permission.TestSqlInject;
 import com.travelsky.base.core.api.BaseService;
-import com.travelsky.base.repository.api.AbstractBaseServiceImpl;
+import com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl;
 import com.travelsky.base.repository.datapermission.annotations.DataPermission;
 import org.springframework.stereotype.Service;
 

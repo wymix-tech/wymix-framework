@@ -1,7 +1,7 @@
 package com.travelsky.base.repository.audit.supports;
 
 
-import com.travelsky.base.repository.audit.domain.AbstractAuditEntity;
+import com.travelsky.base.repository.jpa.audit.domain.AbstractAuditEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.AuditorAware;
 
