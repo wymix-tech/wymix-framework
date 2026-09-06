@@ -1,8 +1,11 @@
+# travelsky_dev_security 示例配置
 security:
-  formsecurityLoginEnable: true
+  # 表单登录开关（注意属性名为 formLoginEnable）
+  formLoginEnable: true
   loginPage: /login
   loginProcessingUrl: /login
-  ignoreUrls:
+  # 白名单：逗号分隔，示例接口统一放行，便于直接访问演示端点
+  ignoreUrls: /demo/**
   jwt:
     # 32 位长度
     secret: adfsdfasdfasdfasdfasdfasdfasd234

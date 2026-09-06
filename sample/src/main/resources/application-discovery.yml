@@ -1,0 +1,12 @@
+# travelsky_dev_decentralization_discovery 示例配置
+# 该能力默认关闭：需 decentralization.discovery.enable=true 才会装配节点服务、选主与集群广播
+# 启用方式：在 application.yml 的 spring.profiles.active 中追加 discovery
+decentralization:
+  discovery:
+    enable: true
+    # 命名空间，用于组播服务类型 _<namespace>._tcp.local.
+    namespace: sample
+    # 服务名 -> 节点地址列表
+    service:
+      sample:
+        - http://127.0.0.1:8080

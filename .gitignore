@@ -39,3 +39,6 @@ build/
 
 ### Maven ###
 .flattened-pom.xml
+
+### Others ###
+.Trash-*/

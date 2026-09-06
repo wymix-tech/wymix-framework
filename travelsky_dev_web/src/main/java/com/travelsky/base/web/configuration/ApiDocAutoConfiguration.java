@@ -87,7 +87,9 @@ public class ApiDocAutoConfiguration {
     public static class AuthGroupOpenApiConfiguration {
 
         @Bean
-        public OpenAPI securityOpenAPI(@Autowired String apiDocTitle, @Autowired String apiDocDescription, @Autowired String apiDocVersion) {
+        public OpenAPI securityOpenAPI(@Value("${swagger.title:Api Docs}") String apiDocTitle,
+                                       @Value("${swagger.description:Api Docs}") String apiDocDescription,
+                                       @Value("${swagger.version:1.0.0}") String apiDocVersion) {
             return new OpenAPI()
                     .info(new Info()
                             .title(apiDocTitle)
