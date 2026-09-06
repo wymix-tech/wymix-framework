@@ -1,132 +1,14 @@
 package com.travelsky.base.repository.api;
 
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.travelsky.base.common.exception.BusinessException;
-import com.travelsky.base.common.query.DevQueryVO;
-import com.travelsky.base.common.query.Page;
-import com.travelsky.base.core.api.BaseService;
-import com.travelsky.base.repository.query.helper.PageHelper;
-import com.travelsky.base.repository.query.helper.QueryParseHelper;
-import com.travelsky.base.utils.ReflectionUtils;
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.io.Serializable;
-import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.List;
-import java.util.stream.Collectors;
-
-public abstract class AbstractBaseServiceImpl<T, ID extends Serializable, REPOSITORY extends BaseRepository<T, ID>> implements BaseService<T, ID> {
-
-    protected final REPOSITORY repository;
-
-    private final Class<T> entityClass;
+/**
+ * @deprecated 旧包名兼容别名，请迁移到 {@link com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl}，
+ *             计划于下个大版本移除。
+ */
+@Deprecated(since = "3.x", forRemoval = true)
+public abstract class AbstractBaseServiceImpl<T, ID extends java.io.Serializable, REPOSITORY extends BaseRepository<T, ID>>
+        extends com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl<T, ID, REPOSITORY> {
 
     public AbstractBaseServiceImpl(REPOSITORY repository) {
-        this.repository = repository;
-        this.entityClass = ReflectionUtils.getSuperClassGenericType(this.getClass(), 0);
-    }
-
-    protected REPOSITORY getRepository() {
-        return this.repository;
-    }
-
-    protected void afterSave(T entity) {
-    }
-
-    protected void beforeSave(T entity) {
-    }
-
-    protected void afterUpdate(T entity) {
-    }
-
-    protected void beforeUpdate(T old, T cur) {
-    }
-
-    @Override
-    public T save(T entity) {
-        beforeSave(entity);
-        getRepository().insert(entity);
-        afterSave(entity);
-        return entity;
-    }
-
-    @Override
-    public T update(ID id, T entity) {
-        T old = this.getOne(id);
-        beforeUpdate(old, entity);
-        this.getRepository().updateById(entity);
-        afterUpdate(entity);
-        return entity;
-    }
-
-    @Override
-    public void delete(ID id) {
-        this.getRepository().deleteById(id);
-    }
-
-    @Override
-    public List<T> save(Collection<T> entities) {
-        return entities.stream().map(this::save).toList();
-    }
-
-    @Override
-    public List<T> update(Collection<T> entities) {
-        return entities.stream().map(entity -> this.update(findIdValueInEntity(entity), entity)).toList();
-    }
-
-    @Override
-    public Collection<T> batchSave(Collection<T> entities) {
-        getRepository().insert(entities, 500);
-        return entities;
-    }
-
-    @Override
-    public Collection<T> batchUpdate(Collection<T> entities) {
-        getRepository().updateById(entities, 500);
-        return entities;
-    }
-
-    @Override
-    public void deleteAll(Collection<T> entities) {
-        this.getRepository().deleteByIds(entities.stream().map(this::findIdValueInEntity).toList());
-    }
-
-    @Override
-    public void deleteAllById(Collection<ID> ids) {
-        this.getRepository().deleteByIds(ids);
-    }
-
-    @Override
-    public T getOne(ID id) {
-        return this.getRepository().selectById(id);
-    }
-
-    @Override
-    public List<T> findAllById(Collection<ID> ids) {
-        return this.getRepository().selectByIds(ids);
-    }
-
-    @Override
-    public Page<T> findAll(DevQueryVO devQueryVO) {
-        return PageHelper.convert(this.getRepository().selectPage(PageHelper.toPageable(devQueryVO), QueryParseHelper.parseToQueryWrapper(new QueryWrapper<T>(), devQueryVO, entityClass)));
-    }
-
-    private ID findIdValueInEntity(T entity) {
-        Field[] fields = ReflectionUtils.findFieldWithAnnotation(entity.getClass(), TableId.class);
-        if (ArrayUtils.isEmpty(fields)) {
-            throw new BusinessException("Miss Column: ID");
-        }
-        try {
-            return (ID) fields[0].get(entity);
-        } catch (IllegalAccessException e) {
-            return null;
-        }
-    }
-
-    @Override
-    public List<T> findAll() {
-        return this.getRepository().selectList(new QueryWrapper<T>());
+        super(repository);
     }
 }

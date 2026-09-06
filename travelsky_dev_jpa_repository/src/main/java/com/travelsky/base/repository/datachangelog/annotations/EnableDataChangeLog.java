@@ -1,16 +1,9 @@
 package com.travelsky.base.repository.datachangelog.annotations;
 
-import com.travelsky.base.repository.datachangelog.configuration.DataChangeLogConfiguration;
-import org.springframework.context.annotation.Import;
-
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
-@Target(ElementType.TYPE)
-@Retention(RetentionPolicy.RUNTIME)
-@Import(DataChangeLogConfiguration.class)
+/**
+ * @deprecated 旧包名兼容别名，请迁移到 {@link com.travelsky.base.repository.jpa.datachangelog.annotations.EnableDataChangeLog}，
+ *             计划于下个大版本移除。该注解本身已废弃（forRemoval），新代码请直接依赖自动装配。
+ */
 @Deprecated(since = "3.x", forRemoval = true)
 public @interface EnableDataChangeLog {
 }

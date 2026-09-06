@@ -54,6 +54,18 @@ q.setSorts("[{\"columns\":[\"createdTime\"],\"direction\":\"DESC\"}]");
 Page<EmployeeEntity> page = service.findAll(q);
 ```
 
+
+> **包路径说明（3.x 起）**：JPA 专属类已迁移到 `com.travelsky.base.repository.jpa.*` 子包，
+> 与 MyBatis 实现完全隔离，两模块可并存引入。旧包路径 `com.travelsky.base.repository.api` /
+> `...audit.domain` 保留 deprecated 兼容别名（`forRemoval = true`），请尽快迁移。
+> 示例中的 import：
+>
+> ```java
+> import com.travelsky.base.repository.jpa.api.BaseRepository;
+> import com.travelsky.base.repository.jpa.api.AbstractBaseServiceImpl;
+> import com.travelsky.base.repository.jpa.audit.domain.AbstractAuditEntity;
+> ```
+
 ## 依赖引入
 
 ```xml
