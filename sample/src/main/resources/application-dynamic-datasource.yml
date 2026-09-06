@@ -1,0 +1,22 @@
+# travelsky_dev_dynamic_datasource 示例配置
+# 启用方式：在 application.yml 的 spring.profiles.active 中追加 dynamicDatasource
+# 注意：开启动态数据源后，数据源由本配置接管，application-datasource.yml 中的 spring.datasource.* 将不再生效
+dynamic:
+  datasource:
+    enabled: true
+    # 默认数据源，必须出现在 items 中
+    primary: master
+    items:
+      master:
+        url: jdbc:mysql://127.0.0.1:3306/adt_dev?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+        username: adt_user
+        # security 模块支持 ENC(...) 密文，明文亦可
+        password: ENC(QWR0QDIwMjUh)
+        driverClassName: com.mysql.cj.jdbc.Driver
+        type: com.zaxxer.hikari.HikariDataSource
+      slave:
+        url: jdbc:mysql://127.0.0.1:3306/adt_dev_slave?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+        username: adt_user
+        password: ENC(QWR0QDIwMjUh)
+        driverClassName: com.mysql.cj.jdbc.Driver
+        type: com.zaxxer.hikari.HikariDataSource

@@ -12,8 +12,12 @@ import com.travelsky.base.utils.GlobalIdGenerator;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.type.JdbcType;
 import org.springframework.context.annotation.Bean;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 
+@AutoConfiguration
+@ConditionalOnProperty(prefix = "travelsky.mybatis", name = "enabled", havingValue = "true", matchIfMissing = true)
 @Configuration
 public class MyBatisConfiguration {
 

@@ -1,0 +1,16 @@
+# travelsky_dev_cache 示例配置
+# 关闭缓存：cache.enabled=false
+cache:
+  enabled: true
+
+# Caffeine 缓存规格（cache 模块将 hazelcast/caffeine 声明为 optional，sample 选用 caffeine）
+# 未在此声明的缓存名会由 SimpleCacheManager#getMissingCache 兜底创建
+caffeine:
+  cache:
+    # 缓存名称 -> 规格，对应 @Cacheable(cacheNames = "sampleCache")
+    sampleCache:
+      maximumSize: 500
+      initialCapacity: 16
+      # AFTER_WRITE（写入后过期）| AFTER_ACCESS（访问后过期）
+      policy: AFTER_WRITE
+      expireInSec: 600

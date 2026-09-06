@@ -1,1 +1,2 @@
 com.travelsky.base.core.configuration.CoreConfiguration
+com.travelsky.base.core.configuration.AsyncScheduleAutoConfiguration

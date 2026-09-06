@@ -34,10 +34,10 @@
 ## 使用示例
 
 ```java
-// 1) 启用异步调度：在启动类或配置类导入
-@Import(AbstractAsyncScheduleConfiguration.class)
-@EnableAsync
-public class AppConfig {}
+// 1) 启用异步调度：引入 travelsky_dev_core 依赖即自动生效（默认已开启）
+//    关闭方式：async.enabled=false
+//    定制方式：声明 TaskDecorator Bean 覆盖默认实现
+//    （旧方式 @Import(AbstractAsyncScheduleConfiguration.class) 已标记 @Deprecated，仍兼容）
 
 // 2) 异步执行
 @Async

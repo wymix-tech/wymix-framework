@@ -4,12 +4,16 @@ import com.travelsky.base.core.context.ApplicationContextHolder;
 import com.travelsky.base.core.message.EmailSenderService;
 import com.travelsky.base.core.message.MessageSenderService;
 import com.travelsky.base.core.message.MessageService;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@Configuration
+@AutoConfiguration
+@EnableConfigurationProperties(AsyncScheduleProperties.class)
+@ConditionalOnProperty(prefix = "travelsky.core", name = "enabled", havingValue = "true", matchIfMissing = true)
 public class CoreConfiguration {
 
     @Bean

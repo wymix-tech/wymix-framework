@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+@Deprecated(since = "3.x", forRemoval = true)
 public abstract class AbstractApiDocConfiguration {
 
     static {

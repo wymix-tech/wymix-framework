@@ -1,7 +1,6 @@
 package com.travelsky.base.web.configuration;
 
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.travelsky.base.core.configuration.AbstractAsyncScheduleConfiguration;
 import com.travelsky.base.utils.GlobalIdGenerator;
 import com.travelsky.base.utils.StringUtils;
 import com.travelsky.base.utils.json.NumberSerializer;
@@ -10,6 +9,7 @@ import com.travelsky.base.web.aop.SlowRequestAspect;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -38,7 +38,7 @@ import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 @Configuration
-public class WebConfiguration extends AbstractAsyncScheduleConfiguration implements WebMvcConfigurer {
+public class WebConfiguration implements WebMvcConfigurer {
 
     static {
         // 防止反射过度膨胀
@@ -48,8 +48,14 @@ public class WebConfiguration extends AbstractAsyncScheduleConfiguration impleme
     @Autowired
     private Environment environment;
 
+    /**
+     * 传递请求上下文与链路 ID 到异步线程。
+     *
+     * <p>core 的 {@code AsyncScheduleAutoConfiguration} 也定义了同名的默认实现，
+     * 此处声明 {@code @ConditionalOnMissingBean} 以保证两者共存时不发生 Bean 覆盖冲突。
+     */
     @Bean
-    @Override
+    @ConditionalOnMissingBean
     public TaskDecorator taskDecorator() {
         return (runnable -> {
             String customTraceId = ThreadContext.get("customTraceId");

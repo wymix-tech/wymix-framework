@@ -154,7 +154,7 @@ security:
     expiredTime: 7200000
 ```
 
-启用安全需继承 `CustomSecurityConfiguration` 并注入 `UserDetailsService`（见 `sample/SecurityConfiguration`）。
+启用安全：引入 `travelsky_dev_security` 后提供 `UserDetailsService` Bean 即自动生效，无需继承任何类（见 `sample/SecurityConfiguration`）。
 
 ### 4.3 线程池（`application.yml`）
 
@@ -194,7 +194,7 @@ thread-pool:
 | 分布式缓存 | 引入 `travelsky_dev_cache` + 配置 `spring.hazelcast.cache.*` |
 | 多数据源 | 引入 `travelsky_dev_dynamic_datasource` + `dynamic.datasource.enabled: true` |
 | 去中心化发现 | 引入 `travelsky_dev_decentralization_discovery` + `decentralization.discovery.enable: true` |
-| 异步/定时 | 引入 `travelsky_dev_core` + `@Import(AbstractAsyncScheduleConfiguration.class)` + `@EnableAsync` |
+| 异步/定时 | 引入 `travelsky_dev_core` 即自动生效（`async.enabled=false` 可关闭） |
 | 数据权限 | 在 Service 方法上加 `@DataPermission(dept = true)` |
 | 测试容器 | 引入 `travelsky_dev_test`(`test` scope) + `@Testcontainers` |
 

@@ -62,7 +62,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             ignoreUrls.addAll(Arrays.asList(ignoreUrlContext.getIgnoreUrls()));
                         }
                     }
-                    if (StringUtils.isNotBlank(customSecurityProperties.getIgnoreUrls())) {
+                    // 该 Filter 可能由非 Spring 托管的方式实例化，属性可能为空，需判空
+                    if (customSecurityProperties != null && StringUtils.isNotBlank(customSecurityProperties.getIgnoreUrls())) {
                         ignoreUrls.addAll(Arrays.stream(customSecurityProperties.getIgnoreUrls().split(",")).map(StringUtils::trim).toList());
                     }
                     this.requestMatchers = ignoreUrls.stream().map(url-> PathPatternRequestMatcher.withDefaults().matcher(url)).toArray(RequestMatcher[]::new);
