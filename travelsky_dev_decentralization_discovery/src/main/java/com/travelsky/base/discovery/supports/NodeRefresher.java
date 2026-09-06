@@ -71,7 +71,7 @@ public class NodeRefresher {
                 }
             });
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.warn("Failed to refresh nodes", e);
         }
 
     }

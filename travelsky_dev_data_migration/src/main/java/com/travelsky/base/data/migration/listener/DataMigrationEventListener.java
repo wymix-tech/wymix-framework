@@ -20,10 +20,17 @@ public class DataMigrationEventListener implements ApplicationListener<DataChang
                 dataMigration(dataChangeLogDTO);
             }
         } catch (ClassNotFoundException e) {
+            // 变更日志对应的实体类不在当前类路径（如跨模块场景），按设计忽略
+            log.debug("DataMigration skipped: class not found: {}", dataChangeLogDTO.getClassName());
         }
     }
 
+    /**
+     * 实验性能力：暂未实现「变更日志 -> 迁移脚本」回放，调用前请确认模块定位。
+     * <p>Experimental: not yet implemented, see README of travelsky_dev_data_migration.
+     */
     private void dataMigration(DataChangeLogDTO dataChangeLogDTO) {
-
+        log.debug("DataMigration event received but replay is not implemented yet, className={}",
+                dataChangeLogDTO.getClassName());
     }
 }
