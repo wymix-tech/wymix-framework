@@ -1,59 +1,10 @@
 package com.travelsky.base.repository.audit.domain;
 
-import com.travelsky.base.repository.audit.supports.AuditListener;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.EntityListeners;
-import jakarta.persistence.MappedSuperclass;
-import java.io.Serializable;
-import java.time.LocalDateTime;
-
-
-@MappedSuperclass
-@EntityListeners(AuditListener.class)
-public class AbstractAuditEntity implements Serializable {
-
-    @Column(name = "CREATED_BY")
-    private String createdBy;
-
-    @Column(name = "CREATED_TIME")
-    private LocalDateTime createdTime;
-
-    @Column(name = "LAST_MODIFIED_BY")
-    private String lastModifiedBy;
-
-    @Column(name = "LAST_MODIFIED_TIME")
-    private LocalDateTime lastModifiedTime;
-
-    public String getCreatedBy() {
-        return createdBy;
-    }
-
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    public LocalDateTime getCreatedTime() {
-        return createdTime;
-    }
-
-    public void setCreatedTime(LocalDateTime createdTime) {
-        this.createdTime = createdTime;
-    }
-
-    public String getLastModifiedBy() {
-        return lastModifiedBy;
-    }
-
-    public void setLastModifiedBy(String lastModifiedBy) {
-        this.lastModifiedBy = lastModifiedBy;
-    }
-
-    public LocalDateTime getLastModifiedTime() {
-        return lastModifiedTime;
-    }
-
-    public void setLastModifiedTime(LocalDateTime lastModifiedTime) {
-        this.lastModifiedTime = lastModifiedTime;
-    }
+/**
+ * @deprecated 旧包名兼容别名，请迁移到 {@link com.travelsky.base.repository.jpa.audit.domain.AbstractAuditEntity}，
+ *             计划于下个大版本移除。
+ */
+@Deprecated(since = "3.x", forRemoval = true)
+public abstract class AbstractAuditEntity
+        extends com.travelsky.base.repository.jpa.audit.domain.AbstractAuditEntity {
 }

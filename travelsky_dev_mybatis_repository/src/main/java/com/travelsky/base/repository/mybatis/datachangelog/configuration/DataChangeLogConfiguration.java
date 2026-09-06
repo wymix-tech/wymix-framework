@@ -1,4 +1,4 @@
-package com.travelsky.base.repository.datachangelog.configuration;
+package com.travelsky.base.repository.mybatis.datachangelog.configuration;
 
 import com.travelsky.base.repository.datachangelog.listener.DataChangeLogEventListener;
 import com.travelsky.base.repository.datachangelog.plugin.DataChangeLogPlugin;

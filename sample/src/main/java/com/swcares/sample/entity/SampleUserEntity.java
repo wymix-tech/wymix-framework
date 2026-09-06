@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.travelsky.base.repository.audit.domain.AbstractAuditEntity;
+import com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity;
 import com.travelsky.base.repository.datamigration.annotations.DataMigration;
 import lombok.Data;
 
