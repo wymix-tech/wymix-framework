@@ -86,7 +86,8 @@
 
 - **背景**：不同业务场景对 ORM 偏好不同，且部分存量系统使用 MyBatis。
 - **决策**：抽象出 `repository` 层（变更日志/迁移/查询符号），`jpa_repository` 与 `mybatis_repository` 各自实现，共享 `common` 的 `DevQueryVO` 查询契约。
-- **后果**：业务可二选一或并存；代价是两个实现需各自维护、查询 DSL 解析逻辑有差异（JPA 用 `SpecificationHelper`，MyBatis 用自有解析器），且 `@DataChangeLog` 等注解存在重复定义。
+- **后果**：业务可二选一或并存；代价是两个实现需各自维护，且 `@DataChangeLog` 等注解存在重复定义。
+- **演进（查询 DSL 解析器统一上提）**：filter 词法/语法解析收敛到 `repository` 抽象层（`FilterStringParser` 词法 + `FilterParser` 语法归一，产出 `FilterNode` 统一 AST）。JPA 的 `SpecificationHelper` 与 MyBatis 的 `QueryParseHelper` 均改为「AST 翻译器」，各自只做 AST → Specification / QueryWrapper，行为一致且新增操作符只需在翻译层各加一个分支。
 
 ### ADR-002：统一查询 DSL（DevQueryVO + 类 Lisp filter）
 

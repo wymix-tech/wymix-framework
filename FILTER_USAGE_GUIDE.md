@@ -222,3 +222,17 @@ WHERE name = 'john'
    - 操作符是否拼写正确（参考 §3）
 2. 字段名对照实体 Java 类（camelCase），不是数据库列名。
 3. 联调时先在 §6 速查表挑最接近的场景做最小复现。
+
+---
+
+## 9. 实现说明（v3 架构演进）
+
+filter DSL 的解析与执行已分层收敛：
+
+| 层 | 模块 | 职责 |
+|---|---|---|
+| 词法 + 语法解析 | `travelsky_dev_repository`（`FilterStringParser` / `FilterParser`） | filter 字符串 → `FilterNode` 统一 AST；AND/OR 优先级归一（AND 优先）、多条件默认 AND、`in`/`between` 值写法归一（`[f,in,[a,b]]` 与 `[f,in,a,b]` 等价） |
+| JPA 翻译层 | `travelsky_dev_jpa_repository`（`SpecificationHelper`） | `FilterNode` AST → JPA `Predicate`（类型转换按实体字段） |
+| MyBatis 翻译层 | `travelsky_dev_mybatis_repository`（`QueryParseHelper`） | `FilterNode` AST → MyBatis-Plus `QueryWrapper`（列名驼峰转下划线、`TableAlias` 别名） |
+
+新增操作符时：在 `OperateSymbol`（common）定义符号后，仅需在两个翻译层各补一个分支，解析逻辑零改动。
