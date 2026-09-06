@@ -41,6 +41,11 @@
             <groupId>com.travelsky.base</groupId>
             <artifactId>travelsky_dev_utils</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -56,6 +61,32 @@
                             <artifactId>lombok</artifactId>
                         </exclude>
                     </excludes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.pitest</groupId>
+                <artifactId>pitest-maven</artifactId>
+                <version>1.18.1</version>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-junit5-plugin</artifactId>
+                        <version>1.2.3</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <targetClasses>
+                        <param>com.travelsky.base.cache.configuration.CacheManagerConfiguration*</param>
+                    </targetClasses>
+                    <targetTests>
+                        <param>com.travelsky.base.cache.*</param>
+                    </targetTests>
+                    <verbose>false</verbose>
+                    <timeoutConstant>8000</timeoutConstant>
+                    <outputFormats>
+                        <outputFormat>XML</outputFormat>
+                        <outputFormat>HTML</outputFormat>
+                    </outputFormats>
                 </configuration>
             </plugin>
         </plugins>

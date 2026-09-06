@@ -140,17 +140,27 @@ public class ${classNamePrefix}Controller extends AbstractBaseController<${class
 }
 
 
+// 数据库连接信息通过环境变量或系统属性注入（避免硬编码凭证入库），缺失时快速失败
 def config = [:]
-config.url = "jdbc:mysql://192.168.18.106:3306/adt_dev?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8"
-config.user = "adt_user"
-config.password = "Adt@2025!"
+config.url = System.getenv("GEN_DB_URL") ?: System.getProperty("gen.db.url")
+config.user = System.getenv("GEN_DB_USER") ?: System.getProperty("gen.db.user")
+config.password = System.getenv("GEN_DB_PASSWORD") ?: System.getProperty("gen.db.password")
+
+if (!config.url || !config.user || !config.password) {
+    println "[code-generator] Missing database config. Please set environment variables:"
+    println "  GEN_DB_URL      e.g. jdbc:mysql://127.0.0.1:3306/your_db?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8"
+    println "  GEN_DB_USER     database username"
+    println "  GEN_DB_PASSWORD database password"
+    System.exit(1)
+}
 
 def fetcher
 
 try {
     fetcher = new DatabaseTableFetcher(config.url, config.user, config.password)
 } catch (Exception e) {
-    e.printStackTrace()
+    println "[code-generator] Failed to connect database: ${e.message}"
+    System.exit(1)
 }
 
 def allTables = fetcher.getAllTables()

@@ -1,5 +1,8 @@
 package com.travelsky.base.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -16,6 +19,8 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 public class ReflectionUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ReflectionUtils.class);
 
     private ReflectionUtils() {
 
@@ -299,7 +304,7 @@ public class ReflectionUtils {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.warn("Failed to scan class names under package: {}", packagePath, e);
         }
         return myClassName;
     }

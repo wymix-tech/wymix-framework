@@ -3,11 +3,16 @@ package com.travelsky.base.utils.json;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 
 public class JsonDeserialize<T> implements Comparable<JsonDeserialize<T>> {
+
+    private static final Logger log = LoggerFactory.getLogger(JsonDeserialize.class);
 
     protected Type _type;
 
@@ -42,7 +47,7 @@ public class JsonDeserialize<T> implements Comparable<JsonDeserialize<T>> {
 
         } catch (IOException e) {
 
-            e.printStackTrace();
+            log.warn("Failed to deserialize json: {}", str, e);
             return null;
 
         }

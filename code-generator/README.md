@@ -24,12 +24,23 @@
 | 输出目录 | 生成文件写入的本地路径 |
 | 表名清单 | 需要生成的表 |
 
-> ⚠️ 当前脚本中数据库连接地址与密码为**硬编码明文**，使用前请改为从环境变量/参数读取，避免凭证泄露。
+### 数据库凭证（必须通过环境变量/系统属性注入）
+
+数据库连接信息已不再硬编码，通过环境变量或系统属性注入，缺失时脚本启动即失败：
+
+| 环境变量 | 系统属性 | 说明 |
+|------|------|------|
+| `GEN_DB_URL` | `gen.db.url` | JDBC 连接串 |
+| `GEN_DB_USER` | `gen.db.user` | 数据库用户名 |
+| `GEN_DB_PASSWORD` | `gen.db.password` | 数据库密码 |
 
 ## 使用示例
 
 ```bash
-# 1) 修改 code-generator.groovy 顶部连接信息与输出目录
+# 1) 通过环境变量注入数据库凭证（支持系统属性 gen.db.url / gen.db.user / gen.db.password）
+export GEN_DB_URL="jdbc:mysql://127.0.0.1:3306/your_db?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8"
+export GEN_DB_USER="your_user"
+export GEN_DB_PASSWORD="your_password"
 # 2) 用 Groovy 运行
 groovy code-generator.groovy
 
