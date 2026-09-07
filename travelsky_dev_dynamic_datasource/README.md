@@ -4,22 +4,26 @@
 
 ## 模块说明
 
-`travelsky_dev_dynamic_datasource` 提供多数据源管理能力。它通过 `EnvironmentPostProcessor` 在 Spring 环境准备阶段即把配置的数据源注入到 `Environment`，随后 `DynamicDatasourceConfiguration` 据此构建多个 `DataSource` 并以 `primary` 指定默认源。相比运行时动态路由，本模块更偏向「启动期确定的多库」场景。
+`travelsky_dev_dynamic_datasource` 提供多数据源管理能力。它通过 `DynamicEnvPostProcessor`（`EnvironmentPostProcessor`）在 Spring 环境准备阶段即把配置的数据源注入到 `Environment`，随后 `DynamicDatasourceConfiguration` 据此构建多个 `DataSource` 并以 `primary` 指定默认源。支持注解切换与编程式切换两种方式。
 
-## 功能说明
+## 依赖引入
 
-- **启动期注入** `*.EnvironmentPostProcessor`：在 `application.yml` 解析后、Bean 创建前将数据源属性写入环境，保证后续自动配置能正确识别。
-- **多数据源构建** `DynamicDatasourceConfiguration` + `DynamicDataSourceBuilder`：按 `dynamic.datasource.items.<name>` 逐条构建 `DataSource`，`primary` 指定主库。
-- **条件装配**：仅当 `dynamic.datasource.enabled=true` 时生效。
+```xml
+<dependency>
+    <groupId>com.travelsky.base</groupId>
+    <artifactId>travelsky_dev_dynamic_datasource</artifactId>
+    <version>${revision}</version>
+</dependency>
+```
 
 ## 配置项
 
 配置前缀：`dynamic.datasource`
 
-| 配置项 | 说明 | 默认 |
-|--------|------|------|
-| `dynamic.datasource.enabled` | 是否启用动态数据源 | false |
-| `dynamic.datasource.primary` | 主数据源名称 | — |
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `dynamic.datasource.enabled` | 是否启用动态数据源 | `false` |
+| `dynamic.datasource.primary` | 主数据源名称（对应 `items` 中的 key） | — |
 | `dynamic.datasource.items.<name>.url` | 数据库连接 URL | — |
 | `dynamic.datasource.items.<name>.username` | 用户名 | — |
 | `dynamic.datasource.items.<name>.password` | 密码 | — |
@@ -27,6 +31,34 @@
 | `dynamic.datasource.items.<name>.type` | 数据源实现类型（如 HikariCP 全类名） | — |
 
 > ⚠️ 密码以明文写在配置中，生产环境请配合 `security` 模块的 `ENC()` 配置解密能力使用。
+
+## 集成类（自动装配）
+
+| 类 | 说明 |
+|----|------|
+| `DynamicDatasourceConfiguration` | 按配置构建多 `DataSource`，注册 `DynamicDataSource`（主库为 primary） |
+| `DynamicEnvPostProcessor` | 启动期把 `dynamic.datasource.items.*` 写入 Environment（经 `spring.factories` 注册） |
+| `DynamicDataSourceAnnotationAdvisor` / `Interceptor` | `@DynamicDatasource` 注解的 AOP 切换支持 |
+| `DynamicDataSourceBuilder` | 数据源构建工具 |
+
+## 继承类（业务方可实现）
+
+| 类/接口 | 说明 |
+|---------|------|
+| 无强制继承 | 直接使用注解或编程式 API 即可 |
+
+## 注解（业务方使用）
+
+| 注解 | 说明 |
+|------|------|
+| `@DynamicDatasource("slave")` | 类/方法级注解，标注后该方法执行期间切换到指定数据源（`@Inherited`） |
+
+## 扩展点
+
+| 扩展点 | 说明 |
+|--------|------|
+| `DynamicDataSourceContextHolder.setDataSource(name)` | 编程式切换数据源；`getDataSource()` 查询当前；`clear()` 清理；`addDataSource(name)` 动态添加 |
+| `DynamicDataSourceBuilder` | 代码中自定义构建数据源 |
 
 ## 使用示例
 
@@ -51,12 +83,12 @@ dynamic:
         type: com.zaxxer.hikari.HikariDataSource
 ```
 
-## 依赖引入
+```java
+// 1) 注解方式切换
+@DynamicDatasource("slave")
+public List<Order> listFromSlave() { ... }
 
-```xml
-<dependency>
-    <groupId>com.travelsky.base</groupId>
-    <artifactId>travelsky_dev_dynamic_datasource</artifactId>
-    <version>${revision}</version>
-</dependency>
+// 2) 编程式切换（用完记得 clear）
+DynamicDataSourceContextHolder.setDataSource("slave");
+try { ... } finally { DynamicDataSourceContextHolder.clear(); }
 ```
