@@ -1,16 +1,21 @@
 # travelsky_dev_test 测试模块
 
-> 测试基础设施：Testcontainers 封装（Oracle/PostgreSQL/Kafka/Redis）与 DBUnit Excel 数据集。
+> 测试基础设施：Testcontainers 封装（MySQL/Oracle/PostgreSQL/Kafka/Redis）与 DBUnit Excel 数据集。
 
 ## 模块说明
 
-`travelsky_dev_test` 为集成测试提供可复用的基础设施。`AbstractContainer` 封装常见中间件的 Testcontainers 生命周期（Oracle、PostgreSQL、Kafka、Redis 等），让测试在接近生产的环境中进行；DBUnit 相关能力支持以 Excel 数据集准备/校验数据库状态，降低集成测试的数据准备成本。
+`travelsky_dev_test` 为集成测试提供可复用的基础设施。`AbstractContainer` 及其子类封装常见中间件的 Testcontainers 生命周期，让测试在接近生产的环境中进行；DBUnit 相关能力支持以 Excel（xlsx）数据集准备/校验数据库状态，降低集成测试的数据准备成本。
 
-## 功能说明
+## 依赖引入
 
-- **容器封装** `AbstractContainer`：统一拉起/销毁中间件容器，提供连接信息注入。
-- **多中间件支持**：Oracle / PostgreSQL / Kafka / Redis 等容器模板。
-- **数据集驱动**：DBUnit 以 Excel 作为数据准备与断言的数据源。
+```xml
+<dependency>
+    <groupId>com.travelsky.base</groupId>
+    <artifactId>travelsky_dev_test</artifactId>
+    <version>${revision}</version>
+    <scope>test</scope>
+</dependency>
+```
 
 ## 配置项
 
@@ -20,6 +25,31 @@
 |--------|------|
 | `spring.test.context.cache.maxSize` | 测试上下文缓存上限 |
 | Testcontainers 环境变量（如 `DOCKER_HOST`） | 容器运行环境 |
+
+## 集成类（测试基类清单）
+
+| 类 | 说明 |
+|----|------|
+| `AbstractContainer` | 容器生命周期统一封装，提供连接信息注入 |
+| `AbstractMySqlContainer` / `AbstractOracleContainer` / `AbstractPgSqlContainer` | 数据库容器模板（MySQL / Oracle / PostgreSQL） |
+| `AbstractKafkaContainer` / `AbstractRedisContainer` | Kafka / Redis 容器模板 |
+| `AbstractDbContainer` | 数据库容器公共逻辑 |
+| `JunitConfiguration` | JUnit 基础配置 |
+
+## 继承类（业务方可继承/使用）
+
+| 类 | 说明 |
+|----|------|
+| `DataSet` / `XlsxDataSet` / `XlsxDataSetWriter` / `XlsxTable` | Excel 数据集定义与写入 |
+| `Operation` 及实现（`InsertOperation` / `UpdateOperation` / `DeleteOperation` / `RefreshOperation` / `TruncateOperation` / `ClearOperation`） | DBUnit 操作封装 |
+| `DataSetSupportListener` | 数据集支撑监听器 |
+
+## 扩展点
+
+| 扩展点 | 说明 |
+|--------|------|
+| `AbstractContainer` 子类 | 需要新中间件时继承扩展 |
+| `AbstractOperation` | 自定义数据集操作 |
 
 ## 使用示例
 
@@ -43,15 +73,4 @@ class EmployeeRepositoryTest {
         // 使用 Excel 数据集准备数据 + 断言
     }
 }
-```
-
-## 依赖引入
-
-```xml
-<dependency>
-    <groupId>com.travelsky.base</groupId>
-    <artifactId>travelsky_dev_test</artifactId>
-    <version>${revision}</version>
-    <scope>test</scope>
-</dependency>
 ```
