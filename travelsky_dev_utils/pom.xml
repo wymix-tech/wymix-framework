@@ -94,6 +94,8 @@
                 <configuration>
                     <targetClasses>
                         <param>com.travelsky.base.utils.json.JsonDeserialize</param>
+                        <param>com.travelsky.base.utils.ReflectUtils</param>
+                        <param>com.travelsky.base.utils.CompressUtil</param>
                     </targetClasses>
                     <targetTests>
                         <param>com.travelsky.base.utils.*</param>

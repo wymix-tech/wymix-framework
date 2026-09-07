@@ -1,14 +1,24 @@
 package com.travelsky.base.utils;
 
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-public class CompressUtil {
+/**
+ * 字符串 GZIP 压缩/解压工具（框架内唯一的压缩实现）。
+ *
+ * <p>历史背景：曾与 {@link FastCompressUtil} 并存，已收敛为本类，{@link FastCompressUtil}
+ * 保留为 deprecated 兼容门面，新代码请直接使用本类。</p>
+ */
+public final class CompressUtil {
+
+    private CompressUtil() {
+    }
+
     public static String compress(String string) throws IOException {
         if (StringUtils.isBlank(string)) {
             return string;
@@ -17,7 +27,7 @@ public class CompressUtil {
         byte[] byteArray;
         try (ByteArrayOutputStream out = new ByteArrayOutputStream();){
             try (GZIPOutputStream gzip = new GZIPOutputStream(out)) {
-                gzip.write(string.getBytes());
+                gzip.write(string.getBytes(StandardCharsets.UTF_8));
             }
             byteArray = out.toByteArray();
         }
@@ -52,7 +62,7 @@ public class CompressUtil {
             while ((n = gzip.read(buffer)) > 0) {
                 out.write(buffer, 0, n);
             }
-            dest = out.toString("utf-8");
+            dest = out.toString(StandardCharsets.UTF_8.name());
         }
         return dest;
     }
