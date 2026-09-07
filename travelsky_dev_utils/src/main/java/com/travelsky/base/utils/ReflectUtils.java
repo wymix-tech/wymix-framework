@@ -8,9 +8,18 @@ import java.lang.reflect.Field;
 import java.util.Arrays;
 
 
+/**
+ * 反射字段工具。
+ *
+ * <p>历史背景：本类与 {@link ReflectionUtils} 功能重叠且互相引用，已收敛为唯一实现，
+ * {@link ReflectionUtils} 保留为 deprecated 兼容门面，新代码请直接使用本类。</p>
+ */
 public class ReflectUtils {
 
     private static final WeakConcurrentMap<Class<?>, Field[]> FIELDS_CACHE = new WeakConcurrentMap<>();
+
+    protected ReflectUtils() {
+    }
 
     public static Field[] getFieldsDirectly(Class<?> clz, boolean withSuperClassFields) {
         Field[] allFields = null;

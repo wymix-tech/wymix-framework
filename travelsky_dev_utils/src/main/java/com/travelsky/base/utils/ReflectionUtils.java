@@ -18,7 +18,12 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class ReflectionUtils {
+/**
+ * @deprecated 与 {@link ReflectUtils} 功能重复，请迁移到 {@link ReflectUtils}（泛型/枚举/类扫描类方法后续将迁入
+ * {@code GenericUtils} / {@code ClassScannerUtils}）。本类仅为存量代码提供兼容，计划下个大版本移除。
+ */
+@Deprecated
+public class ReflectionUtils extends ReflectUtils {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ReflectionUtils.class);
 
