@@ -4,18 +4,23 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.travelsky.base.common.query.DevQueryVO;
 import com.travelsky.base.common.query.OperateSymbol;
 import com.travelsky.base.common.query.SortVO;
-import com.travelsky.base.repository.query.FilterSymbolConst;
+import com.travelsky.base.repository.query.FilterParser;
+import com.travelsky.base.repository.query.FilterStringParser;
+import com.travelsky.base.repository.query.ast.ConditionNode;
+import com.travelsky.base.repository.query.ast.FilterNode;
+import com.travelsky.base.repository.query.ast.GroupNode;
+import com.travelsky.base.repository.query.ast.LogicalNode;
 import com.travelsky.base.utils.StringUtils;
 import com.travelsky.base.utils.json.JsonUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Stack;
-import java.util.stream.Collectors;
 
+/**
+ * MyBatis 查询构造器：将统一 filter DSL 的 {@link FilterNode} AST 翻译为 {@link QueryWrapper}。
+ * <p>filter 词法/语法解析已上提至 travelsky_dev_repository（{@link FilterParser} / {@link FilterStringParser}），
+ * 本类仅负责 AST -> QueryWrapper 的翻译，新增操作符只需在 {@link #addCondition} 增加分支。
+ */
 public class QueryParseHelper {
 
     /**
@@ -60,61 +65,45 @@ public class QueryParseHelper {
 
     private static <T> void parse(QueryWrapper<T> wrapper, String condition, Class<T> clazz) {
         try {
-            // 解析JSON为List<Object>
-            List<Object> conditions = FilterStringParser.parse(condition);
-            // 创建QueryWrapper并解析条件
-            parseConditions(conditions, wrapper, clazz);
+            FilterNode ast = FilterParser.parse(condition);
+            if (ast != null) {
+                translate(ast, wrapper, clazz);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse input: " + condition, e);
         }
     }
 
-    private static <T> void parseConditions(List<Object> conditions, QueryWrapper<T> wrapper, Class<T> clazz) {
-        Iterator<Object> iterator = conditions.iterator();
-        while (iterator.hasNext()) {
-            Object element = iterator.next();
-            if (element instanceof List) {
-                List<Object> subList = (List<Object>) element;
-                if (isCondition(subList)) {
-                    addCondition(wrapper, subList, clazz);
-                } else {
-                    wrapper.and(w -> parseConditions(subList, w, clazz));
-                }
-            } else if (element instanceof String) {
-                String operator = (String) element;
-                if (iterator.hasNext()) {
-                    Object next = iterator.next();
-                    if (next instanceof List) {
-                        List<Object> rightOperand = (List<Object>) next;
-                        if ("AND".equalsIgnoreCase(operator)) {
-                            wrapper.and(w -> parseConditions(isCondition(rightOperand) ? Collections.singletonList(rightOperand) : rightOperand, w, clazz));
-                        } else if ("OR".equalsIgnoreCase(operator)) {
-                            wrapper.or(w -> parseConditions(isCondition(rightOperand) ? Collections.singletonList(rightOperand) : rightOperand, w, clazz));
-                        } else {
-                            if (rightOperand.stream().noneMatch(e -> e instanceof List)) {
-                                if (isCondition(rightOperand)) {
-                                    addCondition(wrapper, rightOperand, clazz);
-                                } else {
-                                    wrapper.and(w -> parseConditions(isCondition(rightOperand) ? Collections.singletonList(rightOperand) : rightOperand, w, clazz));
-                                }
-                            } else {
-                                wrapper.or(w -> parseConditions(isCondition(rightOperand) ? Collections.singletonList(rightOperand) : rightOperand, w, clazz));
-                            }
-                        }
-                    }
-                }
+    /**
+     * AST -> QueryWrapper 翻译：按节点类型分派。
+     */
+    private static <T> void translate(FilterNode node, QueryWrapper<T> wrapper, Class<T> clazz) {
+        if (node instanceof ConditionNode condition) {
+            addCondition(wrapper, condition, clazz);
+        } else if (node instanceof LogicalNode logical) {
+            if (logical.type() == LogicalNode.Type.AND) {
+                wrapper.and(w -> translate(logical.left(), w, clazz));
+                // AND 语义下右侧也并入 and 分支，保持与既有 and(...) 嵌套等价
+                wrapper.and(w -> translate(logical.right(), w, clazz));
+            } else {
+                wrapper.or(w -> translate(logical.left(), w, clazz));
+                wrapper.or(w -> translate(logical.right(), w, clazz));
             }
+        } else if (node instanceof GroupNode group) {
+            wrapper.and(w -> {
+                for (FilterNode child : group.children()) {
+                    translate(child, w, clazz);
+                }
+            });
+        } else {
+            throw new IllegalArgumentException("Unsupported filter node: " + node);
         }
     }
 
-    private static boolean isCondition(List<Object> list) {
-        return list.size() >= 3 && list.get(0) instanceof String && list.get(1) instanceof String;
-    }
-
-    private static <T> void addCondition(QueryWrapper<T> wrapper, List<Object> condition, Class<T> clazz) {
-        String field = (String) condition.get(0);
-        OperateSymbol operator = OperateSymbol.of((String) condition.get(1));
-        List<Object> values = condition.subList(2, condition.size());
+    private static <T> void addCondition(QueryWrapper<T> wrapper, ConditionNode condition, Class<T> clazz) {
+        String field = condition.field();
+        OperateSymbol operator = condition.operator();
+        List<Object> values = condition.values();
 
         switch (operator) {
             case EQ:
@@ -200,71 +189,6 @@ public class QueryParseHelper {
 
         public static ColumnNameStyleStrategy fromSystemProperty() {
             return new ColumnNameStyleStrategy("CAMEL_TO_UNDERLINE".equals(System.getProperty("COLUMN_NAME_RULE", "CAMEL_TO_UNDERLINE")));
-        }
-    }
-
-    public static class FilterStringParser {
-
-        // 入口方法：将字符串解析为结构化条件
-        public static List<Object> parse(String filter) {
-            filter = filter.trim();
-            if (!filter.startsWith(FilterSymbolConst.LEFT_BUCKET_STR) || !filter.endsWith(FilterSymbolConst.RIGHT_BUCKET_STR)) {
-                throw new IllegalArgumentException("Invalid filter format: must start with '[' and end with FilterSymbolConst.RIGHT_BUCKET");
-            }
-            return parseList(filter, 1, filter.length() - 1);
-        }
-
-        // 递归解析列表
-        private static List<Object> parseList(String filter, int start, int end) {
-            List<Object> result = new ArrayList<>();
-            int index = start;
-            while (index < end) {
-                char ch = filter.charAt(index);
-                if (ch == FilterSymbolConst.LEFT_BUCKET) {
-                    // 嵌套列表
-                    int closeIndex = findClosingBracket(filter, index);
-                    result.add(parseList(filter, index + 1, closeIndex));
-                    index = closeIndex + 1;
-                } else if (ch == FilterSymbolConst.COMMA || ch == ' ') {
-                    // 分隔符，跳过
-                    index++;
-                } else if (ch == FilterSymbolConst.RIGHT_BUCKET) {
-                    // 列表结束
-                    break;
-                } else {
-                    // 解析字符串（条件或逻辑符）
-                    int nextComma = filter.indexOf(FilterSymbolConst.COMMA, index);
-                    int nextBracket = filter.indexOf(']', index);
-                    int next = Math.min(nextComma == -1 ? Integer.MAX_VALUE : nextComma, nextBracket == -1 ? Integer.MAX_VALUE : nextBracket);
-                    if (next == Integer.MAX_VALUE) {
-                        throw new IllegalArgumentException("Invalid filter format: missing ',' or ']'");
-                    }
-                    String token = filter.substring(index, next).trim();
-                    if (!token.isEmpty()) {
-                        result.add(token);
-                    }
-                    index = next;
-                }
-            }
-            return result;
-        }
-
-        // 找到匹配的闭合括号
-        private static int findClosingBracket(String filter, int start) {
-            Stack<Character> stack = new Stack<>();
-            stack.push(FilterSymbolConst.LEFT_BUCKET);
-            for (int i = start + 1; i < filter.length(); i++) {
-                char ch = filter.charAt(i);
-                if (ch == FilterSymbolConst.LEFT_BUCKET) {
-                    stack.push(FilterSymbolConst.LEFT_BUCKET);
-                } else if (ch == FilterSymbolConst.RIGHT_BUCKET) {
-                    stack.pop();
-                    if (stack.isEmpty()) {
-                        return i;
-                    }
-                }
-            }
-            throw new IllegalArgumentException("Invalid filter format: unmatched '['");
         }
     }
 }
