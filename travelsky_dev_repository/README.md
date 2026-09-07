@@ -1,40 +1,12 @@
 # travelsky_dev_repository 数据访问抽象层
 
-> 定义跨 ORM 的数据访问公共抽象：变更日志、数据迁移与统一查询符号常量。
+> 定义跨 ORM 的数据访问公共抽象：变更日志、数据迁移与统一查询 DSL。
 
 ## 模块说明
 
-`travelsky_dev_repository` 是 JPA 与 MyBatis-Plus 两套实现共享的抽象层，定义与具体持久化技术无关的公共契约：`DataChangeLog`（数据变更审计）、`DataMigration`（数据迁移触发）、以及查询 DSL 的符号常量 `FilterSymbolConst`。它本身不包含自动配置，而是为下层 `jpa_repository` / `mybatis_repository` 提供基类与约定。
+`travelsky_dev_repository` 是 JPA 与 MyBatis-Plus 两套实现共享的抽象层，定义与具体持久化技术无关的公共契约：`@DataChangeLog`（数据变更审计）、`@DataMigration`（数据迁移触发）、以及查询 DSL 的符号常量 `FilterSymbolConst` 与 filter 解析器（AST）。它本身不包含自动配置，而是为下层 `jpa_repository` / `mybatis_repository` 提供基类与约定。
 
-> ⚠️ 注意：`DataChangeLog` 注解在 `repository`、`jpa_repository` 等多个模块中各自定义，包路径不同。请统一引用本模块（或 `jpa_repository`）中的定义，避免重复引用造成歧义。
-
-## 功能说明
-
-- **数据变更日志** `@DataChangeLog`：标记需要记录增删改的实体/方法，由 `jpa_repository` 的拦截器与 AOP 落地（MyBatis 侧另有实现）。
-- **数据迁移** `@DataMigration` / `DataMigrationProperties`：标记数据迁移任务，框架在检测到变更事件后可触发迁移（详见 `data_migration` 模块）。
-- **查询符号常量** `FilterSymbolConst`：集中定义 filter DSL 的操作符与连接符字符串，供解析器与前端共用。
-
-## 配置项
-
-| 配置前缀 | 说明 |
-|----------|------|
-| `data.migration.*` | 数据迁移相关属性（`DataMigrationProperties`，当前为空容器，作为扩展占位） |
-
-## 使用示例
-
-```java
-// 1) 标记实体需要记录变更日志
-@DataChangeLog("EMPLOYEE")
-@Entity
-public class Employee { ... }
-
-// 2) 在方法上标记需要迁移的数据
-@DataMigration(table = "EMPLOYEE")
-public void syncEmployee(Employee e) { ... }
-
-// 3) 引用统一查询符号（避免硬编码字符串）
-String op = FilterSymbolConst.CONTAINS; // "CONTAINS"
-```
+> ⚠️ 注意：`DataChangeLog` 注解在 `repository`、`jpa_repository` 等多个模块中各自定义，包路径不同。请统一引用本模块（或对应 ORM 模块新包 `com.travelsky.base.repository.<jpa|mybatis>.*`）中的定义，避免重复引用造成歧义。
 
 ## 依赖引入
 
@@ -47,3 +19,65 @@ String op = FilterSymbolConst.CONTAINS; // "CONTAINS"
 ```
 
 > 通常不需要直接依赖本模块，引入 `jpa_repository` 或 `mybatis_repository` 时会自动传递依赖。
+
+## 配置项
+
+| 配置项 | 说明 |
+|--------|------|
+| `data.migration.*` | 数据迁移相关属性（`DataMigrationProperties`，当前为空容器，作为扩展占位） |
+| `data.changelog.basePackages` | 变更日志扫描包（由下层 ORM 模块读取，逗号分隔） |
+| `data-changelog.enabled` | 变更日志开关（由下层 ORM 模块装配，默认 `true`） |
+
+## 集成类
+
+本模块无自动配置，通过下层模块的自动装配生效（`DataChangeLogEvent` 事件、`DataChangeLogEventListener` 监听器均定义于此）。
+
+## 注解清单（业务方使用）
+
+| 注解 | 说明 |
+|------|------|
+| `@DataChangeLog` | 标记需要记录增删改的实体；`record()` 可指定记录的语句类型（INSERT/MODIFY/REMOVE） |
+| `@DataMigration` | 类级注解，标记实体发生变更时触发数据迁移（配合 `data_migration` 模块） |
+
+## 继承类（业务方可继承/实现）
+
+| 类/接口 | 说明 |
+|---------|------|
+| `DataChangeLogEventListener` | 变更日志事件监听器，业务方可声明子类 Bean 并重写 `changelog(DataChangeLogDTO)` 自定义处理（默认仅记录日志） |
+| `FilterParser` / `FilterStringParser` | filter DSL → AST 解析器，可直接使用或扩展 |
+
+## 扩展点
+
+| 扩展点 | 说明 |
+|--------|------|
+| `DataChangeLogEvent` | Spring 事件，`@EventListener` 可监听数据变更 |
+| `FilterSymbolConst` | 集中定义 filter 操作符/连接符常量，供解析器与前端共用 |
+| `StatementType` | 变更语句类型枚举，扩展 `@DataChangeLog(record = ...)` 可选值 |
+
+## 使用示例
+
+```java
+// 1) 标记实体需要记录变更日志
+@DataChangeLog
+@Entity
+public class Employee { ... }
+
+// 2) 标记实体需要触发数据迁移
+@DataMigration
+@TableName("EMPLOYEE")
+public class EmployeeEntity { ... }
+
+// 3) 自定义变更日志处理
+@Bean
+public DataChangeLogEventListener dataChangeLogEventListener() {
+    return new DataChangeLogEventListener() {
+        @Override
+        protected void changelog(DataChangeLogDTO dto) {
+            // 落库 / 推送 MQ / 写 ES ...
+        }
+    };
+}
+
+// 4) 引用统一查询符号（避免硬编码字符串）
+String op = FilterSymbolConst.CONTAINS; // "CONTAINS"
+```
