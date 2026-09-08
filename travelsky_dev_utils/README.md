@@ -1,6 +1,6 @@
 # travelsky_dev_utils 基础工具模块
 
-> 全框架最底层的通用工具集，被其余绝大多数模块依赖，无自动配置、纯工具类。
+> 全框架最底层的通用工具集，被其余绝大多数模块依赖（多为经 common/core 的传递依赖），无自动配置、纯工具类。
 
 ## 模块说明
 
@@ -32,6 +32,7 @@
 | `ReflectUtils` | 反射：`getFieldsDirectly`/`getFieldValue`（字段读取，带缓存）、`getSuperClassGenericType`（解析泛型实参）、`findFieldWithAnnotation`（按注解找字段）、`newInstance`（按泛型位置实例化） |
 | `JsonUtils` | JSON 序列化/反序列化：`entityToJson` / `jsonToEntity` / `entityToJsonWithDefaultDateformat` / `getValue`（按属性名提取 JSON 字段值）等 |
 | `NumberSerializer` / `DateSerializer` / `DateDeserializer` | Jackson 定制序列化器，数值超过 `100000000000000` 时输出为字符串，规避前端精度丢失 |
+| `PropertyNamingStrategy` | Jackson 属性命名策略（getter/setter 去前缀后首字母小写，字段名原样输出） |
 | `JsonDeserialize` | 泛型 JSON 反序列化基类（继承时指定泛型实参后调用 `jsonToEntity`） |
 | `BeanUtils` | Bean 属性拷贝 |
 | `StringUtils` | 字符串工具（含 `generateRandomString` 随机串） |
@@ -39,7 +40,7 @@
 | `HttpUtils` | HTTP 工具（如响应写出 `response(...)`） |
 | `NetUtils` | 网络工具（IP 解析等） |
 | `CompressUtil` | 压缩/解压工具（GZIP + Base64） |
-| `CurrentTimestamp` / `PriorityUtils` / `UUID` | 时间戳（基于后台线程定时刷新的缓存时钟，枚举单例）、优先级、UUID 工具 |
+| `CurrentTimestamp` / `PriorityUtils` / `com.travelsky.base.utils.UUID` | 时间戳（基于后台线程定时刷新的缓存时钟，枚举单例）、优先级、UUID 工具（模块自定义类，非 `java.util.UUID`） |
 | `SafeConcurrentHashMap` / `WeakConcurrentMap` / `ReferenceConcurrentMap` | 并发安全 Map 变体 |
 
 ## 继承类 / 扩展点
