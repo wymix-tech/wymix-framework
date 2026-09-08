@@ -22,9 +22,9 @@
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| `data-changelog.enabled` | 变更日志开关（由下层 ORM 模块装配） | `true` |
+| `data-changelog.enabled` | 变更日志开关（由下层 ORM 模块装配，本模块不读取） | `true`（由 jpa/mybatis 模块 `@ConditionalOnProperty(matchIfMissing = true)` 决定） |
 | `data.changelog.basePackages` | 变更日志扫描包（由下层 ORM 模块读取，逗号分隔） | 空 |
-| `data.migration.*` | 数据迁移相关属性（`DataMigrationProperties` 定义于 `travelsky_dev_data_migration` 模块，当前为空容器，作为扩展占位） | — |
+| `data.migration.*` | 数据迁移相关属性（`DataMigrationProperties` 定义于 `travelsky_dev_data_migration` 模块，当前为空容器，作为扩展占位）。注意：`data.migration.*` 前缀在本模块及依赖方均无读取方，数据迁移装配实际开关为 `travelsky.data-migration.enabled`（默认 `true`） | — |
 
 ## 集成类
 
@@ -76,6 +76,10 @@ public DataChangeLogEventListener dataChangeLogEventListener() {
     };
 }
 
-// 4) 引用统一查询符号（避免硬编码字符串）
-String op = FilterSymbolConst.CONTAINS; // "CONTAINS"
+// 4) 操作符取值（本模块不提供，来自 common 模块，经 core 传递引入）
+String op = OperateSymbol.CONTAINS.getSymbol()[0]; // "CONTAINS"
+
+// 5) DSL 分隔符常量（避免硬编码）
+String left = FilterSymbolConst.LEFT_BUCKET_STR;   // "["
+String comma = FilterSymbolConst.COMMA_STR;        // ","
 ```
