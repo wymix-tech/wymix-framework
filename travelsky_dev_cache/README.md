@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_cache` 在 Spring Cache 抽象之上封装多级缓存能力。提供 Hazelcast 分布式缓存（支持单例/集群/客户端三种部署模式）与 Caffeine 本地缓存（条件装配，依赖存在时自动启用）。通过 `@ConditionalOnClass` 实现真正的按需加载。
+`travelsky_dev_cache` 在 Spring Cache 抽象之上封装多级缓存能力。提供 Hazelcast 分布式缓存（支持单例/集群/客户端三种部署模式）与 Caffeine 本地缓存（条件装配，依赖存在时自动启用）。通过 `@ConditionalOnClass` 实现真正的按需加载；可通过 `cache.enabled=false` 关闭自动装配。
 
 ## 依赖引入
 
@@ -15,6 +15,8 @@
     <version>${revision}</version>
 </dependency>
 ```
+
+> Hazelcast 与 Caffeine 在本模块中为 `optional` 依赖，不会随本模块传递引入。需在业务工程中自行引入 `hazelcast-spring`（分布式缓存）或 `caffeine`（本地缓存）依赖，对应缓存能力才会生效。同时支持 JDK 17 / Spring Boot 3.5.x。
 
 ## 配置项
 
@@ -50,19 +52,21 @@ Caffeine 前缀：`caffeine`
 | 类 | 说明 |
 |----|------|
 | `CacheManagerConfiguration` | 自动装配入口，内嵌两个条件装配子配置： |
-| ├─ `HazelcastCacheConfiguration` | `@ConditionalOnClass(HazelcastInstance)` 时构建分布式 `CacheManager`（未配置 `default` 命名空间时自动补充 `<app>:default`，TTL 86400s/LRU） |
+| ├─ `HazelcastCacheConfiguration` | `@ConditionalOnClass(HazelcastInstance)` 时构建分布式 `CacheManager`（未配置 `default` 命名空间时自动补充 `<app>:default`，TTL 86400s/LRU；自动补充的容量为 `10000 * 999 = 9990000`，未写入任何命名空间配置项） |
 | └─ `CaffeineCacheConfiguration` | `@ConditionalOnClass(Caffeine)` 时构建本地 `CacheManager` |
 | `CustomHazelcastCacheManager` | 自定义 Hazelcast CacheManager，缓存 key 自动拼接 `<APP>:CACHE:类:方法:参数` |
+
+> 缓存命名空间为 `<app>:<cacheName>` 格式（`<app>` 取自 `spring.application.name`，默认回退 `default`），未在 `spring.hazelcast.cache.namespace` 中声明的名称统一回退到 `default` 命名空间。KeyGenerator 由 `CacheManagerConfiguration` 提供：`<APP大写>:CACHE:<类名>:<方法名>:<参数JSON>`，参数为 null 时拼接 `null`，其余经 JSON 序列化。
 
 ## 继承类 / 扩展点
 
 | 扩展点 | 说明 |
 |--------|------|
 | 标准 Spring Cache 注解 | `@Cacheable` / `@CachePut` / `@CacheEvict` 直接使用 |
-| `CachingConfigurer` | Spring 标准扩展接口，可自定义 key 生成等 |
+| `CachingConfigurer` | Spring 标准扩展接口，可自定义 key 生成等；`CacheManagerConfiguration` 实现该接口并暴露 `keyGenerator()`，未对 `CacheManager` 做 `@ConditionalOnMissingBean` 判断，业务侧同名 Bean 可覆盖 |
 | 依赖引入即生效 | 加 hazelcast 依赖 → 分布式缓存；加 caffeine 依赖 → 本地缓存；两者可共存 |
 
-> `CacheManagerConfiguration` 实现 Spring Boot 3.x 推荐的 `CachingConfigurer` 接口（已不再使用已废弃的 `CachingConfigurerSupport`）。
+> `CacheManagerConfiguration` 实现 Spring Boot 3.x 推荐的 `CachingConfigurer` 接口（已不再使用已废弃的 `CachingConfigurerSupport`），并通过 `@EnableCaching(order = Ordered.LOWEST_PRECEDENCE - 1)` 控制切面优先级。
 
 ## 使用示例
 
