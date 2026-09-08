@@ -1,6 +1,6 @@
 # travelsky_dev_utils 基础工具模块
 
-> 全框架最底层的通用工具集，被除自身外所有模块依赖，无自动配置、纯工具类。
+> 全框架最底层的通用工具集，被其余绝大多数模块依赖（多为经 common/core 的传递依赖），无自动配置、纯工具类。
 
 ## 模块说明
 
@@ -22,7 +22,7 @@
 
 ## 集成类
 
-无自动配置。全部为静态工具类，直接调用即可。
+无自动配置。除 `JsonDeserialize` 为需继承并指定泛型实参的基类外，其余均为静态工具类，直接调用即可。
 
 ## 工具类清单（调用入口）
 
@@ -30,21 +30,22 @@
 |----|------|
 | `GlobalIdGenerator` | 雪花 ID：`generateNextId()` / `generateNextIdStr()`；支持按 IP/MAC 推导 datacenterId 与 workerId |
 | `ReflectUtils` | 反射：`getFieldsDirectly`/`getFieldValue`（字段读取，带缓存）、`getSuperClassGenericType`（解析泛型实参）、`findFieldWithAnnotation`（按注解找字段）、`newInstance`（按泛型位置实例化） |
-| `JsonUtils` | JSON 序列化/反序列化：`entityToJson` / `jsonToEntity` / `entityToJsonWithDefaultDateformat` 等 |
-| `NumberSerializer` / `DateSerializer` / `DateDeserializer` | Jackson 定制序列化器，`Long`→String 规避前端精度丢失 |
-| `JsonDeserialize` | Jackson 组合注解（自定义日期反序列化） |
+| `JsonUtils` | JSON 序列化/反序列化：`entityToJson` / `jsonToEntity` / `entityToJsonWithDefaultDateformat` / `getValue`（按属性名提取 JSON 字段值）等 |
+| `NumberSerializer` / `DateSerializer` / `DateDeserializer` | Jackson 定制序列化器，数值超过 `100000000000000` 时输出为字符串，规避前端精度丢失 |
+| `PropertyNamingStrategy` | Jackson 属性命名策略（getter/setter 去前缀后首字母小写，字段名原样输出） |
+| `JsonDeserialize` | 泛型 JSON 反序列化基类（继承时指定泛型实参后调用 `jsonToEntity`） |
 | `BeanUtils` | Bean 属性拷贝 |
 | `StringUtils` | 字符串工具（含 `generateRandomString` 随机串） |
 | `DateUtils` / `LocalDateTimeUtils` | 日期/时间工具 |
 | `HttpUtils` | HTTP 工具（如响应写出 `response(...)`） |
 | `NetUtils` | 网络工具（IP 解析等） |
 | `CompressUtil` | 压缩/解压工具（GZIP + Base64） |
-| `CurrentTimestamp` / `PriorityUtils` / `UUID` | 时间戳、优先级、UUID 工具 |
+| `CurrentTimestamp` / `PriorityUtils` / `com.travelsky.base.utils.UUID` | 时间戳（基于后台线程定时刷新的缓存时钟，枚举单例）、优先级、UUID 工具（模块自定义类，非 `java.util.UUID`） |
 | `SafeConcurrentHashMap` / `WeakConcurrentMap` / `ReferenceConcurrentMap` | 并发安全 Map 变体 |
 
 ## 继承类 / 扩展点
 
-无继承体系；扩展方式为直接调用上述静态工具，或自行实现 Jackson `Serializer`/`Deserializer` 后注册到 ObjectMapper。
+无继承体系；扩展方式为直接调用上述静态工具。模块内不提供 Jackson `Serializer`/`Deserializer` 的统一注册入口。
 
 ## 使用示例
 
@@ -53,7 +54,7 @@
 long id = GlobalIdGenerator.generateNextId();
 String idStr = GlobalIdGenerator.generateNextIdStr();
 
-// 2) 反射解析泛型（框架 CRUD 基类内部大量使用）
+// 2) 反射解析泛型
 Class<?> entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 0);
 
 // 3) 按注解查找实体 ID 字段
@@ -65,6 +66,6 @@ Object vo = ReflectUtils.newInstance(this.getClass(), 1);
 // 5) JSON 工具
 String json = JsonUtils.entityToJson(obj);
 
-// 6) Long 精度：核心模块已全局注册 Long->String 序列化器，
-//    前端收到的 id 为字符串，写回时 Web 模块再转回 Long。
+// 6) Long 精度：entityToJsonWithDefaultDateformat 内部注册 NumberSerializer，
+//    数值超过 100000000000000 时序列化为字符串
 ```
