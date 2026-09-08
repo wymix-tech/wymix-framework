@@ -29,7 +29,7 @@
 
 | 类 | 说明 |
 |----|------|
-| `JpaConfiguration` | 基础装配：`DatabaseAuditorAware`（审计人）、`AuditHandler`、`AuditListener` |
+| `JpaConfiguration` | 基础装配：`DatabaseAuditorAware`（审计人）、`AuditHandler`、`AuditListener`（由 `@Import` 注册） |
 | `DataChangeLogConfiguration` | 变更日志装配：Hibernate 事件监听器挂载、请求拦截器、`ManualDmlAspect`、`BatchDeleteAspect` |
 | `SpecificationHelper` / `PageHelper` | `DevQueryVO` → `Specification` 与分页转换 |
 
@@ -46,7 +46,7 @@
 | 扩展点 | 说明 |
 |--------|------|
 | `beforeSave` / `afterSave` / `beforeUpdate` / `afterUpdate` | 服务基类生命周期钩子，覆写即可插入业务逻辑 |
-| `DataChangeLogEventListener` Bean | 重写 `changelog(DataChangeLogDTO)` 自定义变更落地（自动装配了默认实现，声明自定义 Bean 即覆盖） |
+| `DataChangeLogEventListener` Bean | 重写 `changelog(DataChangeLogDTO)` 自定义变更落地；模块以 `@ConditionalOnMissingBean` 注册了默认实现，声明自定义 `DataChangeLogEventListener` Bean 即不装配默认实现（该 Bean 由 `@Bean` 方法显式注册，并非类路径条件装配） |
 | `ManualDmlContext` | 自定义 SQL 场景手动触发变更记录 |
 | `AuditListener` / `DatabaseAuditorAware` | 审计填充逻辑可按 Spring Data JPA 标准方式定制 |
 
@@ -82,9 +82,7 @@ q.setSorts("[{\"columns\":[\"createdTime\"],\"direction\":\"DESC\"}]");
 Page<EmployeeEntity> page = service.findAll(q);
 ```
 
-> **包路径说明（3.x 起）**：JPA 专属类统一位于 `com.travelsky.base.repository.jpa.*` 子包，
-> 与 MyBatis 实现完全隔离，两模块可并存引入。旧包路径 `com.travelsky.base.repository.api` /
-> `...audit.domain` 的兼容别名已移除，请直接使用下列 import：
+> **包路径说明（3.x 起）**：JPA 专属类（`BaseRepository`、`AbstractBaseServiceImpl`、`AbstractAuditEntity` 等）统一位于 `com.travelsky.base.repository.jpa.*` 子包；旧包路径 `com.travelsky.base.repository.api`、`...audit.domain` 下的兼容别名已随包路径迁移一并移除，请直接使用下列 import：
 >
 > ```java
 > import com.travelsky.base.repository.jpa.api.BaseRepository;
