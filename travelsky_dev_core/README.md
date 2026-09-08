@@ -40,9 +40,9 @@
 | `travelsky.core.enabled` | 是否启用核心自动装配 | `true` |
 | `spring.mail.host` | 配置后自动注册 `EmailSenderService`（邮件能力开关） | — |
 | `http.requests.<svc>[n].uri` | Feign 动态实例清单，启动期自动映射为 `spring.cloud.discovery.client.simple.instances.*` | — |
-| `http.requests.<svc>.retry.*` | 重试配置，启动期自动映射为 `spring.cloud.loadbalancer.<svc>.retry.*`（`enabled` / `retryOnAllOperations` / `maxRetriesOnSameServiceInstance` 等） | — |
-| `logging.file` | 未配置时默认写入 `/logs/${spring.application.name}.log`（由 `LogApplicationStartedEventListener` 在启动期补默认值） | — |
-| `logging.pattern.file` | 文件日志输出格式，未配置时使用框架默认 pattern（含 traceId） | — |
+| `http.requests.<svc>.retry.*` | 重试配置，启动期自动映射为 `spring.cloud.loadbalancer.<svc>.retry.*`（共 8 项：`enabled`、`retryOnAllOperations`、`maxRetriesOnSameServiceInstance`、`maxRetriesOnNextServiceInstance`、`backoff.enabled`、`backoff.minBackoff`、`backoff.maxBackoff`、`backoff.jitter`）；**仅当同名全局属性 `spring.cloud.loadbalancer.retry.*` 未显式配置时才映射**，否则该项被静默忽略 | — |
+| `logging.file` | 未配置时由 `LogApplicationStartedEventListener` 在启动期补默认值 `/logs/${spring.application.name}.log`（未设应用名时为 `/logs/app.log`）；实际输出路径由 `log4j2-default.xml` 读取 MDC 的 `logHome`/`logFilename` 决定 | — |
+| `logging.pattern.file` | 未配置时由 `LogApplicationStartedEventListener` 写入默认 pattern（占位符为 `%X{traceId:-defaultTraceId}`）；注意模块自带 `log4j2-default.xml` 的 `DEFAULT_PATTERN_LAYOUT` 使用 `%X{customTraceId}`，两者占位符不同 | — |
 
 ## 集成类（自动装配）
 
@@ -68,7 +68,7 @@
 | 名为 `taskExecutor` 的 `Executor` Bean | 完全接管异步线程池 |
 | `Decoder` Bean | Feign 解码器，`CustomFeignConfiguration` 中通过 `@ConditionalOnMissingBean` 支持覆盖默认实现 |
 | `ApplicationContextHolder` | 静态获取 Spring 容器 Bean |
-| `MessageSenderService` 实现类 | 收集容器内所有实现，统一由 `Message` 消息模型分发（邮件、短信等） |
+| `MessageSenderService` 实现类 | 收集容器内所有实现，统一由 `Message` 消息模型分发；`Message.SendType` 枚举取值为 `O` / `E` / `P`（内置 `EmailSenderService` 对应 `O`，`E`、`P` 对应渠道模块内未定义，见存疑项），`type()` 返回值需包含在 `Message.of(...)` 传入的 SendType 数组中才会被分发 |
 
 ## 使用示例
 
@@ -96,6 +96,10 @@ private EmailSenderService emailSenderService;
 // http.requests.user-service[0].uri=http://10.0.0.1:8080
 // http.requests.user-service[1].uri=http://10.0.0.2:8080
 ```
+
+## 存疑项
+
+- `Message.SendType` 枚举中的 `E`、`P` 对应的消息渠道在本模块内无实现与说明，对应关系需向框架维护方确认。
 
 ## 注意事项
 
