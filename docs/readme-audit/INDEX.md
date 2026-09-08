@@ -36,7 +36,7 @@ L6  data_migration ──→ jpa_repository, mybatis_repository
 | 03 | `travelsky_dev_common` | utils | [03-travelsky_dev_common.md](./03-travelsky_dev_common.md) | ☑ |
 | 04 | `travelsky_dev_cache` | utils | [04-travelsky_dev_cache.md](./04-travelsky_dev_cache.md) | ☑ |
 | 05 | `travelsky_dev_core` | common, threadpool | [05-travelsky_dev_core.md](./05-travelsky_dev_core.md) | ☑ |
-| 06 | `travelsky_dev_repository` | core | [06-travelsky_dev_repository.md](./06-travelsky_dev_repository.md) | ☐ |
+| 06 | `travelsky_dev_repository` | core | [06-travelsky_dev_repository.md](./06-travelsky_dev_repository.md) | ☑ |
 | 07 | `travelsky_dev_jpa_repository` | repository | [07-travelsky_dev_jpa_repository.md](./07-travelsky_dev_jpa_repository.md) | ☐ |
 | 08 | `travelsky_dev_mybatis_repository` | repository | [08-travelsky_dev_mybatis_repository.md](./08-travelsky_dev_mybatis_repository.md) | ☐ |
 | 09 | `travelsky_dev_security` | core | [09-travelsky_dev_security.md](./09-travelsky_dev_security.md) | ☐ |
