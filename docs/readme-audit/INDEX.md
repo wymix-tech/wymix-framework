@@ -31,7 +31,7 @@ L6  data_migration ──→ jpa_repository, mybatis_repository
 
 | 序号 | 模块 | 内部依赖 | 提示词文件 | 完成 |
 |------|------|----------|-----------|------|
-| 01 | `travelsky_dev_utils` | — | [01-travelsky_dev_utils.md](./01-travelsky_dev_utils.md) | ☐ |
+| 01 | `travelsky_dev_utils` | — | [01-travelsky_dev_utils.md](./01-travelsky_dev_utils.md) | ☑ |
 | 02 | `travelsky_dev_threadpool` | — | [02-travelsky_dev_threadpool.md](./02-travelsky_dev_threadpool.md) | ☐ |
 | 03 | `travelsky_dev_common` | utils | [03-travelsky_dev_common.md](./03-travelsky_dev_common.md) | ☐ |
 | 04 | `travelsky_dev_cache` | utils | [04-travelsky_dev_cache.md](./04-travelsky_dev_cache.md) | ☐ |
