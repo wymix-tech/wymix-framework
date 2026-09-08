@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_common` 提供跨层共享的通用数据结构与上下文工具。它是 Web 层与 Repository 层之间的「数据契约」，被两者共同依赖，无自动配置。
+`travelsky_dev_common` 提供跨层共享的通用数据结构与上下文工具，无自动配置。模块仅依赖 `travelsky_dev_utils`（安全上下文透传所需的 `TransmittableThreadLocal` 即来自该依赖链）；引入 `travelsky_dev_core`、`travelsky_dev_web`、`travelsky_dev_repository` 等模块时会作为传递依赖间接引入。
 
 ## 依赖引入
 
@@ -33,7 +33,7 @@
 | `OperateSymbol` | filter DSL 操作符号枚举（EQ、GE、CONTAINS 等） |
 | `SortVO` | 排序模型（columns + direction） |
 | `Page<T>` | 分页结果，支持 `map()` 做 VO 转换 |
-| `UserContextHolder` / `Principal` | 静态获取当前登录人上下文 |
+| `UserContextHolder` / `Principal` | 静态方法读写当前登录人上下文（`setContext` / `getUserContext` / `clearContext`），基于 `TransmittableThreadLocal` 实现线程间透传 |
 | `IgnoreUrlContext` | 白名单 URL 上下文（security/monitor 等模块通过 Bean 汇集放行路径） |
 | `BusinessException` / `LoginException` | 业务异常与登录异常基类 |
 | `AbstractAuditVO` | VO 层审计字段基类（createdBy/createdTime/lastModifiedBy/lastModifiedTime） |
@@ -64,8 +64,8 @@ return ResultVO.of(401, "未登录");           // 错误
 Page<UserVO> voPage = userPage.map(user -> convertToVO(user));
 
 // 3) 获取当前登录人
-Principal principal = UserContextHolder.getPrincipal();
-String userId = principal.getUserId();
+Principal principal = UserContextHolder.getUserContext();
+String userId = principal.getPrincipal();
 
 // 4) 构造查询条件（后端方式，避免手写 filter 字符串）
 DevQueryVO query = new DevQueryVO();
