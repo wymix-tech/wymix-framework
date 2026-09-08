@@ -79,6 +79,19 @@ class FilterParserTest {
     }
 
     @Test
+    void shouldSupportUnaryOperatorsWithoutValue() {
+        // NULL / NOT_NULL 不取值，允许省略第三个元素（含尾部逗号写法）
+        ConditionNode condition = (ConditionNode) FilterParser.parse("[[name,NULL,]]");
+        assertEquals("name", condition.field());
+        assertEquals(OperateSymbol.NULL, condition.operator());
+        assertTrue(condition.values().isEmpty());
+
+        condition = (ConditionNode) FilterParser.parse("[[name,NOT_NULL]]");
+        assertEquals(OperateSymbol.NOT_NULL, condition.operator());
+        assertTrue(condition.values().isEmpty());
+    }
+
+    @Test
     void shouldReturnNullForEmptyStructuredFilter() {
         assertNull(FilterParser.parse("[[]]"));
     }

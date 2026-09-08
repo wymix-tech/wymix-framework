@@ -11,7 +11,7 @@ import com.travelsky.base.repository.datachangelog.event.DataChangeLogEvent;
 import com.travelsky.base.repository.helper.SqlParseHelper;
 import com.travelsky.base.utils.GlobalIdGenerator;
 import com.travelsky.base.utils.HttpUtils;
-import com.travelsky.base.utils.ReflectionUtils;
+import com.travelsky.base.utils.ReflectUtils;
 import com.travelsky.base.utils.StringUtils;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
 import net.sf.jsqlparser.statement.delete.Delete;
@@ -208,7 +208,7 @@ public class DataChangeLogPlugin implements Interceptor {
                 DataChangeLogDTO dataChangeLogDTO = new DataChangeLogDTO();
                 Class entityClass = DataChangeLogTableRegistry.getClass(tableName);
                 dataChangeLogDTO.setClassName(entityClass.getName());
-                String idName = ReflectionUtils.findFieldWithAnnotation(entityClass, TableId.class)[0].getName();
+                String idName = ReflectUtils.findFieldWithAnnotation(entityClass, TableId.class)[0].getName();
                 dataChangeLogDTO.setId(oldObj.get(idName));
                 dataChangeLogDTO.setLastModifiedBy(UserContextHolder.getUserContext() == null ? "SYSTEM" : UserContextHolder.getUserContext().getPrincipal());
                 dataChangeLogDTO.setLastModifiedDate(LocalDateTime.now());
@@ -237,7 +237,7 @@ public class DataChangeLogPlugin implements Interceptor {
             DataChangeLogDTO dataChangeLogDTO = new DataChangeLogDTO();
             Class entityClass = DataChangeLogTableRegistry.getClass(tableName);
             dataChangeLogDTO.setClassName(entityClass.getName());
-            String idName = ReflectionUtils.findFieldWithAnnotation(entityClass, TableId.class)[0].getName();
+            String idName = ReflectUtils.findFieldWithAnnotation(entityClass, TableId.class)[0].getName();
             dataChangeLogDTO.setId(newObj.get(idName));
             dataChangeLogDTO.setLastModifiedBy(UserContextHolder.getUserContext() == null ? "SYSTEM" : UserContextHolder.getUserContext().getPrincipal());
             dataChangeLogDTO.setLastModifiedDate(LocalDateTime.now());

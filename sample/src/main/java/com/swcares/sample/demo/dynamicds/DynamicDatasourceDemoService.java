@@ -1,7 +1,7 @@
 package com.swcares.sample.demo.dynamicds;
 
-import com.swcares.sample.dao.SampleUserDao;
 import com.swcares.sample.entity.SampleUserEntity;
+import com.swcares.sample.service.SampleUserService;
 import com.travelsky.base.dynamic.datasource.annotations.DynamicDatasource;
 import com.travelsky.base.dynamic.datasource.support.DynamicDataSourceContextHolder;
 import org.springframework.stereotype.Service;
@@ -15,21 +15,24 @@ import org.springframework.stereotype.Service;
  *     <li>编程式：{@link DynamicDataSourceContextHolder#setDataSource(String)} 后需手动 {@code clear()}。</li>
  * </ol>
  * 需先开启 {@code dynamic.datasource.enabled=true} 并配置数据源清单，见 {@code application-dynamic-datasource.yml}。
+ *
+ * <p>本示例统一走 {@link SampleUserService}（{@code BaseService} 契约），
+ * 因此在 MyBatis / JPA 两种 ORM 下都能直接运行。
  */
 @Service
 public class DynamicDatasourceDemoService {
 
-    private final SampleUserDao sampleUserDao;
+    private final SampleUserService sampleUserService;
 
-    public DynamicDatasourceDemoService(SampleUserDao sampleUserDao) {
-        this.sampleUserDao = sampleUserDao;
+    public DynamicDatasourceDemoService(SampleUserService sampleUserService) {
+        this.sampleUserService = sampleUserService;
     }
 
     /**
      * 走默认数据源（{@code dynamic.datasource.primary}）。
      */
     public long countOnPrimary() {
-        return sampleUserDao.selectCount(null);
+        return sampleUserService.findAll().size();
     }
 
     /**
@@ -37,7 +40,7 @@ public class DynamicDatasourceDemoService {
      */
     @DynamicDatasource("slave")
     public long countOnSlave() {
-        return sampleUserDao.selectCount(null);
+        return sampleUserService.findAll().size();
     }
 
     /**
@@ -46,7 +49,7 @@ public class DynamicDatasourceDemoService {
     public long countByContextHolder(String datasourceName) {
         try {
             DynamicDataSourceContextHolder.setDataSource(datasourceName);
-            return sampleUserDao.selectCount(null);
+            return sampleUserService.findAll().size();
         } finally {
             DynamicDataSourceContextHolder.clear();
         }
@@ -60,6 +63,6 @@ public class DynamicDatasourceDemoService {
     }
 
     public SampleUserEntity getOne(Long id) {
-        return sampleUserDao.selectById(id);
+        return sampleUserService.getOne(id);
     }
 }

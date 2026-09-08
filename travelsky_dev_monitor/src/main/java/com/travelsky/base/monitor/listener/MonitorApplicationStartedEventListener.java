@@ -29,6 +29,10 @@ public class MonitorApplicationStartedEventListener implements GenericApplicatio
     public void onApplicationEvent(ApplicationEvent event) {
         if (event instanceof ApplicationEnvironmentPreparedEvent) {
             ConfigurableEnvironment environment = ((ApplicationEnvironmentPreparedEvent) event).getEnvironment();
+            // 由 spring.factories 注册后本监听器始终存在，开关在这里读取（默认开启）
+            if (!environment.getProperty("travelsky.monitor.enabled", Boolean.class, Boolean.TRUE)) {
+                return;
+            }
             Properties source = new Properties();
             source.put("management.endpoints.web.exposure.include", "*");
             source.put("management.endpoint.health.showDetails", "always");

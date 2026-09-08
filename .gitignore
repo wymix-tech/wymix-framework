@@ -42,3 +42,6 @@ build/
 
 ### Others ###
 .Trash-*/
+
+### 本地工具链（setup-env.sh 下载到项目内，不改动系统） ###
+.tools/

@@ -39,7 +39,6 @@
 |---------|------|
 | `AbstractBaseController<T, V, ID, SERVICE>` | **控制器基类**：继承即获得标准 CRUD 端点，自动完成 VO↔PO 转换（基于反射按泛型实例化 + `BeanUtils.copyProperties`） |
 | `BaseController<T, V, ID>` | 控制器契约接口（含 Swagger `@Operation` 注解的标准端点定义） |
-| `AbstractApiDocConfiguration` | Swagger 文档配置基类，需实现 `packageToScan()` 指定扫描包 |
 
 ### AbstractBaseController 自动暴露的端点
 
@@ -86,5 +85,6 @@ public class SampleUserController
 // 自动暴露：GET /sampleUser/{id}、POST /sampleUser、PUT /sampleUser/{id}、
 //            DELETE /sampleUser/{id}、GET /sampleUser（分页）等
 
-// 2) 启用 Swagger：继承 AbstractApiDocConfiguration 并配置 swagger.web.enabled=true
+// 2) 启用 Swagger：引入 travelsky_dev_web 即由 ApiDocAutoConfiguration 自动装配，无需继承任何基类
+//    通过 swagger.enabled=false 关闭，springdoc.packages-to-scan 指定扫描包
 ```

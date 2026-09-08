@@ -5,8 +5,23 @@ spring:
     # datasource/security：基础能力
     # cache：缓存(application-cache.yml)
     # async：异步与自定义线程池(application-async.yml，threadpool 模块的 testThreadPool 在此定义)
+    # monitor：actuator 端点放行 + 启动信息打印(application-monitor.yml)
     # 按需追加：discovery（去中心化服务发现）、dynamicDatasource（动态数据源）
-    active: datasource,security,cache,async
+    active: datasource,security,cache,async,monitor
+  # i18n：MessageResourceHelper 依赖 MessageSource（基名 messages）与 AcceptHeaderLocaleResolver，
+  # 二者由 Boot 自动装配 + SampleWebConfiguration 显式兜底
+  messages:
+    basename: messages
+    encoding: UTF-8
+  # web 模块的 WebConfiguration#getValidator 读取该基名作为 Bean Validation 文案来源
+  validate:
+    messages: i18n/validation/ValidationMessages
+
+# 慢请求阈值：SlowRequestAspect 超过该秒数打印 warn 日志
+app:
+  slow:
+    request:
+      inSecond: 3
 
 # 模块开关汇总（均为默认开启，置 false 可关闭对应自动装配）
 travelsky:
@@ -24,6 +39,29 @@ async:
   enabled: true
 cache:
   enabled: true
-# 数据变更日志（data_migration 依赖该事件）
+
+# 数据变更日志开关（data_migration 依赖该事件）
 data-changelog:
   enabled: true
+# 变更日志实体扫描包（DataChangeLogTableRegistry，多个用逗号分隔）
+data:
+  changelog:
+    basePackages: com.swcares.sample.entity
+
+# Swagger：web 模块的 ApiDocAutoConfiguration 自动装配，无需继承任何基类
+# swagger.web.enabled=true 时框架还会额外放行 /doc.html 等路径
+swagger:
+  enabled: true
+  web:
+    enabled: true
+  title: sample 示例接口
+  description: travelsky_dev 框架能力端到端示例
+  version: 1.0.0
+# 显式指定 springdoc 路径（不能只依赖框架 static 块里的 System.setProperty，
+# 该方式可能在 springdoc 绑定配置之后才执行，导致自定义路径不生效）
+springdoc:
+  swagger-ui:
+    path: /doc.html
+  api-docs:
+    path: /api-docs.json
+  packages-to-scan: com.swcares.sample

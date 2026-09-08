@@ -10,9 +10,6 @@ import java.util.zip.GZIPOutputStream;
 
 /**
  * 字符串 GZIP 压缩/解压工具（框架内唯一的压缩实现）。
- *
- * <p>历史背景：曾与 {@link FastCompressUtil} 并存，已收敛为本类，{@link FastCompressUtil}
- * 保留为 deprecated 兼容门面，新代码请直接使用本类。</p>
  */
 public final class CompressUtil {
 

@@ -29,8 +29,7 @@
 | 类 | 说明 |
 |----|------|
 | `GlobalIdGenerator` | 雪花 ID：`generateNextId()` / `generateNextIdStr()`；支持按 IP/MAC 推导 datacenterId 与 workerId |
-| `ReflectionUtils` | 反射：`getSuperClassGenericType`（解析泛型实参）、`findFieldWithAnnotation`（按注解找字段）、`newInstance`（按泛型位置实例化） |
-| `ReflectUtils` | 反射补充：`getFieldsDirectly`（含父类字段）、`getFieldValue` 等 |
+| `ReflectUtils` | 反射：`getFieldsDirectly`/`getFieldValue`（字段读取，带缓存）、`getSuperClassGenericType`（解析泛型实参）、`findFieldWithAnnotation`（按注解找字段）、`newInstance`（按泛型位置实例化） |
 | `JsonUtils` | JSON 序列化/反序列化：`entityToJson` / `jsonToEntity` / `entityToJsonWithDefaultDateformat` 等 |
 | `NumberSerializer` / `DateSerializer` / `DateDeserializer` | Jackson 定制序列化器，`Long`→String 规避前端精度丢失 |
 | `JsonDeserialize` | Jackson 组合注解（自定义日期反序列化） |
@@ -39,7 +38,7 @@
 | `DateUtils` / `LocalDateTimeUtils` | 日期/时间工具 |
 | `HttpUtils` | HTTP 工具（如响应写出 `response(...)`） |
 | `NetUtils` | 网络工具（IP 解析等） |
-| `CompressUtil` / `FastCompressUtil` | 压缩/解压工具 |
+| `CompressUtil` | 压缩/解压工具（GZIP + Base64） |
 | `CurrentTimestamp` / `PriorityUtils` / `UUID` | 时间戳、优先级、UUID 工具 |
 | `SafeConcurrentHashMap` / `WeakConcurrentMap` / `ReferenceConcurrentMap` | 并发安全 Map 变体 |
 
@@ -55,13 +54,13 @@ long id = GlobalIdGenerator.generateNextId();
 String idStr = GlobalIdGenerator.generateNextIdStr();
 
 // 2) 反射解析泛型（框架 CRUD 基类内部大量使用）
-Class<?> entityClass = ReflectionUtils.getSuperClassGenericType(this.getClass(), 0);
+Class<?> entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 0);
 
 // 3) 按注解查找实体 ID 字段
-Field idField = ReflectionUtils.findFieldWithAnnotation(entityClass, Id.class);
+Field[] idFields = ReflectUtils.findFieldWithAnnotation(entityClass, Id.class);
 
 // 4) 实例化泛型实参对应的类
-Object vo = ReflectionUtils.newInstance(this.getClass(), 1);
+Object vo = ReflectUtils.newInstance(this.getClass(), 1);
 
 // 5) JSON 工具
 String json = JsonUtils.entityToJson(obj);

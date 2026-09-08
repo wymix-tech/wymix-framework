@@ -4,7 +4,7 @@ import com.travelsky.base.repository.datapermission.annotations.EnableDataPermis
 import com.travelsky.base.repository.datapermission.aop.DataPermissionAspect;
 import com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector;
 import com.travelsky.base.repository.datapermission.plugin.DataPermissionPlugin;
-import com.travelsky.base.utils.ReflectionUtils;
+import com.travelsky.base.utils.ReflectUtils;
 import com.travelsky.base.utils.StringUtils;
 import org.reflections.Reflections;
 import org.springframework.beans.BeansException;
@@ -52,7 +52,7 @@ public class DataPermissionInjectorRegistry implements ImportBeanDefinitionRegis
         BeanDefinitionBuilder builder;
         for (Class<? extends PermissionSqlInjector> clz : subTypesOf) {
             try {
-                Field[] allFieldByClazz = ReflectionUtils.findFieldWithAnnotation(clz, Autowired.class);
+                Field[] allFieldByClazz = ReflectUtils.findFieldWithAnnotation(clz, Autowired.class);
                 builder = BeanDefinitionBuilder.genericBeanDefinition(clz);
                 builder.setScope(BeanDefinition.SCOPE_SINGLETON);
                 for (Field fieldByClazz : allFieldByClazz) {

@@ -1,6 +1,6 @@
 package com.travelsky.base.security.helper;
 
-import com.travelsky.base.utils.FastCompressUtil;
+import com.travelsky.base.utils.CompressUtil;
 import com.travelsky.base.utils.json.JsonUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -11,6 +11,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 
+import java.io.IOException;
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -41,7 +42,7 @@ public class JwtTokenHelper {
         List<String> roles = authorities.stream()
                 .map(GrantedAuthority::getAuthority)
                 .toList();
-        map.put("roles", FastCompressUtil.compress(JsonUtils.entityToJson(roles)));
+        map.put("roles", compress(JsonUtils.entityToJson(roles)));
         return Jwts.builder()
                 .setSubject(authentication.getName())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
@@ -57,7 +58,7 @@ public class JwtTokenHelper {
 
     public Authentication extractAuthentication(String token) {
         Claims claims = extractAllClaims(token);
-        List<String> roles = JsonUtils.jsonToEntity(ArrayList.class, String.class, FastCompressUtil.decompress(claims.get("roles", String.class)));
+        List<String> roles = JsonUtils.jsonToEntity(ArrayList.class, String.class, decompress(claims.get("roles", String.class)));
         List<SimpleGrantedAuthority> authorities = roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();
@@ -90,6 +91,22 @@ public class JwtTokenHelper {
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
         final Claims claims = extractAllClaims(token);
         return claimsResolver.apply(claims);
+    }
+
+    private String compress(String raw) {
+        try {
+            return CompressUtil.compress(raw);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to compress jwt roles claim", e);
+        }
+    }
+
+    private String decompress(String compressed) {
+        try {
+            return CompressUtil.decompress(compressed);
+        } catch (IOException e) {
+            throw new IllegalStateException("Failed to decompress jwt roles claim", e);
+        }
     }
 
     private Claims extractAllClaims(String token) {

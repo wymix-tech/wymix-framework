@@ -1,6 +1,9 @@
 spring:
   datasource:
     name: adt_dev
-    url: jdbc:mysql://192.168.18.106:3306/adt_dev?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+    # MySQL 8 默认认证插件为 caching_sha2_password，客户端需允许公钥检索，否则报
+    # "Public Key Retrieval is not allowed"；如改用 mysql_native_password 可去掉该参数
+    url: jdbc:mysql://127.0.0.1:3306/adt_dev?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
     username: adt_user
+    # security 模块支持 ENC(...) 密文（此处为 Adt@2025!），明文亦可
     password: ENC(QWR0QDIwMjUh)

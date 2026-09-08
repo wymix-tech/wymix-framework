@@ -34,10 +34,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenBlackList jwtTokenBlackList;
 
-    @Autowired(required = false)
-    private List<IgnoreUrlContext> ignoreUrlContexts;
-    @Autowired
-    private CustomSecurityProperties customSecurityProperties;
+    /**
+     * 白名单上下文：由构造器传入（本类由配置类用 {@code new} 创建，字段注入不会生效）。
+     */
+    private final List<IgnoreUrlContext> ignoreUrlContexts;
+
+    private final CustomSecurityProperties customSecurityProperties;
 
     private volatile RequestMatcher[] requestMatchers;
 
@@ -45,8 +47,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
 
     public JwtAuthenticationFilter(JwtTokenHelper jwtTokenHelper, JwtTokenBlackList jwtTokenBlackList) {
+        this(jwtTokenHelper, jwtTokenBlackList, null, null);
+    }
+
+    public JwtAuthenticationFilter(JwtTokenHelper jwtTokenHelper,
+                                   JwtTokenBlackList jwtTokenBlackList,
+                                   List<IgnoreUrlContext> ignoreUrlContexts,
+                                   CustomSecurityProperties customSecurityProperties) {
         this.jwtTokenHelper = jwtTokenHelper;
         this.jwtTokenBlackList = jwtTokenBlackList;
+        this.ignoreUrlContexts = ignoreUrlContexts;
+        this.customSecurityProperties = customSecurityProperties;
     }
 
     @Override

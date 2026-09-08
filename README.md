@@ -94,7 +94,6 @@ travelsky_dev_parent
 ### 2. 创建启动类
 
 ```java
-import com.travelsky.base.core.boot.BootLoader;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -104,8 +103,8 @@ import org.springframework.cache.annotation.EnableCaching;
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer {
     public static void main(String[] args) {
-        SpringApplication springApplication = BootLoader.genApp(Application.class);
-        springApplication.run(args);
+        // 原生启动即可：框架监听器已由 META-INF/spring.factories 自动注册
+        SpringApplication.run(Application.class, args);
     }
 
     @Override

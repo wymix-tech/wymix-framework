@@ -28,7 +28,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.travelsky.base.repository.audit.domain.AbstractAuditEntity;
+import com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -81,7 +81,7 @@ public class ${classNamePrefix}VO extends AbstractAuditVO implements Serializabl
 
     def dao = """package  ${basePackage}.dao;
 
-import com.travelsky.base.repository.api.BaseRepository;
+import com.travelsky.base.repository.mybatis.api.BaseRepository;
 import  ${basePackage}.entity.${classNamePrefix}Entity;
 
 public interface ${classNamePrefix}Dao extends BaseRepository<${classNamePrefix}Entity, ${idType}> {
@@ -92,7 +92,7 @@ public interface ${classNamePrefix}Dao extends BaseRepository<${classNamePrefix}
     def service = """package ${basePackage}.service;
 
 import com.travelsky.base.core.api.BaseService;
-import com.travelsky.base.repository.api.AbstractBaseServiceImpl;
+import com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl;
 import ${basePackage}.dao.${classNamePrefix}Dao;
 import ${basePackage}.entity.${classNamePrefix}Entity;
 import org.springframework.stereotype.Service;

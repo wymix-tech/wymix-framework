@@ -53,7 +53,6 @@
 
 | 类/接口 | 说明 |
 |---------|------|
-| `AbstractAsyncScheduleConfiguration` | 旧式异步配置基类（`@Deprecated(since = "3.x", forRemoval = true)`），需实现抽象方法 `taskDecorator()`，仍兼容 |
 | `MessageSenderService` | 消息发送 SPI 接口，实现后注册为 Bean 即可接入统一消息发送 |
 | `CustomFeignConfiguration` | Feign 基础配置抽象类（`decentralization_discovery` 模块继承使用） |
 
@@ -61,7 +60,6 @@
 
 | 扩展点 | 说明 |
 |--------|------|
-| `BootLoader.genApp(Class)` | **启动入口**：`SpringApplication app = BootLoader.genApp(App.class)`，自动挂载 Feign 动态实例与日志监听器；`BootLoader.addListener(...)` 注册自定义监听器 |
 | `TaskDecorator` Bean | 声明即覆盖默认装饰器（如 `web` 模块用它透传请求上下文与 TraceId） |
 | 名为 `taskExecutor` 的 `Executor` Bean | 完全接管异步线程池 |
 | `AuthenticationEntryPoint` 等标准 Bean | 通过 `@ConditionalOnMissingBean` 支持覆盖默认实现 |
@@ -71,11 +69,12 @@
 ## 使用示例
 
 ```java
-// 1) 启动类（框架标准写法）
+// 1) 启动类：直接用 Spring Boot 原生方式即可。
+//    框架监听器已在 META-INF/spring.factories 中声明，由 SpringApplication 自动加载。
 @SpringBootApplication
 public class App {
     public static void main(String[] args) {
-        BootLoader.genApp(App.class).run(args);
+        SpringApplication.run(App.class, args);
     }
 }
 

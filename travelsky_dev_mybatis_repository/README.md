@@ -107,10 +107,9 @@ public class EmployeeService extends AbstractBaseServiceImpl<EmployeeEntity, Lon
 //   "page": 1, "limit": 20 }
 ```
 
-> **包路径说明（3.x 起）**：MyBatis-Plus 专属类已迁移到 `com.travelsky.base.repository.mybatis.*` 子包，
+> **包路径说明（3.x 起）**：MyBatis-Plus 专属类统一位于 `com.travelsky.base.repository.mybatis.*` 子包，
 > 与 JPA 实现完全隔离，两模块可并存引入。旧包路径 `com.travelsky.base.repository.api` /
-> `...audit.domain` 保留 deprecated 兼容别名（`forRemoval = true`），请尽快迁移。
-> 示例中的 import：
+> `...audit.domain` 的兼容别名已移除，请直接使用下列 import：
 >
 > ```java
 > import com.travelsky.base.repository.mybatis.api.BaseRepository;

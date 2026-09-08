@@ -6,7 +6,7 @@ import com.travelsky.base.common.query.Page;
 import com.travelsky.base.core.api.BaseService;
 import com.travelsky.base.repository.query.PageHelper;
 import com.travelsky.base.repository.query.SpecificationHelper;
-import com.travelsky.base.utils.ReflectionUtils;
+import com.travelsky.base.utils.ReflectUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -112,8 +112,18 @@ public abstract class AbstractBaseServiceImpl<T, ID, REPOSITORY extends BaseRepo
         return PageHelper.convert(this.getRepository().findAll((Specification<T>) (root, query, criteriaBuilder) -> SpecificationHelper.parse(devQueryVO, root, query, criteriaBuilder), PageHelper.toPageable(devQueryVO)));
     }
 
+    /**
+     * 全量查询，与 MyBatis 侧 {@code AbstractBaseServiceImpl} 保持同一份 {@link BaseService} 契约。
+     *
+     * <p>注意：不分页且不带条件，数据量大时请改用 {@link #findAll(DevQueryVO)}。
+     */
+    @Override
+    public List<T> findAll() {
+        return this.getRepository().findAll();
+    }
+
     private ID findIdValueInEntity(T entity) {
-        Field[] fields = ReflectionUtils.findFieldWithAnnotation(entity.getClass(), Id.class);
+        Field[] fields = ReflectUtils.findFieldWithAnnotation(entity.getClass(), Id.class);
         if (ArrayUtils.isEmpty(fields)) {
             throw new BusinessException("Miss Column: ID");
         }

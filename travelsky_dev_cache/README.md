@@ -62,7 +62,7 @@ Caffeine 前缀：`caffeine`
 | `CachingConfigurer` | Spring 标准扩展接口，可自定义 key 生成等 |
 | 依赖引入即生效 | 加 hazelcast 依赖 → 分布式缓存；加 caffeine 依赖 → 本地缓存；两者可共存 |
 
-> ⚠️ `CacheManagerConfiguration` 继承了 Spring 已废弃的 `CachingConfigurerSupport`，在 Spring Boot 3.x 下建议改为实现 `CachingConfigurer` 接口。
+> `CacheManagerConfiguration` 实现 Spring Boot 3.x 推荐的 `CachingConfigurer` 接口（已不再使用已废弃的 `CachingConfigurerSupport`）。
 
 ## 使用示例
 

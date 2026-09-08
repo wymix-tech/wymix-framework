@@ -4,7 +4,7 @@ package com.travelsky.base.web.api.impl;
 import com.travelsky.base.common.query.DevQueryVO;
 import com.travelsky.base.common.query.Page;
 import com.travelsky.base.core.api.BaseService;
-import com.travelsky.base.utils.ReflectionUtils;
+import com.travelsky.base.utils.ReflectUtils;
 import com.travelsky.base.web.api.BaseController;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,8 +26,8 @@ public abstract class AbstractBaseController<T, V, ID, SERVICE extends BaseServi
     }
 
     private void initializer() {
-        entityClass = ReflectionUtils.getSuperClassGenericType(this.getClass(), 0);
-        voClass = ReflectionUtils.getSuperClassGenericType(this.getClass(), 1);
+        entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 0);
+        voClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 1);
     }
 
     protected SERVICE getService() {
@@ -79,7 +79,7 @@ public abstract class AbstractBaseController<T, V, ID, SERVICE extends BaseServi
         if (t == null) {
             return null;
         }
-        V v = (V) ReflectionUtils.newInstance(this.getClass(), 1);
+        V v = (V) ReflectUtils.newInstance(this.getClass(), 1);
         BeanUtils.copyProperties(t, v);
         return v;
     }
@@ -88,7 +88,7 @@ public abstract class AbstractBaseController<T, V, ID, SERVICE extends BaseServi
         if (v == null) {
             return null;
         }
-        T t = (T) ReflectionUtils.newInstance(this.getClass(), 0);
+        T t = (T) ReflectUtils.newInstance(this.getClass(), 0);
         BeanUtils.copyProperties(v, t);
         return t;
     }

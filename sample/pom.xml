@@ -18,6 +18,8 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <travelsky.dev.version>3.0.0-SNAPSHOT</travelsky.dev.version>
+        <!-- 由 mybatis / jpa profile 覆盖为对应的 ORM 示例代码目录 -->
+        <orm.source.dir>src/main/mybatis/java</orm.source.dir>
     </properties>
 
     <dependencies>
@@ -127,6 +129,34 @@
         </dependency>
     </dependencies>
 
+    <build>
+        <plugins>
+            <!-- ORM 相关的示例代码按 profile 分目录，保证 mybatis / jpa 两种构建都能通过：
+                 src/main/java       —— 与 ORM 无关的公共示例
+                 src/main/mybatis/java —— MyBatis-Plus 版 Entity/Dao/Service/装配
+                 src/main/jpa/java     —— JPA 版 Entity/Dao/Service/装配（与上者同名同类，二选一参与编译） -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.0</version>
+                <executions>
+                    <execution>
+                        <id>add-orm-source</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${orm.source.dir}</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
     <profiles>
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓使用Mybatis作为ORM框架↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <profile>
@@ -135,6 +165,9 @@
                 <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓建议使用Mybatis↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
                 <activeByDefault>true</activeByDefault>
             </activation>
+            <properties>
+                <orm.source.dir>src/main/mybatis/java</orm.source.dir>
+            </properties>
             <dependencies>
                 <dependency>
                     <groupId>com.travelsky.base</groupId>
@@ -165,6 +198,9 @@
             <activation>
                 <activeByDefault>false</activeByDefault>
             </activation>
+            <properties>
+                <orm.source.dir>src/main/jpa/java</orm.source.dir>
+            </properties>
             <dependencies>
                 <dependency>
                     <groupId>com.travelsky.base</groupId>

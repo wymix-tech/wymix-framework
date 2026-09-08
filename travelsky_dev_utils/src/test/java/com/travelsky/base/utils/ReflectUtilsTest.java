@@ -5,8 +5,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * ReflectUtils 单元测试：字段缓存、父类字段上钻、静态字段读取与异常场景。
- * 同时覆盖 deprecated 兼容门面（ReflectionUtils 继承的字段方法、FastCompressUtil 委托）。
+ * ReflectUtils 单元测试：字段缓存、父类字段上钻、静态字段读取、泛型解析与异常场景。
  */
 class ReflectUtilsTest {
 
@@ -122,22 +121,68 @@ class ReflectUtilsTest {
         assertNull(ReflectUtils.getFieldValue(obj, (java.lang.reflect.Field) null));
     }
 
-    // ===== deprecated 兼容门面回归 =====
+    // ===== 泛型解析 =====
 
     @Test
-    void deprecatedReflectionUtilsShouldStillResolveFields() {
-        Sub obj = new Sub();
-        assertEquals("base", ReflectionUtils.getFieldValueForAll(obj, "baseField"));
-        assertEquals("sub", ReflectionUtils.getFieldValue(obj, "subField"));
-        assertNotNull(ReflectionUtils.findFieldForAll(obj, "subField"));
+    void shouldResolveSuperClassGenericType() {
+        assertEquals(String.class, ReflectUtils.getSuperClassGenericType(GenericHolder.class, 0));
+        assertEquals(StringBuilder.class, ReflectUtils.getSuperClassGenericType(GenericHolder.class, 1));
+        // 越界/负值回退到 Object.class
+        assertEquals(Object.class, ReflectUtils.getSuperClassGenericType(GenericHolder.class, 9));
+        assertEquals(Object.class, ReflectUtils.getSuperClassGenericType(GenericHolder.class, -1));
+        // 无泛型父类逐级上溯直至 Object
+        assertEquals(Object.class, ReflectUtils.getSuperClassGenericType(Sub2.class, 0));
+        // 集合泛型返回原始类型
+        assertEquals(java.util.List.class,
+                ReflectUtils.getSuperClassGenericType(CollectionGenericHolder.class, 0));
     }
 
     @Test
-    void deprecatedFastCompressUtilShouldDelegateToCompressUtil() throws Exception {
-        String raw = "compress-me-with-a-relatively-long-payload-to-make-gzip-worthwhile-1234567890";
-        String compressed = FastCompressUtil.compress(raw);
-        assertEquals(CompressUtil.compress(raw), compressed);
-        assertEquals(raw, FastCompressUtil.decompress(compressed));
+    void shouldNewInstanceByGenericIndex() {
+        assertTrue(ReflectUtils.<String>newInstance(GenericHolder.class, 0).isEmpty());
+        assertEquals(0, ReflectUtils.<StringBuilder>newInstance(GenericHolder.class, 1).length());
+    }
+
+    @Test
+    void shouldFailWhenGenericTypeHasNoDefaultConstructor() {
+        assertThrows(RuntimeException.class, () -> ReflectUtils.newInstance(NoDefaultCtorHolder.class, 0));
+    }
+
+    @Test
+    void shouldFindFieldWithAnnotationIncludingSuperClass() {
+        // 子类自身无标注字段，命中父类字段，验证父类字段同样在扫描范围内
+        java.lang.reflect.Field[] fields = ReflectUtils.findFieldWithAnnotation(AnnotatedChild.class, Marker.class);
+        assertEquals(1, fields.length);
+        assertEquals("parentMarked", fields[0].getName());
+        assertEquals(1, ReflectUtils.findFieldWithAnnotation(AnnotatedParent.class, Marker.class).length);
+        // 未被标注的注解类型返回空数组
+        assertEquals(0, ReflectUtils.findFieldWithAnnotation(AnnotatedChild.class, Deprecated.class).length);
+        assertEquals(0, ReflectUtils.findFieldWithAnnotation(AnnotatedParent.class, Deprecated.class).length);
+    }
+
+    static class GenericHolder extends GenericBase<String, StringBuilder> {
+    }
+
+    static class CollectionGenericHolder extends GenericBase<java.util.List<String>, StringBuilder> {
+    }
+
+    static class NoDefaultCtorHolder extends GenericBase<Integer, StringBuilder> {
+    }
+
+    static class GenericBase<A, B> {
+    }
+
+    @java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+    @interface Marker {
+    }
+
+    static class AnnotatedChild extends AnnotatedParent {
+        private String childMarked;
+    }
+
+    static class AnnotatedParent {
+        @Marker
+        private String parentMarked;
     }
 
     @Test

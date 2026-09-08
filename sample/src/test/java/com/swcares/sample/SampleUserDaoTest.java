@@ -1,8 +1,8 @@
 package com.swcares.sample;
 
 import com.swcares.sample.container.SampleMySqlContainer;
-import com.swcares.sample.dao.SampleUserDao;
 import com.swcares.sample.entity.SampleUserEntity;
+import com.swcares.sample.service.SampleUserService;
 import com.travelsky.base.test.annotations.DataSet;
 import com.travelsky.base.test.configuration.JunitConfiguration;
 import com.travelsky.base.test.enums.Operation;
@@ -18,6 +18,9 @@ import org.springframework.boot.test.context.SpringBootTest;
  * <p>{@link DataSet} 由 {@link JunitConfiguration} 中的 {@code DataSetSupportListener} 解析，
  * setup 在测试前造数、teardown 在测试后清理。
  *
+ * <p>本用例走 {@link SampleUserService}（{@code BaseService} 契约）而非具体 DAO，
+ * 因此在 MyBatis / JPA 两种 ORM 构建下都能编译通过。
+ *
  * <p>默认禁用：本用例需要本地可用的 Docker 环境，确认环境就绪后删除 {@link Disabled} 即可运行。
  */
 @SpringBootTest
@@ -25,17 +28,21 @@ import org.springframework.boot.test.context.SpringBootTest;
 class SampleUserDaoTest extends SampleMySqlContainer {
 
     @Autowired
-    private SampleUserDao sampleUserDao;
+    private SampleUserService sampleUserService;
 
     @Test
     @DataSet(values = {"SAMPLE_USER"}, setup = Operation.INSERT, teardown = Operation.DELETE)
-    void testSelectById() {
+    void testSaveAndGetOne() {
         SampleUserEntity entity = new SampleUserEntity();
         entity.setUsername("admin");
         entity.setPassword("Abc@123");
-        sampleUserDao.insert(entity);
 
-        SampleUserEntity loaded = sampleUserDao.selectById(entity.getId());
+        SampleUserEntity saved = sampleUserService.save(entity);
+        Assertions.assertNotNull(saved.getId());
+
+        SampleUserEntity loaded = sampleUserService.getOne(saved.getId());
         Assertions.assertEquals("admin", loaded.getUsername());
+        // AbstractAuditEntity 的审计字段由框架自动填充
+        Assertions.assertNotNull(loaded.getCreatedTime());
     }
 }

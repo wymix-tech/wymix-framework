@@ -122,9 +122,28 @@ public final class FilterParser {
 
     /**
      * 结构化条件：{@code [field, OP, value...]}，与 QueryParseHelper#isCondition 语义一致。
+     *
+     * <p>一元操作符（{@code NULL} / {@code NOT_NULL}）不取值，允许写成 {@code [[field,NULL]]}
+     * 或 {@code [[field,NULL,]]}（尾部空值会被词法层丢弃，只剩 2 个元素）。
      */
     static boolean isCondition(List<?> list) {
-        return list.size() >= 3 && list.get(0) instanceof String && list.get(1) instanceof String;
+        if (list.isEmpty() || !(list.get(0) instanceof String) || !(list.get(1) instanceof String)) {
+            return false;
+        }
+        if (list.size() >= 3) {
+            return true;
+        }
+        return list.size() == 2 && isUnaryOperator((String) list.get(1));
+    }
+
+    private static boolean isUnaryOperator(String operator) {
+        OperateSymbol symbol;
+        try {
+            symbol = OperateSymbol.of(operator.toUpperCase());
+        } catch (RuntimeException ex) {
+            return false;
+        }
+        return symbol == OperateSymbol.NULL || symbol == OperateSymbol.NOT_NULL;
     }
 
     private static ConditionNode toCondition(List<?> condition) {

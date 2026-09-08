@@ -1,0 +1,6 @@
+# 监控模块启动监听器：通过 Spring Boot 标准的 SpringFactoriesLoader 机制注册，
+# 业务方使用原生启动方式即可生效（详见 core 模块同名文件的说明）。
+#
+# 该监听器内部会读取 travelsky.monitor.enabled（默认 true）决定是否注入 Actuator 默认值。
+org.springframework.context.ApplicationListener=\
+com.travelsky.base.monitor.listener.MonitorApplicationStartedEventListener

@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_monitor` 在 Spring Boot Actuator 与 Micrometer 之上，暴露应用运行指标（JVM、HTTP、线程池等），并通过 `MonitorApplicationStartedEventListener` 在环境准备阶段注入 Actuator/Prometheus 默认配置，`MonitorBootLoader` 提供监控版启动入口。本模块复用 Spring 标准监控配置，无专有配置前缀。
+`travelsky_dev_monitor` 在 Spring Boot Actuator 与 Micrometer 之上，暴露应用运行指标（JVM、HTTP、线程池等），并通过 `MonitorApplicationStartedEventListener` 在环境准备阶段注入 Actuator/Prometheus 默认配置。该监听器由 `META-INF/spring.factories` 自动注册，业务方使用原生启动方式即可生效。本模块复用 Spring 标准监控配置，无专有配置前缀。
 
 ## 依赖引入
 
@@ -38,16 +38,16 @@
 
 | 扩展点 | 说明 |
 |--------|------|
-| `MonitorBootLoader.genApp(Class)` | **启动入口**：`SpringApplication app = MonitorBootLoader.genApp(App.class)`，自动挂载监控事件监听器（内部复用 `BootLoader`） |
-| `BootLoader.addListener(...)` | 追加自定义启动监听器 |
 | `IgnoreUrlContext` Bean | 追加更多免认证路径 |
 
 ## 使用示例
 
 ```java
-// 启动类（使用监控版 BootLoader，自动注入 Actuator 默认配置）
+// 启动类：原生写法即可，无需任何框架启动入口类。
+// MonitorApplicationStartedEventListener 已通过 META-INF/spring.factories 自动注册，
+// 在环境准备阶段注入下列 Actuator 默认值（开关 travelsky.monitor.enabled，默认 true）。
 public static void main(String[] args) {
-    MonitorBootLoader.genApp(App.class).run(args);
+    SpringApplication.run(App.class, args);
 }
 ```
 

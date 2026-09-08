@@ -8,7 +8,7 @@ import com.travelsky.base.common.query.Page;
 import com.travelsky.base.core.api.BaseService;
 import com.travelsky.base.repository.query.helper.PageHelper;
 import com.travelsky.base.repository.query.helper.QueryParseHelper;
-import com.travelsky.base.utils.ReflectionUtils;
+import com.travelsky.base.utils.ReflectUtils;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.io.Serializable;
@@ -25,7 +25,7 @@ public abstract class AbstractBaseServiceImpl<T, ID extends Serializable, REPOSI
 
     public AbstractBaseServiceImpl(REPOSITORY repository) {
         this.repository = repository;
-        this.entityClass = ReflectionUtils.getSuperClassGenericType(this.getClass(), 0);
+        this.entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 0);
     }
 
     protected REPOSITORY getRepository() {
@@ -114,7 +114,7 @@ public abstract class AbstractBaseServiceImpl<T, ID extends Serializable, REPOSI
     }
 
     private ID findIdValueInEntity(T entity) {
-        Field[] fields = ReflectionUtils.findFieldWithAnnotation(entity.getClass(), TableId.class);
+        Field[] fields = ReflectUtils.findFieldWithAnnotation(entity.getClass(), TableId.class);
         if (ArrayUtils.isEmpty(fields)) {
             throw new BusinessException("Miss Column: ID");
         }

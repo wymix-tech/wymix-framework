@@ -1,0 +1,28 @@
+# travelsky_dev_monitor 示例配置
+# 启用方式：在 application.yml 的 spring.profiles.active 中追加 monitor
+# monitor 模块做两件事：
+#   1. MonitorConfiguration 注册 IgnoreUrlContext 放行 /actuator/**
+#   2. MonitorApplicationStartedEventListener 在环境准备阶段注入 Actuator/Prometheus 默认值
+#      （由 META-INF/spring.factories 自动注册，无需任何启动入口类）
+# 装配开关为 travelsky.monitor.enabled。
+travelsky:
+  monitor:
+    enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,beans,env
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+
+# 应用信息（/actuator/info 返回内容）
+info:
+  app:
+    name: sample
+    description: travelsky_dev 框架端到端示例
