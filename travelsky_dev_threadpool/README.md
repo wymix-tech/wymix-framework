@@ -16,6 +16,8 @@
 </dependency>
 ```
 
+`transmittable-thread-local`（TTL）为本模块编译期强依赖，随本模块自动带入，业务方无需额外引入。
+
 ## 配置项
 
 自动装配开关：`travelsky.threadpool.enabled`（默认 `true`）。线程池参数由 `ThreadPoolConfiguration` 在启动期直接从 `thread-pool` 前缀绑定读取。
@@ -25,13 +27,16 @@
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
 | `thread-pool.pool.<name>.corePoolSize` | 普通线程池核心线程数 | 4 |
-| `thread-pool.pool.<name>.maxPoolSize` | 最大线程数 | 2×corePoolSize |
-| `thread-pool.pool.<name>.queueCapacity` | 队列容量 | 100 |
+| `thread-pool.pool.<name>.maxPoolSize` | 最大线程数，实际生效值为 `max(corePoolSize, maxPoolSize)` | 8 |
+| `thread-pool.pool.<name>.queueCapacity` | 队列容量（`LinkedBlockingQueue`） | 100 |
 | `thread-pool.pool.<name>.keepAliveSeconds` | 空闲线程存活秒数 | 60 |
-| `thread-pool.pool.<name>.rejectedPolicy` | 拒绝策略：`ABORT_POLICY` / `DISCARD_POLICY` / `DISCARD_OLDEST_POLICY` / `CALLER_RUNS_POLICY` | `ABORT_POLICY` |
-| `thread-pool.pool.<name>.rejectedPolicyClassName` | 自定义拒绝策略全类名（反序列化实例化） | — |
+| `thread-pool.pool.<name>.rejectedPolicy` | 拒绝策略：`ABORT_POLICY` / `DISCARD_POLICY` / `DISCARD_OLDEST_POLICY` / `CALLER_RUNS_POLICY` / `CUSTOM_POLICY` | `ABORT_POLICY` |
+| `thread-pool.pool.<name>.rejectedPolicyClassName` | 自定义拒绝策略全类名（反射实例化），仅当 `rejectedPolicy=CUSTOM_POLICY` 时生效 | — |
 | `thread-pool.scheduled.<name>.corePoolSize` | 定时线程池核心线程数 | 4 |
-| `thread-pool.scheduled.<name>.rejectedPolicyClassName` | 定时线程池拒绝策略全类名 | — |
+| `thread-pool.scheduled.<name>.rejectedPolicyClassName` | 定时线程池自定义拒绝策略全类名，仅当 `rejectedPolicy=CUSTOM_POLICY` 时生效 | — |
+
+> 未配置任何 `pool.<name>` / `scheduled.<name>` 时不会创建默认线程池。
+> `scheduled.<name>` 复用同一参数结构，仅 `corePoolSize` 与拒绝策略相关项生效。
 
 > 每个配置的线程池会以 `<name>` 为 Bean 名注册单例，可直接 `@Qualifier` 注入。
 
@@ -57,8 +62,8 @@
 | 扩展点 | 说明 |
 |--------|------|
 | `ThreadPoolRegistry` 静态 API | 代码中随时注册额外线程池 |
-| `ThreadPoolWatchController` | 查看全部线程池状态（`ThreadPoolMonitor.allThreadPoolContext()`） |
-| `ThreadPoolOperateController` | 运行时调整线程池参数（`changeThreadPoolConfig`），maxPoolSize ≥ corePoolSize 校验 |
+| `ThreadPoolWatchController` | 查看全部线程池状态（`ThreadPoolMonitor.allThreadPoolContext()`）；未自动注册为 Bean，需业务方自行注册并暴露 |
+| `ThreadPoolOperateController` | 运行时调整线程池参数（`changeThreadPoolConfig`），maxPoolSize ≥ corePoolSize 校验；未自动注册为 Bean，需业务方自行注册并暴露 |
 
 ## 使用示例
 
