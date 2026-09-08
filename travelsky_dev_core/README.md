@@ -39,8 +39,10 @@
 |--------|------|--------|
 | `travelsky.core.enabled` | 是否启用核心自动装配 | `true` |
 | `spring.mail.host` | 配置后自动注册 `EmailSenderService`（邮件能力开关） | — |
-| `http.requests.<svc>` | Feign 动态实例清单，启动期自动映射为 `spring.cloud.loadbalancer.*` 配置 | — |
-| `http.requests.<svc>.retry.*` | 重试配置（`enabled` / `retryOnAllOperations` / `maxRetriesOnSameServiceInstance` 等） | — |
+| `http.requests.<svc>[n].uri` | Feign 动态实例清单，启动期自动映射为 `spring.cloud.discovery.client.simple.instances.*` | — |
+| `http.requests.<svc>.retry.*` | 重试配置，启动期自动映射为 `spring.cloud.loadbalancer.<svc>.retry.*`（`enabled` / `retryOnAllOperations` / `maxRetriesOnSameServiceInstance` 等） | — |
+| `logging.file` | 未配置时默认写入 `/logs/${spring.application.name}.log`（由 `LogApplicationStartedEventListener` 在启动期补默认值） | — |
+| `logging.pattern.file` | 文件日志输出格式，未配置时使用框架默认 pattern（含 traceId） | — |
 
 ## 集成类（自动装配）
 
@@ -49,12 +51,14 @@
 | `CoreConfiguration` | 基础装配：`ApplicationContextHolder`、`MessageService`、条件装配 `EmailSenderService` |
 | `AsyncScheduleAutoConfiguration` | 异步/调度统一装配：注册 `applicationTaskExecutor` / `taskExecutor` / `taskScheduler` |
 
+装配类通过 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 注册；另有 `LogApplicationStartedEventListener`（日志默认值）与 `FeignApplicationStartedEventListener`（Feign 动态实例映射）两个启动监听器通过 `META-INF/spring.factories` 注册，监听 `ApplicationEnvironmentPreparedEvent`，发生在 `ApplicationContext` 创建之前，因此只能走 `spring.factories`，不能声明为 `@Bean`。
+
 ## 继承类（业务方可继承/实现）
 
 | 类/接口 | 说明 |
 |---------|------|
 | `MessageSenderService` | 消息发送 SPI 接口，实现后注册为 Bean 即可接入统一消息发送 |
-| `CustomFeignConfiguration` | Feign 基础配置抽象类（`decentralization_discovery` 模块继承使用） |
+| `CustomFeignConfiguration` | Feign 基础配置抽象类：声明 `@LoadBalancerClients(defaultConfiguration = GlobalLoadBalancerConfiguration.class)`，并提供默认 `Decoder`（`@ConditionalOnMissingBean`） |
 
 ## 扩展点
 
@@ -62,7 +66,7 @@
 |--------|------|
 | `TaskDecorator` Bean | 声明即覆盖默认装饰器（如 `web` 模块用它透传请求上下文与 TraceId） |
 | 名为 `taskExecutor` 的 `Executor` Bean | 完全接管异步线程池 |
-| `AuthenticationEntryPoint` 等标准 Bean | 通过 `@ConditionalOnMissingBean` 支持覆盖默认实现 |
+| `Decoder` Bean | Feign 解码器，`CustomFeignConfiguration` 中通过 `@ConditionalOnMissingBean` 支持覆盖默认实现 |
 | `ApplicationContextHolder` | 静态获取 Spring 容器 Bean |
 | `MessageSenderService` 实现类 | 收集容器内所有实现，统一由 `Message` 消息模型分发（邮件、短信等） |
 
@@ -82,17 +86,20 @@ public class App {
 @Async
 public CompletableFuture<Result> doAsync() { ... }
 
-// 3) 发送邮件（需配置 spring.mail.host 与 spring.mail.username）
+// 3) 发送邮件（需配置 spring.mail.host 与 spring.mail.username；
+//    spring-boot-starter-mail 在本模块为 optional 依赖，业务方需自行引入）
 @Autowired
 private EmailSenderService emailSenderService;
 
 // 4) Feign 动态实例（无需注册中心）
 // application.yml
-// http.requests.user-service[0]=http://10.0.0.1:8080
-// http.requests.user-service[1]=http://10.0.0.2:8080
+// http.requests.user-service[0].uri=http://10.0.0.1:8080
+// http.requests.user-service[1].uri=http://10.0.0.2:8080
 ```
 
 ## 注意事项
 
 - `AsyncScheduleAutoConfiguration` 刻意**不**实现 `AsyncConfigurer`，避免与 Boot 默认装配冲突导致 “Only one AsyncConfigurer may exist”。
-- Feign 动态实例配置在 `ApplicationEnvironmentPreparedEvent` 阶段被改写为 `spring.cloud.loadbalancer.*`，因此无需注册中心。
+- Feign 动态实例配置在 `ApplicationEnvironmentPreparedEvent` 阶段被改写：实例清单映射为 `spring.cloud.discovery.client.simple.instances.*`，重试配置映射为 `spring.cloud.loadbalancer.<svc>.retry.*`，因此无需注册中心。
+- 业务方使用 `SpringApplication.run` / `SpringApplicationBuilder` / `new SpringApplication(...)` 均可，无需框架自定义启动入口类。
+- 邮件能力依赖 `spring-boot-starter-mail`，该依赖在本模块中为 `optional`，业务方使用邮件功能时需自行引入。
