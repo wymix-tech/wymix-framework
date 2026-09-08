@@ -6,8 +6,6 @@
 
 `travelsky_dev_repository` 是 JPA 与 MyBatis-Plus 两套实现共享的抽象层，定义与具体持久化技术无关的公共契约：`@DataChangeLog`（数据变更审计）、`@DataMigration`（数据迁移触发）、以及查询 DSL 的符号常量 `FilterSymbolConst` 与 filter 解析器（AST）。它本身不包含自动配置，而是为下层 `jpa_repository` / `mybatis_repository` 提供基类与约定。
 
-> ⚠️ 注意：`DataChangeLog` 注解在 `repository`、`jpa_repository` 等多个模块中各自定义，包路径不同。请统一引用本模块（或对应 ORM 模块新包 `com.travelsky.base.repository.<jpa|mybatis>.*`）中的定义，避免重复引用造成歧义。
-
 ## 依赖引入
 
 ```xml
@@ -22,11 +20,11 @@
 
 ## 配置项
 
-| 配置项 | 说明 |
-|--------|------|
-| `data.migration.*` | 数据迁移相关属性（`DataMigrationProperties`，当前为空容器，作为扩展占位） |
-| `data.changelog.basePackages` | 变更日志扫描包（由下层 ORM 模块读取，逗号分隔） |
-| `data-changelog.enabled` | 变更日志开关（由下层 ORM 模块装配，默认 `true`） |
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `data-changelog.enabled` | 变更日志开关（由下层 ORM 模块装配，本模块不读取） | `true`（由 jpa/mybatis 模块 `@ConditionalOnProperty(matchIfMissing = true)` 决定） |
+| `data.changelog.basePackages` | 变更日志扫描包（由下层 ORM 模块读取，逗号分隔） | 空 |
+| `data.migration.*` | 数据迁移相关属性（`DataMigrationProperties` 定义于 `travelsky_dev_data_migration` 模块，当前为空容器，作为扩展占位）。注意：`data.migration.*` 前缀在本模块及依赖方均无读取方，数据迁移装配实际开关为 `travelsky.data-migration.enabled`（默认 `true`） | — |
 
 ## 集成类
 
@@ -51,7 +49,7 @@
 | 扩展点 | 说明 |
 |--------|------|
 | `DataChangeLogEvent` | Spring 事件，`@EventListener` 可监听数据变更 |
-| `FilterSymbolConst` | 集中定义 filter 操作符/连接符常量，供解析器与前端共用 |
+| `FilterSymbolConst` | 集中定义 filter DSL 的分隔符常量（方括号、逗号），操作符取值见 `com.travelsky.base.common.query.OperateSymbol` |
 | `StatementType` | 变更语句类型枚举，扩展 `@DataChangeLog(record = ...)` 可选值 |
 
 ## 使用示例
@@ -78,6 +76,10 @@ public DataChangeLogEventListener dataChangeLogEventListener() {
     };
 }
 
-// 4) 引用统一查询符号（避免硬编码字符串）
-String op = FilterSymbolConst.CONTAINS; // "CONTAINS"
+// 4) 操作符取值（本模块不提供，来自 common 模块，经 core 传递引入）
+String op = OperateSymbol.CONTAINS.getSymbol()[0]; // "CONTAINS"
+
+// 5) DSL 分隔符常量（避免硬编码）
+String left = FilterSymbolConst.LEFT_BUCKET_STR;   // "["
+String comma = FilterSymbolConst.COMMA_STR;        // ","
 ```
