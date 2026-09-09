@@ -1,6 +1,6 @@
 # travelsky_dev_data_migration 数据迁移模块
 
-> 监听数据变更事件并触发数据迁移，作为数据同步/迁移的扩展骨架。
+> 监听数据变更事件并检查实体是否标注 `@DataMigration`，作为数据同步/迁移的扩展骨架（内置迁移回放尚未实现）。
 
 ## 模块说明
 
@@ -16,7 +16,7 @@
 </dependency>
 ```
 
-> 需与 `jpa_repository` 或 `mybatis_repository` 配合使用（事件来源）。
+> 需与 `jpa_repository` / `mybatis_repository` 配合使用（事件来源）。引入本模块会通过 compile 依赖同时带入两套 ORM 模块；本模块装配类会按 classpath 条件自动导入对应的 `DataChangeLogConfiguration`，而非二选一。
 
 ## 配置项
 
@@ -30,7 +30,7 @@
 | 类 | 说明 |
 |----|------|
 | `DataMigrationConfiguration` | 自动装配入口，同时 `@Import` 变更日志配置 |
-| `DataMigrationEventListener` | 监听 `DataChangeLogEvent`，对标注 `@DataMigration` 的实体触发迁移 |
+| `DataMigrationEventListener` | 实现 `ApplicationListener` 监听 `DataChangeLogEvent`，对标注 `@DataMigration` 的实体触发迁移（当前迁移回放未实现，仅 debug 日志） |
 
 ## 继承类 / 注解（业务方使用）
 
