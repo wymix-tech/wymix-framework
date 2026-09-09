@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_security` 提供基于 Spring Security 的企业认证能力。新版只需提供 `UserDetailsService` Bean 即启用安全（无需继承配置类）；支持表单登录与 JWT 两种模式；配置中的密码若以 `ENC(...)` 包裹则自动解密（`DecryptEnvironmentPostProcessor`）；登录凭证使用 BCrypt 加密；JWT 提供令牌黑名单机制实现主动失效。
+`travelsky_dev_security` 提供基于 Spring Security 的企业认证能力。是否装配由 `security.enabled` 控制（默认开启）；表单登录模式需提供 `UserDetailsService` Bean 作为用户来源，无需继承任何配置类；支持表单登录与 JWT 两种模式；配置中的密码若以 `ENC(...)` 包裹则自动解密（`DecryptEnvironmentPostProcessor`）；登录凭证使用 BCrypt 加密；JWT 提供令牌黑名单机制实现主动失效。
 
 ## 依赖引入
 
@@ -15,6 +15,8 @@
     <version>${revision}</version>
 </dependency>
 ```
+
+> JWT 依赖（`jjwt-api` / `jjwt-impl` / `jjwt-jackson`，scope：impl 与 jackson 为 `runtime`）版本由父 POM 统一管理，当前为 `0.13.0`。
 
 ## 配置项
 
@@ -30,7 +32,7 @@
 | `security.ignoreUrls` | 放行 URL（逗号分隔） | — |
 | `security.jwt.randomSecret` | 启动时随机生成密钥 | `false` |
 | `security.jwt.secret` | JWT 固定密钥（生产建议配置） | — |
-| `security.jwt.expiredTime` | 令牌过期时间（毫秒） | 0 |
+| `security.jwt.expiredTime` | 令牌过期时间（秒） | 0 |
 
 ## 集成类（自动装配）
 
@@ -47,7 +49,7 @@
 
 | 类/接口 | 说明 |
 |---------|------|
-| `CustomSecurityConfiguration` | 旧式用法：继承后注入 `UserDetailsService`；**新版无需继承**，直接声明 `UserDetailsService` Bean 即可 |
+| `CustomSecurityConfiguration` | 自动装配入口（`@AutoConfiguration`，配合 `SecurityFilterChain` 构建），非继承用途；业务方只需声明 `UserDetailsService` Bean |
 | `SecurityCustomizer` | **函数式扩展接口**：`customize(HttpSecurity)` 自定义安全过滤链，声明 Bean 即被收集调用 |
 | `JwtTokenBlackList` | 令牌黑名单可自行实现/覆盖（`@ConditionalOnMissingBean`） |
 
@@ -87,7 +89,7 @@ security:
   jwt:
     randomSecret: false
     secret: ${JWT_SECRET}
-    expiredTime: 7200000
+    expiredTime: 7200
 spring:
   datasource:
     password: ENC(密文)     # 自动解密
