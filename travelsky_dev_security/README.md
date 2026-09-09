@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_security` 提供基于 Spring Security 的企业认证能力。是否装配由 `security.enabled` 控制（默认开启）；表单登录模式需提供 `UserDetailsService` Bean 作为用户来源，无需继承任何配置类；支持表单登录与 JWT 两种模式；配置中的密码若以 `ENC(...)` 包裹则自动解密（`DecryptEnvironmentPostProcessor`）；登录凭证使用 BCrypt 加密；JWT 提供令牌黑名单机制实现主动失效。
+`travelsky_dev_security` 提供基于 Spring Security 的企业认证能力。是否装配由 `security.enabled` 控制（默认开启）；表单登录模式需提供 `UserDetailsService` Bean 作为用户来源，无需继承任何配置类；支持表单登录与 JWT 两种模式；配置中的密码若以 `ENC(...)` 包裹则自动解密（`DecryptEnvironmentPostProcessor`）；登录凭证使用 BCrypt 加密；JWT 提供令牌黑名单机制实现登出后主动失效（黑名单为单机内存态 `JwtTokenBlackList`，不含分布式共享存储，登出记入的失效时长为配置的完整令牌有效期）。
 
 ## 依赖引入
 
@@ -43,7 +43,7 @@
 | `JwtAuthenticationFilter` | JWT 认证过滤器 |
 | `LoginSuccessHandler` / `LoginFailureHandler` | 登录成功/失败处理器 |
 | `Http401UnauthorizedEntryPoint` / `BaseAccessDeniedHandler` | 401 入口点与 403 处理器 |
-| `InvalidJwtTokenLogoutHandler` | 登出时把 JWT 加入黑名单 |
+| `InvalidJwtTokenLogoutHandler` | 登出时把 JWT 加入黑名单（内存态，失效时长取完整令牌有效期） |
 
 ## 继承类（业务方核心用法）
 
