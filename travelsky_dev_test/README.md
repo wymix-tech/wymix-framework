@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_test` 为集成测试提供可复用的基础设施。`AbstractContainer` 及其子类封装数据库中间件的 Testcontainers 生命周期，让测试在接近生产的环境中进行；DBUnit 相关能力支持以 Excel（xlsx/xls）数据集准备/校验数据库状态，降低集成测试的数据准备成本。
+`travelsky_dev_test` 为集成测试提供可复用的基础设施。`AbstractContainer` 及其子类封装数据库中间件的 Testcontainers 生命周期，让测试在接近生产的环境中进行；DBUnit 相关能力支持以 Excel（xlsx/xls）数据集准备/清理数据库状态，降低集成测试的数据准备成本。
 
 > 运行前提：Testcontainers 需要可用的 Docker 环境。
 
@@ -33,9 +33,9 @@
 | `db.username` | 数据库用户名 | `unittest` |
 | `db.password` | 数据库密码 | `unit@Test4321` |
 | `db.database` | 数据库名 | `test` |
-| `init.sql.path` | 初始化 SQL 目录（classpath 相对路径，目录下所有 `.sql` 按序执行） | `schema/` |
+| `init.sql.path` | 初始化 SQL 目录（工作目录相对路径，目录下所有 `.sql` 文件均执行，执行顺序不保证） | `schema/` |
 | `docker.client.strategy` | Testcontainers 客户端策略（透传） | — |
-| `docker.host` | Docker 连接地址（透传；亦可经环境变量 `DOCKER_HOST` 提供） | — |
+| `docker.host` | Docker 连接地址（本模块透传系统属性/`unittest.properties` 至 Testcontainers 配置；`DOCKER_HOST` 环境变量由 Testcontainers 自身读取，非本模块代码） | — |
 
 ## 集成类（测试基类清单）
 
@@ -51,7 +51,7 @@
 | 类 | 说明 |
 |----|------|
 | `@DataSet` | 类/方法级注解声明数据集：`values`（文件路径）、`setup` / `teardown` 操作（默认 `INSERT` / `DELETE`）、`database`（默认 `test`）、`dataSourceNames`（默认 `dataSource`，多数据源时 `values` 数量需与之相等） |
-| `XlsxDataSet` / `XlsxDataSetWriter` / `XlsxTable` | Excel 数据集读取/写入（每个 sheet 一张表，首行为列名；`.xls` 走 DBUnit `XlsDataSet`，`.xlsx` 走自定义 POI 实现） |
+| `XlsxDataSet` / `XlsxTable` / `XlsxDataSetWriter` | Excel 数据集读取/写入：读取时每个 sheet 一张表、首行为列名（`.xls` 走 DBUnit `XlsDataSet`，`.xlsx` 走自定义 POI 实现）；`XlsxDataSetWriter` 复用 DBUnit `XlsDataSetWriter` 流程、仅将工作簿替换为 `XSSFWorkbook`，用于把数据集导出为 `.xlsx` 文件 |
 | `Operation` 及实现（`InsertOperation` / `UpdateOperation` / `DeleteOperation` / `RefreshOperation` / `TruncateOperation` / `ClearOperation`） | DBUnit 操作封装 |
 | `DataSetSupportListener` | 数据集支撑监听器：测试前按 `@DataSet.setup` 加载数据、测试后按 `teardown` 清理 |
 
@@ -59,8 +59,9 @@
 
 | 扩展点 | 说明 |
 |--------|------|
-| `AbstractContainer` 子类 | 需要新中间件时继承扩展 |
+| `AbstractContainer` 子类 | 需要新中间件时继承扩展（参照 `AbstractMySqlContainer`：静态块按 `unittest.properties`/系统属性创建容器并赋给 `container` 字段） |
 | `AbstractOperation` | 自定义数据集操作 |
+| 自定义镜像 / `@Container` | 继承 `AbstractDbContainer` 子类后，可经 `db.*.image` 属性切换镜像版本，或在测试类中另行声明 `@Container` 字段 |
 
 ## 使用示例
 
