@@ -46,7 +46,7 @@ L6  data_migration ──→ jpa_repository, mybatis_repository
 | 13 | `travelsky_dev_dynamic_datasource` | repository | [13-travelsky_dev_dynamic_datasource.md](./13-travelsky_dev_dynamic_datasource.md) | ☑ |
 | 14 | `travelsky_dev_data_migration` | jpa_repository, mybatis_repository | [14-travelsky_dev_data_migration.md](./14-travelsky_dev_data_migration.md) | ☑ |
 | 15 | `travelsky_dev_test` | — | [15-travelsky_dev_test.md](./15-travelsky_dev_test.md) | ☑ |
-| 16 | `travelsky_dev_ai` | — | [16-travelsky_dev_ai.md](./16-travelsky_dev_ai.md) | ☐ |
+| 16 | `travelsky_dev_ai` | — | [16-travelsky_dev_ai.md](./16-travelsky_dev_ai.md) | ☑ |
 
 ## 全仓库通用基线（各模块提示词已内置，供人工抽查）
 
