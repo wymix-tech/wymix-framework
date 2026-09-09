@@ -16,21 +16,25 @@
 </dependency>
 ```
 
+> ⚠️ JmDNS（`org.jmdns:jmdns`）在本模块中为 `optional` 依赖，业务方需自行显式引入后 mDNS 注册/发现能力才生效；未引入时其余能力（节点注册、选举、心跳、广播）不受影响。本模块仅适用于局域网/内网场景。
+
 ## 配置项
 
 配置前缀：`decentralization.discovery`
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| `decentralization.discovery.enable` | 是否启用去中心化发现（关闭或类路径无 JmDNS 均不装配） | `false` |
+| `decentralization.discovery.enable` | 是否启用去中心化发现（关闭则整个模块不装配；类路径无 JmDNS 时仅 mDNS 注册/发现相关 Bean 不装配，其余能力照常装配） | `false` |
 | `decentralization.discovery.namespace` | 服务域命名空间（拼为 `_<ns>._tcp.local.`） | — |
 | `decentralization.discovery.service.<svc>` | 服务名 → 实例地址列表（List\<String\>） | — |
+| `decentralization.discovery.heartbeat.periodInSeconds` | 心跳周期（秒，`HeartbeatService` 调度间隔；由 `@Value` 读取，非 `DecentralizedDiscoveryProperties` 绑定字段） | `30` |
 
 ## 集成类（自动装配）
 
 | 类 | 说明 |
 |----|------|
 | `DecentralizedDiscoveryConfiguration` | 自动装配入口，继承 `CustomFeignConfiguration`，替换 Feign `Client` 为动态寻址 |
+| `DecentralizedDiscoveryConfiguration.JmDnsConfiguration` | 内部配置类，`@ConditionalOnClass(javax.jmdns.JmDNS)` 守卫，仅装配 `JmDNS` 与 `JmDnsService` 两个 Bean（类路径无 JmDNS 时跳过，不影响其余装配） |
 | `JmDnsService` | mDNS 注册/发现核心 |
 | `NodeService` / `NodeRegistry` / `NodeRefresher` | 节点清单管理与刷新 |
 | `ElectionService` / `HeartbeatService` | Leader 选举与心跳 |
