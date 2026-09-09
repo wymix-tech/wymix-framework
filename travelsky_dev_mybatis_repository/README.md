@@ -63,6 +63,7 @@
 |--------|------|
 | `beforeSave` / `afterSave` / `beforeUpdate` / `afterUpdate` | 服务基类生命周期钩子 |
 | `PermissionSqlInjector.type()` | `InjectType.WHERE_ADDITIONAL` 追加 WHERE 条件；`InjectType.REPLACE_TABLE_NAME` 按格式 `A->B` 替换表名 |
+| `DataPermissionPlugin`（MyBatis `Interceptor`） | 由 `@EnableDataPermission` 自动注册，与 `DataPermissionAspect`（AOP 织入上下文）配合：按 `statementIds` 匹配 MappedStatement，经 JSqlParser 改写 SELECT/UPDATE/DELETE 追加数据权限条件 |
 | `DataChangeLogEventListener` Bean | 重写 `changelog(DataChangeLogDTO)` 自定义变更落地 |
 | `InjectType` / `DataPermissionContextHolder` | 数据权限上下文与注入类型扩展 |
 
@@ -107,8 +108,9 @@ public class EmployeeService extends AbstractBaseServiceImpl<EmployeeEntity, Lon
 //   "page": 1, "limit": 20 }
 ```
 
-> **包路径说明（3.x 起）**：MyBatis-Plus 专属类统一位于 `com.travelsky.base.repository.mybatis.*` 子包，
-> 与 JPA 实现完全隔离，两模块可并存引入。旧包路径 `com.travelsky.base.repository.api` /
+> **包路径说明（3.x 起）**：业务方直接使用的基类（`BaseRepository`、`AbstractBaseServiceImpl`、`AbstractAuditEntity`）
+> 位于 `com.travelsky.base.repository.mybatis.*` 子包，与 JPA 实现完全隔离，两模块可并存引入；
+> 框架内部的配置与插件类则分布在 `...configuration`、`...datapermission`、`...datachangelog` 等各自子包，无需业务方直接引用。旧包路径 `com.travelsky.base.repository.api` /
 > `...audit.domain` 的兼容别名已移除，请直接使用下列 import：
 >
 > ```java
