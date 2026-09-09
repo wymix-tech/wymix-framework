@@ -13,6 +13,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -73,13 +74,24 @@ class HazelcastBuildConfigTest {
     }
 
     @Test
-    void hazelcastInstanceShouldShutdownOnClose() {
-        // P3-7: hazelcastInstance 交由容器托管（destroyMethod = "shutdown"）
-        hazelcastInstance = Hazelcast.newHazelcastInstance(new Config());
-        assertTrue(hazelcastInstance.getLifecycleService().isRunning());
-        hazelcastInstance.shutdown();
-        assertFalse(hazelcastInstance.getLifecycleService().isRunning());
+    void hazelcastInstanceShouldShutdownOnContextClose() {
+        // P3-7: hazelcastInstance 由容器托管（@Bean(destroyMethod = "shutdown")），
+        // 容器关闭时 HazelcastInstance 必须被 shutdown（容器级断言，而非手动 new + shutdown）
+        org.springframework.boot.test.context.runner.ApplicationContextRunner runner =
+                new org.springframework.boot.test.context.runner.ApplicationContextRunner()
+                        .withConfiguration(org.springframework.boot.autoconfigure.AutoConfigurations.of(
+                                CacheManagerConfiguration.class))
+                        .withPropertyValues("cache.enabled=true",
+                                "spring.hazelcast.cache.tcp-ip-enabled=true");
+        runner.run(context -> {
+            assertThat(context).hasNotFailed();
+            HazelcastInstance instance = context.getBean(HazelcastInstance.class);
+            assertTrue(instance.getLifecycleService().isRunning());
+            ((org.springframework.context.ConfigurableApplicationContext) context).close();
+            assertFalse(instance.getLifecycleService().isRunning());
+        });
     }
+
 
     @Test
     void appPrefixFallbackShouldNotProduceNullKey() throws Exception {

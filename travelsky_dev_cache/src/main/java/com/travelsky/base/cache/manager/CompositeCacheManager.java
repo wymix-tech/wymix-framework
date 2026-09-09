@@ -3,10 +3,15 @@ package com.travelsky.base.cache.manager;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * 组合 {@link CacheManager}：按装配顺序聚合多个底层 CacheManager。
@@ -21,11 +26,13 @@ import java.util.Map;
  */
 public class CompositeCacheManager implements CacheManager {
 
+    private static final Logger log = LoggerFactory.getLogger(CompositeCacheManager.class);
+
     private final CacheManager primaryCacheManager;
 
     private final CacheManager localCacheManager;
 
-    private final Map<String, CompositeCache> caches = new LinkedHashMap<>();
+    private final ConcurrentMap<String, CompositeCache> caches = new ConcurrentHashMap<>();
 
     public CompositeCacheManager(CacheManager primaryCacheManager, CacheManager localCacheManager) {
         this.primaryCacheManager = primaryCacheManager;
@@ -42,7 +49,18 @@ public class CompositeCacheManager implements CacheManager {
 
     @Override
     public Cache getCache(String name) {
-        return caches.computeIfAbsent(name, this::buildCompositeCache);
+        CompositeCache cache = caches.get(name);
+        if (cache == null) {
+            // buildCompositeCache 可能返回 null，ConcurrentHashMap.computeIfAbsent 不接受 null 映射值，
+            // 因此拆成 get + putIfAbsent；并发下由 putIfAbsent 保证只有一个实例生效
+            CompositeCache created = buildCompositeCache(name);
+            if (created == null) {
+                return null;
+            }
+            CompositeCache prev = caches.putIfAbsent(name, created);
+            cache = (prev != null) ? prev : created;
+        }
+        return cache;
     }
 
     private CompositeCache buildCompositeCache(String name) {
@@ -56,7 +74,16 @@ public class CompositeCacheManager implements CacheManager {
 
     @Override
     public Collection<String> getCacheNames() {
-        return Collections.unmodifiableCollection(caches.keySet());
+        // 聚合两级底层 CacheManager 的命名（注意两级命名空间不同：Hazelcast 侧为 <app>:<name>）
+        LinkedHashSet<String> names = new LinkedHashSet<>();
+        if (primaryCacheManager.getCacheNames() != null) {
+            names.addAll(primaryCacheManager.getCacheNames());
+        }
+        if (localCacheManager.getCacheNames() != null) {
+            names.addAll(localCacheManager.getCacheNames());
+        }
+        names.addAll(caches.keySet());
+        return Collections.unmodifiableSet(names);
     }
 
     /**
@@ -112,9 +139,20 @@ public class CompositeCacheManager implements CacheManager {
 
         @Override
         public <T> T get(Object key, java.util.concurrent.Callable<T> valueLoader) {
-            T value = primaryCache != null ? primaryCache.get(key, valueLoader) : null;
-            if (value != null) {
-                return value;
+            if (primaryCache != null) {
+                T value = primaryCache.get(key, valueLoader);
+                if (value != null) {
+                    // 回源成功后同步回填本地缓存，保证「本地读加速」对回源路径同样成立
+                    if (localCache != null) {
+                        try {
+                            localCache.put(key, value);
+                        } catch (RuntimeException ex) {
+                            log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
+                        }
+                    }
+                    return value;
+                }
+                return null;
             }
             return localCache != null ? localCache.get(key, valueLoader) : null;
         }
@@ -128,7 +166,8 @@ public class CompositeCacheManager implements CacheManager {
                 try {
                     localCache.put(key, value);
                 } catch (RuntimeException ex) {
-                    // 本地缓存写入失败不阻断分布式缓存写入
+                    // 本地缓存写入失败不阻断分布式缓存写入，但留痕便于排障
+                    log.warn("本地缓存写入失败，不影响分布式缓存，cache={}", getName(), ex);
                 }
             }
         }

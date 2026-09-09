@@ -20,6 +20,12 @@ public class CustomHazelcastCacheManager implements CacheManager {
      * Property name for hazelcast spring-cache related properties.
      */
     public static final String CACHE_PROP = "spring.hazelcast.cache.prop";
+
+    /**
+     * {@code spring.application.name} 未配置时的默认应用名前缀（单一来源）。
+     */
+    public static final String DEFAULT_APP_PREFIX = "default";
+
     private static final String NAMESPACE = "%s:%s";
     private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<String, Cache>();
     /**
@@ -34,7 +40,7 @@ public class CustomHazelcastCacheManager implements CacheManager {
     private HazelcastCacheProperties hazelcastCacheProperties;
 
     public CustomHazelcastCacheManager(String appPrefix) {
-        this.appPrefix = appPrefix == null || appPrefix.isBlank() ? "default" : appPrefix;
+        this.appPrefix = appPrefix == null || appPrefix.isBlank() ? DEFAULT_APP_PREFIX : appPrefix;
     }
 
     public HazelcastCacheProperties getHazelcastCacheProperties() {

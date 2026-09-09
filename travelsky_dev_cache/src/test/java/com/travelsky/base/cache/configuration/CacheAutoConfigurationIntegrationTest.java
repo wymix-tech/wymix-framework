@@ -48,11 +48,15 @@ class CacheAutoConfigurationIntegrationTest {
 
     @Test
     void missingSpringApplicationNameShouldFallbackToDefault() {
-        // 不配置 spring.application.name，Hazelcast 分支应能启动且前缀回退 default
+        // 不配置 spring.application.name，Hazelcast 分支应能启动且前缀回退 default（而非 null:）
         runner.run(context -> {
             assertThat(context).hasNotFailed();
-            CacheManager cacheManager = context.getBean("cacheManager", CacheManager.class);
-            assertThat(cacheManager.getCache("any")).isNotNull();
+            CustomHazelcastCacheManager hazelcastManager =
+                    context.getBean(CustomHazelcastCacheManager.class);
+            org.springframework.cache.Cache cache = hazelcastManager.getCache("user");
+            assertThat(cache).isNotNull();
+            // 前缀必须是 default，若回退为 null 会拼出 null:user 脏 key，此处即可拦截回归
+            assertThat(cache.getName()).startsWith("default:");
         });
     }
 

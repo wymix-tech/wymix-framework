@@ -52,9 +52,7 @@ public class CacheManagerConfiguration {
 
     private static final String SPLITTER = ":";
 
-    private static final String DEFAULT_APP_NAME = "default";
-
-    @Value("${spring.application.name:default}")
+    @Value("${spring.application.name:" + CustomHazelcastCacheManager.DEFAULT_APP_PREFIX + "}")
     private String appName;
 
     /**
@@ -91,6 +89,7 @@ public class CacheManagerConfiguration {
          * Hazelcast 实例交由 Spring 容器托管生命周期，应用关闭时自动 shutdown。
          */
         @Bean(destroyMethod = "shutdown")
+        @ConditionalOnMissingBean(HazelcastInstance.class)
         public HazelcastInstance hazelcastInstance() {
             return Hazelcast.newHazelcastInstance(buildConfig());
         }
@@ -228,17 +227,23 @@ public class CacheManagerConfiguration {
          */
         @SuppressWarnings("unchecked")
         private com.github.benmanes.caffeine.cache.Weigher<Object, Object> newWeightedWeigher(String weigherClass) {
+            String trimmed = weigherClass.trim();
+            // 类名来自配置文件，限制包前缀白名单，避免配置被污染时加载并实例化 classpath 上任意类
+            if (!trimmed.startsWith("com.travelsky.") && !trimmed.startsWith("com.github.benmanes.")) {
+                throw new IllegalStateException(
+                        "weigher 不在允许的包范围内（仅支持 com.travelsky.* 或 com.github.benmanes.*）");
+            }
             Object instance;
             try {
-                Class<?> clazz = Class.forName(weigherClass.trim());
+                Class<?> clazz = Class.forName(trimmed);
                 instance = clazz.getDeclaredConstructor().newInstance();
             } catch (Exception ex) {
-                throw new IllegalStateException("无法实例化 weigher: " + weigherClass
-                        + "（需提供 public 无参构造）", ex);
+                throw new IllegalStateException("无法实例化 weigher（需提供 public 无参构造，"
+                        + "且类名需在允许的包范围内）", ex);
             }
             if (!(instance instanceof com.github.benmanes.caffeine.cache.Weigher)) {
-                throw new IllegalStateException("weigher 必须实现 com.github.benmanes.caffeine.cache.Weigher: "
-                        + weigherClass + "（实际类型: " + instance.getClass().getName() + "）");
+                throw new IllegalStateException("weigher 必须实现 com.github.benmanes.caffeine.cache.Weigher"
+                        + "（实际类型: " + instance.getClass().getName() + "）");
             }
             return (com.github.benmanes.caffeine.cache.Weigher<Object, Object>) instance;
         }

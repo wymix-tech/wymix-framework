@@ -104,10 +104,22 @@ class CacheManagerConfigurationTest {
         }
 
         @Test
+        void weigherOutsideAllowedPackagesShouldFail() {
+            // 评审: weigher 类名来自配置，限制包前缀白名单，避免加载 classpath 上任意类
+            com.travelsky.base.cache.properties.CaffeineCacheProperties.CaffeineConfig config =
+                    config(-1, 100, -1);
+            config.setWeigher("java.lang.String");
+            IllegalStateException ex = assertThrows(IllegalStateException.class,
+                    () -> caffeineConfiguration.buildeCaffeine(config));
+            assertTrue(ex.getMessage().contains("包范围"));
+        }
+
+        @Test
         void weigherWithWrongTypeShouldFailWithReadableError() {
             com.travelsky.base.cache.properties.CaffeineCacheProperties.CaffeineConfig config =
                     config(-1, 100, -1);
-            config.setWeigher(String.class.getName());
+            // 白名单包内但未实现 Weigher 的类，验证类型校验仍然生效
+            config.setWeigher(SampleHolder.class.getName());
             IllegalStateException ex = assertThrows(IllegalStateException.class,
                     () -> caffeineConfiguration.buildeCaffeine(config));
             assertTrue(ex.getMessage().contains("Weigher"));
@@ -122,6 +134,12 @@ class CacheManagerConfigurationTest {
         public int weigh(Object key, Object value) {
             return 1;
         }
+    }
+
+    /**
+     * 白名单包内但未实现 Weigher 的类，用于类型校验用例。
+     */
+    static class SampleHolder {
     }
 
     static class SampleService {

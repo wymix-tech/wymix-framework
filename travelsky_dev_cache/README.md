@@ -43,7 +43,7 @@ Caffeine 前缀：`caffeine`
 |--------|------|--------|
 | `caffeine.cache.<name>.maximumSize` | 最大条目数（-1 表示不限制） | -1 |
 | `caffeine.cache.<name>.maximumWeight` | 最大权重（-1 表示不限制；**与 `maximumSize` 互斥，同时配置启动报错**；> 0 时必须同时配置 `weigher`） | -1 |
-| `caffeine.cache.<name>.weigher` | 权重函数全限定类名（实现 Caffeine `Weigher`，需 public 无参构造），`maximumWeight > 0` 时必填 | — |
+| `caffeine.cache.<name>.weigher` | 权重函数全限定类名（实现 Caffeine `Weigher`，需 public 无参构造；仅允许 `com.travelsky.*` 或 `com.github.benmanes.*` 包内类，其余包启动报可读错误），`maximumWeight > 0` 时必填 | — |
 | `caffeine.cache.<name>.initialCapacity` | 初始容量 | 16 |
 | `caffeine.cache.<name>.allowNullValues` | 是否允许 null | `true` |
 | `caffeine.cache.<name>.expireInSec` | 过期秒数 | 600 |
@@ -68,9 +68,9 @@ Caffeine 前缀：`caffeine`
 | 标准 Spring Cache 注解 | `@Cacheable` / `@CachePut` / `@CacheEvict` 直接使用 |
 | 自定义 KeyGenerator | 直接声明名为 `keyGenerator` 的 Bean 即可覆盖默认实现（默认实现带 `@ConditionalOnMissingBean(KeyGenerator.class)` 保护）；`CacheManagerConfiguration` **不再实现** `CachingConfigurer`，业务侧可自由实现该接口，不会触发多实现冲突 |
 | 自定义 CacheManager | 推荐路径一：`cache.enabled=false` 关闭模块自动装配后完全自管；路径二：`@Primary` + 自定义 Bean 名（如 `businessCacheManager`）覆盖自动装配 |
-| 依赖引入即生效 | 只加 hazelcast 依赖 → 分布式缓存（`hazelcastCacheManager`）；只加 caffeine 依赖 → 本地缓存（`caffeineCacheManager`）；**两者同时引入可共存**：自动装配组合 `CacheManager`（Bean 名 `cacheManager`，`@Primary`），主 = Hazelcast 分布式、次 = Caffeine 本地，读按主→次，写双写（本地写失败不影响分布式写） |
+| 依赖引入即生效 | 只加 hazelcast 依赖 → 分布式缓存（`hazelcastCacheManager`）；只加 caffeine 依赖 → 本地缓存（`caffeineCacheManager`）；**两者同时引入可共存**：自动装配组合 `CacheManager`（Bean 名 `cacheManager`，`@Primary`），主 = Hazelcast 分布式、次 = Caffeine 本地，读按主→次，写双写（本地写失败不影响分布式写，仅 warn 日志留痕）；`get(key, valueLoader)` 回源成功后同步回填本地缓存；`getCacheNames()` 聚合两级命名（Hazelcast 侧命名空间为 `<app>:<name>`） |
 
-> `CacheManagerConfiguration` 不再实现 `CachingConfigurer`（避免与业务扩展点冲突），`keyGenerator` 作为独立 `@Bean` 并以 `@ConditionalOnMissingBean` 保护；同时通过 `@EnableCaching(order = Ordered.LOWEST_PRECEDENCE - 1)` 控制切面优先级。Hazelcast 实例由 `@Bean(destroyMethod = "shutdown")` 声明，应用关闭时自动 `shutdown()`。
+> `CacheManagerConfiguration` 不再实现 `CachingConfigurer`（避免与业务扩展点冲突），`keyGenerator` 作为独立 `@Bean` 并以 `@ConditionalOnMissingBean` 保护；同时通过 `@EnableCaching(order = Ordered.LOWEST_PRECEDENCE - 1)` 控制切面优先级。Hazelcast 实例由 `@Bean(destroyMethod = "shutdown")` + `@ConditionalOnMissingBean(HazelcastInstance.class)` 声明（业务侧可自定义 `HazelcastInstance` Bean，不会同名冲突），应用关闭时自动 `shutdown()`。
 
 ## 使用示例
 
