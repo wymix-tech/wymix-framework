@@ -5,7 +5,6 @@ import com.hazelcast.core.HazelcastInstance;
 import com.hazelcast.map.IMap;
 import com.hazelcast.spring.cache.HazelcastCache;
 import com.travelsky.base.cache.properties.HazelcastCacheProperties;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
@@ -23,14 +22,19 @@ public class CustomHazelcastCacheManager implements CacheManager {
     public static final String CACHE_PROP = "spring.hazelcast.cache.prop";
     private static final String NAMESPACE = "%s:%s";
     private final ConcurrentMap<String, Cache> caches = new ConcurrentHashMap<String, Cache>();
-    @Value("${spring.application.name}")
-    private String appPrefix;
+    /**
+     * 应用名前缀，参与命名空间拼接（{@code <appPrefix>:<cacheName>}）。
+     * 由装配方（{@code CacheManagerConfiguration}）显式传入，
+     * 未配置 {@code spring.application.name} 时回退为 {@code default}。
+     */
+    private final String appPrefix;
     private ConcurrentMap<String, String> formatNames = new ConcurrentHashMap<>();
     private HazelcastInstance hazelcastInstance;
 
     private HazelcastCacheProperties hazelcastCacheProperties;
 
-    public CustomHazelcastCacheManager() {
+    public CustomHazelcastCacheManager(String appPrefix) {
+        this.appPrefix = appPrefix == null || appPrefix.isBlank() ? "default" : appPrefix;
     }
 
     public HazelcastCacheProperties getHazelcastCacheProperties() {

@@ -22,13 +22,17 @@ public class CaffeineCacheProperties {
     }
 
     public static class CaffeineConfig {
-        private long maximumSize = 999;
+        private long maximumSize = -1;
         private long maximumWeight = -1;
         private int initialCapacity = 16;
         private boolean allowNullValues = true;
         private long expireInSec = 60 * 10;
         private Policy policy = Policy.AFTER_WRITE;
         private long refreshAfterWriterInSec = -1;
+        /**
+         * 权重函数（{@code ToIntBiFunction<K, V>} 全限定类名），maximumWeight > 0 时必填。
+         */
+        private String weigher;
 
         public long getMaximumSize() {
             return maximumSize;
@@ -84,6 +88,14 @@ public class CaffeineCacheProperties {
 
         public void setRefreshAfterWriterInSec(long refreshAfterWriterInSec) {
             this.refreshAfterWriterInSec = refreshAfterWriterInSec;
+        }
+
+        public String getWeigher() {
+            return weigher;
+        }
+
+        public void setWeigher(String weigher) {
+            this.weigher = weigher;
         }
     }
 }
