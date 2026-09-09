@@ -157,6 +157,30 @@ public class CompositeCacheManager implements CacheManager {
             return localCache != null ? localCache.get(key, valueLoader) : null;
         }
 
+        /**
+         * Spring 6.1 起接口默认实现会抛 {@link UnsupportedOperationException}，
+         * 响应式路径（ReactiveCacheManager 场景）必须覆写：主命中时同步回填本地缓存。
+         */
+        @Override
+        public <T> java.util.concurrent.CompletableFuture<T> retrieve(
+                Object key, java.util.function.Supplier<java.util.concurrent.CompletableFuture<T>> valueSupplier) {
+            java.util.concurrent.CompletableFuture<T> future =
+                    primaryCache != null ? primaryCache.retrieve(key, valueSupplier) : null;
+            if (future != null) {
+                return future.thenApply(value -> {
+                    if (value != null && localCache != null) {
+                        try {
+                            localCache.put(key, value);
+                        } catch (RuntimeException ex) {
+                            log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
+                        }
+                    }
+                    return value;
+                });
+            }
+            return localCache != null ? localCache.retrieve(key, valueSupplier) : null;
+        }
+
         @Override
         public void put(Object key, Object value) {
             if (primaryCache != null) {

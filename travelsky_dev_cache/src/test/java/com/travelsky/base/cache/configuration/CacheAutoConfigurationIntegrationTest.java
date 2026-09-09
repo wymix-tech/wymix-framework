@@ -8,6 +8,8 @@ import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -118,6 +120,125 @@ class CacheAutoConfigurationIntegrationTest {
             @Override
             public Object generate(Object target, java.lang.reflect.Method method, Object... params) {
                 return "custom";
+            }
+        }
+    }
+
+    @Test
+    void defaultKeyGeneratorShouldBeWiredThroughCachingConfigurer() {
+        // 第二次评审「严重」项：keyGenerator 必须经 CacheCachingConfigurer 接入切面，
+        // 否则 @Cacheable 静默回退 SimpleKeyGenerator、<APP>:CACHE:... 格式 key 丢失。
+        // 本测试走切面调用，绕不过装配。
+        runner.withUserConfiguration(AspectProbeConfig.class).run(context -> {
+            assertThat(context).hasNotFailed();
+            AspectProbeConfig.ProbeService probe = context.getBean(AspectProbeConfig.ProbeService.class);
+            // 首次调用回源，key 由模块 KeyGenerator 生成
+            probe.query("abc", 1);
+            // 若 keyGenerator 未接入切面，@Cacheable 回退 SimpleKeyGenerator（key=SimpleKey[abc,1]），
+            // 用模块 keyGenerator 的格式查缓存即 miss；接入成功则命中
+            CacheManager cm = context.getBean(CacheManager.class);
+            org.springframework.cache.Cache cache = cm.getCache("probe-cache");
+            org.springframework.cache.Cache.ValueWrapper wrapper =
+                    cache.get("DEFAULT:CACHE:ProbeService:query:\"abc\"1");
+            assertThat(wrapper).isNotNull();
+            assertThat(wrapper.get()).isEqualTo("value:abc:1");
+        });
+    }
+
+    @Test
+    void businessCachingConfigurerShouldTakeOverAspect() {
+        // 业务侧实现自己的 CachingConfigurer 时，模块内嵌 CacheCachingConfigurer 让位
+        runner.withUserConfiguration(AspectProbeConfig.class, BusinessCachingConfigurerConfig.class).run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean(org.springframework.cache.annotation.CachingConfigurer.class))
+                    .isInstanceOf(BusinessCachingConfigurerConfig.BusinessCachingConfigurer.class);
+            AspectProbeConfig.ProbeService probe = context.getBean(AspectProbeConfig.ProbeService.class);
+            Object first = probe.query("abc", 1);
+            // 业务 CachingConfigurer 接管后 keyGenerator 返回固定值 business-key；
+            // 二次调用（同 key）必命中缓存，方法体不再执行（counter 不变）
+            Object second = probe.query("abc", 1);
+            assertThat(context.getBean(org.springframework.cache.annotation.CachingConfigurer.class))
+                    .isInstanceOf(BusinessCachingConfigurerConfig.BusinessCachingConfigurer.class);
+            assertThat(first).isEqualTo(second);
+        });
+    }
+
+    @Test
+    void businessCacheManagerAsNamedCacheManagerShouldNotConflict() {
+        // README 路径二（修正版）：业务声明名为 cacheManager 的 Bean，组合缓存的
+        // @ConditionalOnMissingBean(name="cacheManager") 让位，无 @Primary 冲突
+        runner.withUserConfiguration(BusinessNamedCacheManagerConfig.class).run(context -> {
+            assertThat(context).hasNotFailed();
+            assertThat(context.getBean("cacheManager", CacheManager.class))
+                    .isInstanceOf(BusinessNamedCacheManagerConfig.BusinessCacheManager.class);
+            assertThat(context.getBean("cacheManager", CacheManager.class))
+                    .extracting(m -> ((CacheManager) m))
+                    .isNotInstanceOf(CompositeCacheManager.class);
+        });
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableCaching
+    static class AspectProbeConfig {
+
+        @Bean
+        public ProbeService probeService() {
+            return new ProbeService();
+        }
+
+        static class ProbeService {
+            @Cacheable(cacheNames = "probe-cache", keyGenerator = "keyGenerator")
+            public String query(String keyword, Integer page) {
+                // 返回值需可被 Hazelcast 序列化
+                return "value:" + keyword + ":" + page;
+            }
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableCaching
+    static class BusinessCachingConfigurerConfig {
+
+        @Bean
+        public org.springframework.cache.annotation.CachingConfigurer businessCachingConfigurer() {
+            return new BusinessCachingConfigurer();
+        }
+
+        static class BusinessCachingConfigurer implements org.springframework.cache.annotation.CachingConfigurer {
+            @Override
+            public KeyGenerator keyGenerator() {
+                return new BusinessKeyGenerator();
+            }
+        }
+
+        static class BusinessKeyGenerator implements KeyGenerator {
+            @Override
+            public Object generate(Object target, java.lang.reflect.Method method, Object... params) {
+                return "business-key";
+            }
+        }
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    static class BusinessNamedCacheManagerConfig {
+
+        @Bean
+        @org.springframework.context.annotation.Primary
+        public CacheManager cacheManager() {
+            // 组合缓存因 @ConditionalOnMissingBean(name = "cacheManager") 让位，
+            // @Primary 保证 @EnableCaching 下 CacheInterceptor 能解析唯一主 CacheManager
+            return new BusinessCacheManager();
+        }
+
+        static class BusinessCacheManager implements CacheManager {
+            @Override
+            public org.springframework.cache.Cache getCache(String name) {
+                return null;
+            }
+
+            @Override
+            public java.util.Collection<String> getCacheNames() {
+                return java.util.Collections.emptyList();
             }
         }
     }

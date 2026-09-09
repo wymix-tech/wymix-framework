@@ -30,7 +30,7 @@ public class CaffeineCacheProperties {
         private Policy policy = Policy.AFTER_WRITE;
         private long refreshAfterWriterInSec = -1;
         /**
-         * 权重函数（{@code ToIntBiFunction<K, V>} 全限定类名），maximumWeight > 0 时必填。
+         * 权重函数（Caffeine {@code Weigher<K, V>} 实现类的全限定类名），maximumWeight > 0 时必填。
          */
         private String weigher;
 

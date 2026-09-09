@@ -32,6 +32,7 @@ import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
+import org.springframework.cache.annotation.CachingConfigurer;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
@@ -57,9 +58,11 @@ public class CacheManagerConfiguration {
 
     /**
      * 自定义 KeyGenerator（{@code <APP大写>:CACHE:<类名>:<方法名>:<参数JSON>}）。
-     * <p>不再通过实现 {@code CachingConfigurer} 暴露，避免业务侧自定义
-     * {@code CachingConfigurer} 时触发多实现冲突；业务侧可直接声明同名
-     * {@code keyGenerator} Bean 覆盖本默认实现。
+     * <p>注意：Spring Cache 切面只从 {@link CachingConfigurer} 获取默认 keyGenerator，
+     * <b>不会</b>按名查找容器中的 {@code keyGenerator} Bean。本 Bean 由下方内嵌的
+     * {@link CacheCachingConfigurer} 接入切面；业务侧可通过声明同名
+     * {@code keyGenerator} Bean 覆盖本默认实现，或直接实现自己的
+     * {@code CachingConfigurer}（此时 {@link CacheCachingConfigurer} 自动让位）。
      */
     @Bean
     @ConditionalOnMissingBean(KeyGenerator.class)
@@ -246,6 +249,30 @@ public class CacheManagerConfiguration {
                         + "（实际类型: " + instance.getClass().getName() + "）");
             }
             return (com.github.benmanes.caffeine.cache.Weigher<Object, Object>) instance;
+        }
+    }
+
+    /**
+     * 将默认 {@code keyGenerator} Bean 接入 Spring Cache 切面。
+     * <p>{@code CacheInterceptor} 的 keyGenerator 仅来源于 {@link CachingConfigurer}
+     * （见 {@code AbstractCachingConfiguration#useCachingConfigurer}），没有
+     * {@code CachingConfigurer} 时会静默回退到 {@code SimpleKeyGenerator}，
+     * 导致 {@code <APP>:CACHE:...} 格式的 key 失效。本配置以独立
+     * {@code @Configuration} + {@code @ConditionalOnMissingBean(CachingConfigurer.class)}
+     * 声明：业务侧实现自己的 {@code CachingConfigurer} 时本配置自动让位，
+     * 不会重演多实现冲突（P2-6）。
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnMissingBean(CachingConfigurer.class)
+    public static class CacheCachingConfigurer implements CachingConfigurer {
+
+        @Autowired
+        @Qualifier("keyGenerator")
+        private KeyGenerator keyGenerator;
+
+        @Override
+        public KeyGenerator keyGenerator() {
+            return keyGenerator;
         }
     }
 
