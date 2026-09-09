@@ -39,7 +39,7 @@ L6  data_migration ──→ jpa_repository, mybatis_repository
 | 06 | `travelsky_dev_repository` | core | [06-travelsky_dev_repository.md](./06-travelsky_dev_repository.md) | ☑ |
 | 07 | `travelsky_dev_jpa_repository` | repository | [07-travelsky_dev_jpa_repository.md](./07-travelsky_dev_jpa_repository.md) | ☑ |
 | 08 | `travelsky_dev_mybatis_repository` | repository | [08-travelsky_dev_mybatis_repository.md](./08-travelsky_dev_mybatis_repository.md) | ☑ |
-| 09 | `travelsky_dev_security` | core | [09-travelsky_dev_security.md](./09-travelsky_dev_security.md) | ☐ |
+| 09 | `travelsky_dev_security` | core | [09-travelsky_dev_security.md](./09-travelsky_dev_security.md) | ☑ |
 | 10 | `travelsky_dev_monitor` | core | [10-travelsky_dev_monitor.md](./10-travelsky_dev_monitor.md) | ☐ |
 | 11 | `travelsky_dev_decentralization_discovery` | core | [11-travelsky_dev_decentralization_discovery.md](./11-travelsky_dev_decentralization_discovery.md) | ☐ |
 | 12 | `travelsky_dev_web` | core, security | [12-travelsky_dev_web.md](./12-travelsky_dev_web.md) | ☐ |
