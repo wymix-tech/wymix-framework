@@ -16,7 +16,10 @@
 </dependency>
 ```
 
-> ⚠️ 本模块依赖仅含 `spring-jdbc`（及内部模块 `travelsky_dev_repository`），**不含任何具体数据库的 JDBC 驱动**，请按实际使用的数据库自行引入驱动（如 `mysql-connector-j`）。
+> ⚠️ 本模块依赖仅含 `spring-jdbc`（及内部模块 `travelsky_dev_repository`），**不含 JDBC 驱动与连接池实现**，需自行补充：
+
+> - 数据库驱动：按实际使用的数据库引入（如 `mysql-connector-j`）；
+> - 连接池：默认 `type` 为 `com.zaxxer.hikari.HikariDataSource`，需自行引入 `com.zaxxer:HikariCP`（可参考 `sample/pom.xml` 通过 profile 显式声明的写法），未引入时构建数据源将抛 `ClassNotFoundException`。
 
 > ⚠️ 模块默认**不启用**（`dynamic.datasource.enabled` 默认为 `false`）。启用需在配置中显式设置 `dynamic.datasource.enabled: true`，并提供 `primary` 与至少一个数据源条目，最小可用配置见下方「使用示例」。
 
@@ -56,9 +59,11 @@
 
 | 注解 | 说明 |
 |------|------|
-| `@DynamicDatasource("slave")` | 类/方法级注解（`@Target({TYPE, METHOD})`、`@Inherited`），属性 `value`（默认 `""`）；标注后方法执行期间切换到指定数据源，目标数据源不存在时抛 `BusinessException("datasource.not.exist")`；查找顺序为：接口方法 → 实现类方法 → 实现类 → 接口 → 桥接方法及其声明类 → 父类逐级向上（兼容 MyBatis / MyBatis-Plus Mapper 代理） |
+| `@DynamicDatasource("slave")` | 类/方法级注解（`@Target({TYPE, METHOD})`、`@Inherited`），属性 `value`（默认 `""`）；标注后方法执行期间切换到指定数据源，目标数据源不存在时抛 `BusinessException("datasource.not.exist")`；查找顺序为：方法声明接口 → 实现类方法 → 实现类 → 实现类接口 → 桥接方法及其声明类（兼容 MyBatis / MyBatis-Plus Mapper 代理）；更深层回退实际不生效，见下方说明 |
 
 > ⚠️ 注解方式仅在 AOP 代理方法调用时生效，同类内部方法直接调用不触发切换。每次切面执行（`invoke`）结束后在 `finally` 中调用 `DynamicDataSourceContextHolder.clear()` 清理 `ThreadLocal`。
+
+> ⚠️ 上述查找顺序之后的「父类逐级向上」「MyBatis 父接口回退」属代码意图，当前实现下实际不生效：回退逻辑以 `datasourceAttr != null` 判断命中，而 `findDataSourceAttribute` 始终返回非 null 的 `Optional`（未命中为 `Optional.empty()`），循环首轮即返回空。注解仅按前述顺序查找，未命中时回退为空值并可能抛 `BusinessException("datasource.not.exist")`。该判空条件属源码实现缺陷，超出本文档修订范围。
 
 ## 扩展点
 
@@ -100,4 +105,4 @@ DynamicDataSourceContextHolder.setDataSource("slave");
 try { ... } finally { DynamicDataSourceContextHolder.clear(); }
 ```
 
-> 注：`spring.factories` 中 `DynamicEnvPostProcessor` 注入的是 `name` / `jdbcUrl` / `poolName` 属性（供 Binder 按宽松绑定映射到 `HikariDataSource` 的 `jdbcUrl` 等字段），`url` / `driverClassName` 等原始属性由 `Binder` 在绑定 `dynamic.datasource.items.<name>` 前缀时直接读取，二者共同完成数据源属性绑定。
+> 注：`spring.factories` 中 `DynamicEnvPostProcessor` 会为每个数据源补齐 `name` / `jdbcUrl` / `poolName` 属性写入 Environment。其中 `jdbcUrl`（取自配置的 `url`）才是 `HikariDataSource` 等连接池实际可绑定的 URL 属性——`HikariConfig` 仅提供 `setJdbcUrl`，不存在 `setUrl`，配置中的 `url` 本身不会被直接绑定；`poolName` 用于连接池命名。`username` / `password` / `driverClassName` 等原始属性由 `Binder` 在绑定 `dynamic.datasource.items.<name>` 前缀时按宽松绑定规则映射，无对应 setter 的属性（如 `name`）会被忽略。
