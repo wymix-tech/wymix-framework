@@ -82,7 +82,7 @@ q.setSorts("[{\"columns\":[\"createdTime\"],\"direction\":\"DESC\"}]");
 Page<EmployeeEntity> page = service.findAll(q);
 ```
 
-> **包路径说明（3.x 起）**：JPA 专属类（`BaseRepository`、`AbstractBaseServiceImpl`、`AbstractAuditEntity` 等）统一位于 `com.travelsky.base.repository.jpa.*` 子包；旧包路径 `com.travelsky.base.repository.api`、`...audit.domain` 下的兼容别名已随包路径迁移一并移除，请直接使用下列 import：
+> **包路径说明（3.x 起）**：业务方直接使用的基类（`BaseRepository`、`AbstractBaseServiceImpl`、`AbstractAuditEntity`）位于 `com.travelsky.base.repository.jpa.*` 子包；旧包路径 `com.travelsky.base.repository.api`、`...audit.domain` 下的兼容别名已随包路径迁移一并移除，请直接使用下列 import：
 >
 > ```java
 > import com.travelsky.base.repository.jpa.api.BaseRepository;
