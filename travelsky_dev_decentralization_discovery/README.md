@@ -16,6 +16,8 @@
 </dependency>
 ```
 
+> ⚠️ JmDNS（`org.jmdns:jmdns`）在本模块中为 `optional` 依赖，业务方需自行显式引入后 mDNS 注册/发现能力才生效；未引入时其余能力（节点注册、选举、心跳、广播）不受影响。本模块仅适用于局域网/内网场景。
+
 ## 配置项
 
 配置前缀：`decentralization.discovery`
@@ -25,6 +27,7 @@
 | `decentralization.discovery.enable` | 是否启用去中心化发现（关闭或类路径无 JmDNS 均不装配） | `false` |
 | `decentralization.discovery.namespace` | 服务域命名空间（拼为 `_<ns>._tcp.local.`） | — |
 | `decentralization.discovery.service.<svc>` | 服务名 → 实例地址列表（List\<String\>） | — |
+| `decentralization.discovery.heartbeat.periodInSeconds` | 心跳周期（秒，`HeartbeatService` 调度间隔） | `30` |
 
 ## 集成类（自动装配）
 
