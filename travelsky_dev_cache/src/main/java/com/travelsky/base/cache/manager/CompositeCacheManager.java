@@ -10,8 +10,10 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.function.Supplier;
 
 /**
  * 组合 {@link CacheManager}：按装配顺序聚合多个底层 CacheManager。
@@ -35,6 +37,8 @@ public class CompositeCacheManager implements CacheManager {
     private final ConcurrentMap<String, CompositeCache> caches = new ConcurrentHashMap<>();
 
     public CompositeCacheManager(CacheManager primaryCacheManager, CacheManager localCacheManager) {
+        org.springframework.util.Assert.notNull(primaryCacheManager, "primaryCacheManager 不能为 null");
+        org.springframework.util.Assert.notNull(localCacheManager, "localCacheManager 不能为 null");
         this.primaryCacheManager = primaryCacheManager;
         this.localCacheManager = localCacheManager;
     }
@@ -82,7 +86,8 @@ public class CompositeCacheManager implements CacheManager {
         if (localCacheManager.getCacheNames() != null) {
             names.addAll(localCacheManager.getCacheNames());
         }
-        names.addAll(caches.keySet());
+        // 只聚合两级底层真实声明的命名，不混入 getCache() 的懒加载表，
+        // 避免对外暴露业务从未配置过的缓存名（如回退 default 命名空间的名称）
         return Collections.unmodifiableSet(names);
     }
 
@@ -159,26 +164,137 @@ public class CompositeCacheManager implements CacheManager {
 
         /**
          * Spring 6.1 起接口默认实现会抛 {@link UnsupportedOperationException}，
-         * 响应式路径（ReactiveCacheManager 场景）必须覆写：主命中时同步回填本地缓存。
+         * 响应式路径必须覆写。
+         * <p>按底层能力降级：主缓存不支持 CompletableFuture 检索（如 HazelcastCache
+         * 未覆写 {@code retrieve}，调用即抛 {@link UnsupportedOperationException}）时，
+         * 降级为 {@code localCache.retrieve}，保证响应式路径可用；
+         * 两级都不支持时保留首个可读异常，不静默吞掉。
          */
         @Override
-        public <T> java.util.concurrent.CompletableFuture<T> retrieve(
-                Object key, java.util.function.Supplier<java.util.concurrent.CompletableFuture<T>> valueSupplier) {
-            java.util.concurrent.CompletableFuture<T> future =
-                    primaryCache != null ? primaryCache.retrieve(key, valueSupplier) : null;
-            if (future != null) {
-                return future.thenApply(value -> {
-                    if (value != null && localCache != null) {
+        public <T> CompletableFuture<T> retrieve(
+                Object key, Supplier<CompletableFuture<T>> valueSupplier) {
+            CompletableFuture<T> future = null;
+            UnsupportedOperationException primaryFailure = null;
+            if (primaryCache != null) {
+                try {
+                    future = primaryCache.retrieve(key, valueSupplier);
+                } catch (UnsupportedOperationException ex) {
+                    primaryFailure = ex;
+                }
+            }
+            if (future == null) {
+                if (localCache != null) {
+                    // 本地缓存（如 CaffeineCache）支持 retrieve 时直接委托
+                    try {
+                        return localCache.retrieve(key, valueSupplier);
+                    } catch (UnsupportedOperationException ex) {
+                        // 本地也不支持：先回填本地（同 get(key, valueLoader) 语义），再抛可读异常
+                        if (primaryFailure != null) {
+                            fillLocal(key, valueSupplier, primaryFailure);
+                        }
+                        throw ex;
+                    }
+                }
+                if (primaryFailure != null) {
+                    throw primaryFailure;
+                }
+                return null;
+            }
+            return future.thenApply(value -> {
+                if (value != null && localCache != null) {
+                    try {
+                        localCache.put(key, value);
+                    } catch (RuntimeException ex) {
+                        log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
+                    }
+                }
+                return value;
+            });
+        }
+
+        /**
+         * 两级均不支持 CompletableFuture 检索时的兜底：以阻塞方式回源并回填本地缓存，
+         * 保证缓存链路仍能工作，随后将原始异常抛给调用方。
+         */
+        private <T> void fillLocal(Object key, Supplier<CompletableFuture<T>> valueSupplier,
+                UnsupportedOperationException cause) {
+            try {
+                T value = valueSupplier.get().get();
+                if (value != null) {
+                    put(key, value);
+                }
+            } catch (java.util.concurrent.ExecutionException | InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                log.warn("retrieve 降级回源失败，cache={}", getName(), ex);
+            } catch (RuntimeException ex) {
+                log.warn("retrieve 降级回源失败，cache={}", getName(), ex);
+            }
+        }
+
+        /**
+         * 单参版本同理按底层能力降级：主命中解包（可能为 ValueWrapper）后返回并回填本地；
+         * 主 miss 或主不支持时降级查本地；两级都不支持时保留首个可读异常。
+         */
+        @Override
+        @SuppressWarnings("unchecked")
+        public CompletableFuture<Object> retrieve(Object key) {
+            CompletableFuture<Object> future = null;
+            UnsupportedOperationException primaryFailure = null;
+            if (primaryCache != null) {
+                try {
+                    future = (CompletableFuture<Object>) primaryCache.retrieve(key);
+                } catch (UnsupportedOperationException ex) {
+                    primaryFailure = ex;
+                }
+            }
+            if (future == null) {
+                // 底层单参 retrieve 对 miss 的表达可能是返回 null future（如 ConcurrentMapCache），
+                // 也可能抛 UnsupportedOperationException（如 HazelcastCache），两种都处理
+                if (localCache != null) {
+                    CompletableFuture<Object> localFuture =
+                            (CompletableFuture<Object>) localCache.retrieve(key);
+                    if (localFuture == null) {
+                        return null;
+                    }
+                    return localFuture.thenApply(this::unwrap);
+                }
+                if (primaryFailure != null) {
+                    throw primaryFailure;
+                }
+                return null;
+            }
+            return future.thenCompose(value -> {
+                Object actual = unwrap(value);
+                if (actual != null) {
+                    if (localCache != null) {
                         try {
-                            localCache.put(key, value);
+                            localCache.put(key, actual);
                         } catch (RuntimeException ex) {
                             log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
                         }
                     }
-                    return value;
-                });
-            }
-            return localCache != null ? localCache.retrieve(key, valueSupplier) : null;
+                    return CompletableFuture.completedFuture(actual);
+                }
+                // 主 miss：降级查本地
+                if (localCache != null) {
+                    CompletableFuture<Object> localFuture =
+                            (CompletableFuture<Object>) localCache.retrieve(key);
+                    if (localFuture == null) {
+                        return CompletableFuture.completedFuture(null);
+                    }
+                    return localFuture.thenApply(this::unwrap);
+                }
+                return CompletableFuture.completedFuture(null);
+            });
+        }
+
+        /**
+         * 单参 retrieve 的部分底层实现（如 ConcurrentMapCache）返回的是
+         * {@link Cache.ValueWrapper}，需解包后再判断命中与回填。
+         */
+        private Object unwrap(Object value) {
+            return (value instanceof Cache.ValueWrapper)
+                    ? ((Cache.ValueWrapper) value).get() : value;
         }
 
         @Override

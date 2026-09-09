@@ -72,6 +72,9 @@ class CacheAutoConfigurationIntegrationTest {
                 .withUserConfiguration(BusinessCustomCacheConfig.class)
                 .run(context -> {
                     assertThat(context).hasNotFailed();
+                    // 模块自动装配确实被关闭（否则本用例名不副实）
+                    assertThat(context).doesNotHaveBean(CompositeCacheManager.class);
+                    assertThat(context).doesNotHaveBean("hazelcastCacheManager");
                     assertThat(context.getBean("businessCacheManager", CacheManager.class))
                             .isInstanceOf(BusinessCustomCacheConfig.StaticCacheManager.class);
                 });
@@ -146,21 +149,42 @@ class CacheAutoConfigurationIntegrationTest {
     }
 
     @Test
-    void businessCachingConfigurerShouldTakeOverAspect() {
-        // 业务侧实现自己的 CachingConfigurer 时，模块内嵌 CacheCachingConfigurer 让位
-        runner.withUserConfiguration(AspectProbeConfig.class, BusinessCachingConfigurerConfig.class).run(context -> {
-            assertThat(context).hasNotFailed();
-            assertThat(context.getBean(org.springframework.cache.annotation.CachingConfigurer.class))
-                    .isInstanceOf(BusinessCachingConfigurerConfig.BusinessCachingConfigurer.class);
-            AspectProbeConfig.ProbeService probe = context.getBean(AspectProbeConfig.ProbeService.class);
-            Object first = probe.query("abc", 1);
-            // 业务 CachingConfigurer 接管后 keyGenerator 返回固定值 business-key；
-            // 二次调用（同 key）必命中缓存，方法体不再执行（counter 不变）
-            Object second = probe.query("abc", 1);
-            assertThat(context.getBean(org.springframework.cache.annotation.CachingConfigurer.class))
-                    .isInstanceOf(BusinessCachingConfigurerConfig.BusinessCachingConfigurer.class);
-            assertThat(first).isEqualTo(second);
-        });
+    void businessCachingConfigurerWithoutDisablingModuleShouldConflict() {
+        // Spring 的 AbstractCachingConfiguration#setConfigurers 在启动期收集全部
+        // CachingConfigurer，数量 >1 直接抛 IllegalStateException。
+        // 模块的 CacheCachingConfigurer 为无条件注册（@ConditionalOnMissingBean 对
+        // 独立自动装配的业务配置不可靠，见评审与源码注释），因此业务侧接管该接口
+        // 必须先关闭模块自动装配（cache.enabled=false）——本用例锁定这一确定行为，
+        // 防止有人改回「自动让位」的错误承诺。
+        new ApplicationContextRunner()
+                .withConfiguration(AutoConfigurations.of(CacheManagerConfiguration.class))
+                .withUserConfiguration(BusinessCachingConfigurerConfig.class)
+                .run(context -> {
+                    assertThat(context).hasFailed();
+                    assertThat(context.getStartupFailure())
+                            .isInstanceOf(IllegalStateException.class)
+                            .hasMessageContaining("2 implementations of CachingConfigurer");
+                });
+    }
+
+    @Test
+    void businessCachingConfigurerWithModuleDisabledShouldWork() {
+        // 关闭模块自动装配后，业务侧可自由实现 CachingConfigurer 接管切面
+        new ApplicationContextRunner()
+                .withPropertyValues("cache.enabled=false")
+                .withConfiguration(AutoConfigurations.of(CacheManagerConfiguration.class))
+                .withUserConfiguration(AspectProbeConfig.class, BusinessCachingConfigurerConfig.class)
+                .run(context -> {
+                    assertThat(context).hasNotFailed();
+                    assertThat(context.getBean(org.springframework.cache.annotation.CachingConfigurer.class))
+                            .isInstanceOf(BusinessCachingConfigurerConfig.BusinessCachingConfigurer.class);
+                    AspectProbeConfig.ProbeService probe = context.getBean(AspectProbeConfig.ProbeService.class);
+                    // 业务 CachingConfigurer 的 keyGenerator 返回固定值 business-key；
+                    // 二次调用（同 key）必命中缓存，方法体不再执行
+                    Object first = probe.query("abc", 1);
+                    Object second = probe.query("abc", 1);
+                    assertThat(first).isEqualTo(second);
+                });
     }
 
     @Test
@@ -187,7 +211,9 @@ class CacheAutoConfigurationIntegrationTest {
         }
 
         static class ProbeService {
-            @Cacheable(cacheNames = "probe-cache", keyGenerator = "keyGenerator")
+            // 不指定 keyGenerator：key 只能经 CachingConfigurer 进入切面，
+            // 若 CacheCachingConfigurer 未生效则回退 SimpleKeyGenerator，本测试必红
+            @Cacheable(cacheNames = "probe-cache")
             public String query(String keyword, Integer page) {
                 // 返回值需可被 Hazelcast 序列化
                 return "value:" + keyword + ":" + page;
@@ -198,6 +224,12 @@ class CacheAutoConfigurationIntegrationTest {
     @Configuration(proxyBeanMethods = false)
     @EnableCaching
     static class BusinessCachingConfigurerConfig {
+
+        @Bean
+        public CacheManager businessCacheManager() {
+            // cache.enabled=false 后模块不提供 CacheManager，切面需要一个
+            return new org.springframework.cache.concurrent.ConcurrentMapCacheManager();
+        }
 
         @Bean
         public org.springframework.cache.annotation.CachingConfigurer businessCachingConfigurer() {

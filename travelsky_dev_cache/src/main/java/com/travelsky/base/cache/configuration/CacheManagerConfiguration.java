@@ -19,6 +19,7 @@ import com.travelsky.base.cache.properties.HazelcastCacheProperties;
 import com.travelsky.base.utils.json.JsonUtils;
 import org.checkerframework.checker.nullness.qual.NonNull;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -61,8 +62,8 @@ public class CacheManagerConfiguration {
      * <p>注意：Spring Cache 切面只从 {@link CachingConfigurer} 获取默认 keyGenerator，
      * <b>不会</b>按名查找容器中的 {@code keyGenerator} Bean。本 Bean 由下方内嵌的
      * {@link CacheCachingConfigurer} 接入切面；业务侧可通过声明同名
-     * {@code keyGenerator} Bean 覆盖本默认实现，或直接实现自己的
-     * {@code CachingConfigurer}（此时 {@link CacheCachingConfigurer} 自动让位）。
+     * {@code keyGenerator} Bean 覆盖本默认实现。注意：模块固定注册
+     * {@code CachingConfigurer}，业务侧如需自定义该接口须先整体关闭模块自动装配。
      */
     @Bean
     @ConditionalOnMissingBean(KeyGenerator.class)
@@ -257,13 +258,18 @@ public class CacheManagerConfiguration {
      * <p>{@code CacheInterceptor} 的 keyGenerator 仅来源于 {@link CachingConfigurer}
      * （见 {@code AbstractCachingConfiguration#useCachingConfigurer}），没有
      * {@code CachingConfigurer} 时会静默回退到 {@code SimpleKeyGenerator}，
-     * 导致 {@code <APP>:CACHE:...} 格式的 key 失效。本配置以独立
-     * {@code @Configuration} + {@code @ConditionalOnMissingBean(CachingConfigurer.class)}
-     * 声明：业务侧实现自己的 {@code CachingConfigurer} 时本配置自动让位，
-     * 不会重演多实现冲突（P2-6）。
+     * 导致 {@code <APP>:CACHE:...} 格式的 key 失效。
+     * <p><b>设计说明</b>：{@code AbstractCachingConfiguration#setConfigurers} 在启动期
+     * 收集容器内全部 {@link CachingConfigurer} Bean，数量大于 1 时直接抛
+     * {@code IllegalStateException: 2 implementations of CachingConfigurer were found}。
+     * {@code @ConditionalOnMissingBean} 在此场景不可靠——业务侧的 {@code CachingConfigurer}
+     * 若来自独立自动装配（另一轮配置解析），本配置评估条件时尚未注册，条件误判为
+     * 「不存在」从而照常装配，最终仍触发多实现冲突。因此本配置<b>无条件注册</b>，
+     * 与业务侧自定义 {@code CachingConfigurer} 为「二选一」关系：
+     * 业务侧接管时须整体关闭本模块自动装配（{@code cache.enabled=false}），
+     * 详见 README「继承类 / 扩展点」。
      */
     @Configuration(proxyBeanMethods = false)
-    @ConditionalOnMissingBean(CachingConfigurer.class)
     public static class CacheCachingConfigurer implements CachingConfigurer {
 
         @Autowired
@@ -284,19 +290,24 @@ public class CacheManagerConfiguration {
     @ConditionalOnClass({HazelcastInstance.class, Caffeine.class})
     public static class CompositeCacheConfiguration {
 
-        @Autowired
-        @Qualifier("hazelcastCacheManager")
-        private CacheManager hazelcastCacheManager;
-
-        @Autowired
-        @Qualifier("caffeineCacheManager")
-        private CacheManager caffeineCacheManager;
-
+        /**
+         * {@code @ConditionalOnClass} 只保证类在 classpath，不保证两个底层 CacheManager
+         * 均已装配（各自还有其他装配条件）。用 {@link ObjectProvider} 判空：
+         * 任一缺失时退化为存在的单级，避免 {@code NoSuchBeanDefinitionException} 启动失败。
+         */
         @Bean
         @org.springframework.context.annotation.Primary
         @ConditionalOnMissingBean(name = "cacheManager")
-        public CacheManager cacheManager() {
-            return new CompositeCacheManager(hazelcastCacheManager, caffeineCacheManager);
+        public CacheManager cacheManager(
+                @Qualifier("hazelcastCacheManager") ObjectProvider<CacheManager> hazelcast,
+                @Qualifier("caffeineCacheManager") ObjectProvider<CacheManager> caffeine) {
+            CacheManager primary = hazelcast.getIfAvailable();
+            CacheManager local = caffeine.getIfAvailable();
+            if (primary == null || local == null) {
+                // 单级退化：哪级存在用哪级
+                return primary != null ? primary : local;
+            }
+            return new CompositeCacheManager(primary, local);
         }
     }
 

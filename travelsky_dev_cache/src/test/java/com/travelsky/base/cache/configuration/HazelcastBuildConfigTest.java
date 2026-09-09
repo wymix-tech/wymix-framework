@@ -76,7 +76,11 @@ class HazelcastBuildConfigTest {
     @Test
     void hazelcastInstanceShouldShutdownOnContextClose() {
         // P3-7: hazelcastInstance 由容器托管（@Bean(destroyMethod = "shutdown")），
-        // 容器关闭时 HazelcastInstance 必须被 shutdown（容器级断言，而非手动 new + shutdown）
+        // 容器关闭时 HazelcastInstance 必须被 shutdown。
+        // 依赖 runner 的 try-with-resources 自动 close，断言发生在容器关闭之后，
+        // 不手动 close（避免双重 close 掩盖 destroyMethod 失效）
+        java.util.concurrent.atomic.AtomicReference<HazelcastInstance> instanceRef =
+                new java.util.concurrent.atomic.AtomicReference<>();
         org.springframework.boot.test.context.runner.ApplicationContextRunner runner =
                 new org.springframework.boot.test.context.runner.ApplicationContextRunner()
                         .withConfiguration(org.springframework.boot.autoconfigure.AutoConfigurations.of(
@@ -86,12 +90,12 @@ class HazelcastBuildConfigTest {
         runner.run(context -> {
             assertThat(context).hasNotFailed();
             HazelcastInstance instance = context.getBean(HazelcastInstance.class);
+            instanceRef.set(instance);
             assertTrue(instance.getLifecycleService().isRunning());
-            ((org.springframework.context.ConfigurableApplicationContext) context).close();
-            assertFalse(instance.getLifecycleService().isRunning());
         });
+        // runner 已自动关闭容器
+        assertFalse(instanceRef.get().getLifecycleService().isRunning());
     }
-
 
     @Test
     void appPrefixFallbackShouldNotProduceNullKey() throws Exception {
