@@ -1,6 +1,6 @@
 # travelsky_dev_data_migration 数据迁移模块
 
-> 监听数据变更事件并触发数据迁移，作为数据同步/迁移的扩展骨架。
+> 监听数据变更事件并检查实体是否标注 `@DataMigration`，作为数据同步/迁移的扩展骨架（内置迁移回放尚未实现）。
 
 ## 模块说明
 
@@ -16,21 +16,21 @@
 </dependency>
 ```
 
-> 需与 `jpa_repository` 或 `mybatis_repository` 配合使用（事件来源）。
+> 需与 `jpa_repository` / `mybatis_repository` 配合使用（事件来源）。引入本模块会通过 compile 依赖同时带入两套 ORM 模块；本模块装配类会按 classpath 条件自动导入对应的 `DataChangeLogConfiguration`，而非二选一。
 
 ## 配置项
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
 | `travelsky.data-migration.enabled` | 是否启用数据迁移模块 | `true` |
-| `data.migration.*` | 迁移行为属性（`DataMigrationProperties`，当前为空容器，扩展占位） | — |
+| `data.migration.*` | 迁移行为属性（`DataMigrationProperties`，当前为空容器，扩展占位）。注意：该 Properties **当前未通过 `@EnableConfigurationProperties` / `@ConfigurationPropertiesScan` 注册，配置不会被绑定**，写入 `data.migration.*` 不会生效 | — |
 
 ## 集成类（自动装配）
 
 | 类 | 说明 |
 |----|------|
 | `DataMigrationConfiguration` | 自动装配入口，同时 `@Import` 变更日志配置 |
-| `DataMigrationEventListener` | 监听 `DataChangeLogEvent`，对标注 `@DataMigration` 的实体触发迁移 |
+| `DataMigrationEventListener` | 实现 `ApplicationListener` 监听 `DataChangeLogEvent`，对标注 `@DataMigration` 的实体触发迁移（当前迁移回放未实现，仅 debug 日志）。事件 DTO 通过 `getDataChangeLogDTO()` 获取；注意 `DataChangeLogEvent` 存在不携带 DTO 的构造（如 `(Object, Clock)`），该场景下取值为 `null` |
 
 ## 继承类 / 注解（业务方使用）
 
@@ -48,6 +48,9 @@
 
 ```java
 // 1) 标注实体（发生增删改时模块会收到事件）
+// 说明：以下为 MyBatis 场景示例，@TableName 为 mybatis-plus 注解、
+// AbstractAuditEntity 来自 travelsky_dev_mybatis_repository；
+// JPA 场景请改用 jpa_repository 中的同名基类（两者包路径不同，不可混用）
 @DataMigration
 @TableName("EMPLOYEE")
 public class EmployeeEntity extends AbstractAuditEntity { ... }
