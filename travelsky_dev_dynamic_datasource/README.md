@@ -4,7 +4,7 @@
 
 ## 模块说明
 
-`travelsky_dev_dynamic_datasource` 提供多数据源管理能力。它通过 `DynamicEnvPostProcessor`（`EnvironmentPostProcessor`）在 Spring 环境准备阶段即把配置的数据源注入到 `Environment`，随后 `DynamicDatasourceConfiguration` 据此构建多个 `DataSource` 并以 `primary` 指定默认源。支持注解切换与编程式切换两种方式。
+`travelsky_dev_dynamic_datasource` 提供多数据源管理能力。它通过 `DynamicEnvPostProcessor`（`EnvironmentPostProcessor`）在 Spring 环境准备阶段扫描 `dynamic.datasource.items.*` 配置，为每个数据源补齐 `name` / `jdbcUrl` / `poolName` 属性后写入 `Environment`（`MapPropertySource`，追加在 PropertySource 列表末尾）；随后由 `DynamicDatasourceConfiguration` 据此通过 `DynamicDataSourceBuilder` 构建各 `DataSource`，组装为单个 `DynamicDataSource`（`AbstractRoutingDataSource` 子类）并以 `primary` 指定默认源。支持注解切换与编程式切换两种方式。
 
 ## 依赖引入
 
@@ -16,19 +16,23 @@
 </dependency>
 ```
 
+> ⚠️ 本模块依赖仅含 `spring-jdbc`（及内部模块 `travelsky_dev_repository`），**不含任何具体数据库的 JDBC 驱动**，请按实际使用的数据库自行引入驱动（如 `mysql-connector-j`）。
+
+> ⚠️ 模块默认**不启用**（`dynamic.datasource.enabled` 默认为 `false`）。启用需在配置中显式设置 `dynamic.datasource.enabled: true`，并提供 `primary` 与至少一个数据源条目，最小可用配置见下方「使用示例」。
+
 ## 配置项
 
 配置前缀：`dynamic.datasource`
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| `dynamic.datasource.enabled` | 是否启用动态数据源 | `false` |
-| `dynamic.datasource.primary` | 主数据源名称（对应 `items` 中的 key） | — |
+| `dynamic.datasource.enabled` | 是否启用动态数据源自动装配 | `false`（未配置或非 `true` 时装配类不生效，但 `DynamicEnvPostProcessor` 仍会在环境准备阶段执行注入） |
+| `dynamic.datasource.primary` | 主数据源名称（对应 `items` 中的 key）；未配置时装配阶段 `getPrimary()` 返回 `null`，构建 `DataSource` Bean 时抛 NPE | — |
 | `dynamic.datasource.items.<name>.url` | 数据库连接 URL | — |
 | `dynamic.datasource.items.<name>.username` | 用户名 | — |
 | `dynamic.datasource.items.<name>.password` | 密码 | — |
 | `dynamic.datasource.items.<name>.driverClassName` | JDBC 驱动类 | — |
-| `dynamic.datasource.items.<name>.type` | 数据源实现类型（如 HikariCP 全类名） | — |
+| `dynamic.datasource.items.<name>.type` | 数据源实现类型（全类名，经反射实例化并用 Binder 绑定属性） | `com.zaxxer.hikari.HikariDataSource` |
 
 > ⚠️ 密码以明文写在配置中，生产环境请配合 `security` 模块的 `ENC()` 配置解密能力使用。
 
@@ -36,10 +40,11 @@
 
 | 类 | 说明 |
 |----|------|
-| `DynamicDatasourceConfiguration` | 按配置构建多 `DataSource`，注册 `DynamicDataSource`（主库为 primary） |
-| `DynamicEnvPostProcessor` | 启动期把 `dynamic.datasource.items.*` 写入 Environment（经 `spring.factories` 注册） |
-| `DynamicDataSourceAnnotationAdvisor` / `Interceptor` | `@DynamicDatasource` 注解的 AOP 切换支持 |
-| `DynamicDataSourceBuilder` | 数据源构建工具 |
+| `DynamicDatasourceConfiguration` | 按配置构建多个 `DataSource`，注册单个 `DynamicDataSource` Bean（Bean 名 `dataSource`，主库由 `primary` 指定，作为 `defaultTargetDataSource`）；`@ConditionalOnProperty(prefix = "dynamic.datasource", name = "enabled", havingValue = "true")`，`@AutoConfigureBefore(DataSourceAutoConfiguration)`；同时注册 `@DynamicDatasource` 注解的 AOP 切面（order = -10） |
+| `DynamicEnvPostProcessor` | 启动期扫描 `dynamic.datasource.items.*` 并补齐 `name` / `jdbcUrl` / `poolName` 属性写入 Environment（经 `spring.factories` 注册；`EnvironmentPostProcessor` 须先于自动装配阶段执行，这是 Spring Boot 3 官方约定的唯一注册方式，不可迁移到 `AutoConfiguration.imports`） |
+| `DynamicDataSourceAnnotationAdvisor` / `Interceptor` | `@DynamicDatasource` 注解的 AOP 切换支持（由装配类注册，非独立自动装配） |
+| `DynamicDataSource` | `AbstractRoutingDataSource` 子类，按 `DynamicDataSourceContextHolder` 当前值路由 |
+| `DynamicDataSourceBuilder` | 数据源构建工具：按 `type` 反射实例化并用 `Binder` 绑定属性 |
 
 ## 继承类（业务方可实现）
 
@@ -51,13 +56,15 @@
 
 | 注解 | 说明 |
 |------|------|
-| `@DynamicDatasource("slave")` | 类/方法级注解，标注后该方法执行期间切换到指定数据源（`@Inherited`） |
+| `@DynamicDatasource("slave")` | 类/方法级注解（`@Target({TYPE, METHOD})`、`@Inherited`），属性 `value`（默认 `""`）；标注后方法执行期间切换到指定数据源，目标数据源不存在时抛 `BusinessException("datasource.not.exist")`；查找顺序为：接口方法 → 实现类方法 → 实现类 → 接口 → 桥接方法及其声明类 → 父类逐级向上（兼容 MyBatis / MyBatis-Plus Mapper 代理） |
+
+> ⚠️ 注解方式仅在 AOP 代理方法调用时生效，同类内部方法直接调用不触发切换。每次切面执行（`invoke`）结束后在 `finally` 中调用 `DynamicDataSourceContextHolder.clear()` 清理 `ThreadLocal`。
 
 ## 扩展点
 
 | 扩展点 | 说明 |
 |--------|------|
-| `DynamicDataSourceContextHolder.setDataSource(name)` | 编程式切换数据源；`getDataSource()` 查询当前；`clear()` 清理；`addDataSource(name)` 动态添加 |
+| `DynamicDataSourceContextHolder.setDataSource(name)` | 编程式切换数据源（`ThreadLocal`）；`getDataSource()` 查询当前；`clear()` 清理；`addDataSource(name)` 动态添加数据源名；`containsDataSource(name)` 判断是否已添加 |
 | `DynamicDataSourceBuilder` | 代码中自定义构建数据源 |
 
 ## 使用示例
@@ -84,7 +91,7 @@ dynamic:
 ```
 
 ```java
-// 1) 注解方式切换
+// 1) 注解方式切换（方法级 / 类级均可）
 @DynamicDatasource("slave")
 public List<Order> listFromSlave() { ... }
 
@@ -92,3 +99,5 @@ public List<Order> listFromSlave() { ... }
 DynamicDataSourceContextHolder.setDataSource("slave");
 try { ... } finally { DynamicDataSourceContextHolder.clear(); }
 ```
+
+> 注：`spring.factories` 中 `DynamicEnvPostProcessor` 注入的是 `name` / `jdbcUrl` / `poolName` 属性（供 Binder 按宽松绑定映射到 `HikariDataSource` 的 `jdbcUrl` 等字段），`url` / `driverClassName` 等原始属性由 `Binder` 在绑定 `dynamic.datasource.items.<name>` 前缀时直接读取，二者共同完成数据源属性绑定。
