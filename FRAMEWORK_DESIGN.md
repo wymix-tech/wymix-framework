@@ -69,7 +69,7 @@
 | 数据 | dynamic_datasource | 启动期多数据源注入 |
 | 数据 | data_migration | 变更事件→迁移（骨架） |
 | 设施 | security | JWT/表单认证、令牌黑名单、配置解密、BCrypt |
-| 设施 | cache | Hazelcast 分布式 + Caffeine 本地多级缓存 |
+| 设施 | cache | Caffeine 本地缓存装配 |
 | 设施 | monitor | Actuator + Micrometer 指标暴露 |
 | 设施 | decentralization_discovery | JmDNS 去中心化服务发现 |
 | 应用 | web | 统一响应、TraceId、Long 精度、i18n、慢请求、CRUD 基类、Swagger |
@@ -115,7 +115,7 @@
 
 ### ADR-006：条件化自动配置
 
-- **背景**：避免「引入即强制生效」带来的干扰（如不需要缓存也强制建 Hazelcast 实例）。
+- **背景**：避免「引入即强制生效」带来的干扰（如不需要缓存也强制建缓存实例）。
 - **决策**：`cache`、`dynamic_datasource`、`decentralization_discovery`、`web`（swagger）等采用 `@ConditionalOnClass` / `@ConditionalOnProperty` 按需装配。
 - **后果**：真正按需加载；但部分自动配置（如 `MyBatisConfiguration`、`MonitorConfiguration`）仍缺少 `@ConditionalOnProperty` 开关，属待补齐项。
 
@@ -128,7 +128,7 @@
 | 语言 | Java 17 |
 | 框架 | Spring Boot 3.5.8、Spring Security 6.x、Spring Data JPA、Spring Cloud OpenFeign 3.1.3 |
 | 持久化 | MyBatis-Plus、Hibernate JPA |
-| 缓存 | Hazelcast 5.2.5、Caffeine |
+| 缓存 | Caffeine |
 | Web 容器 | Undertow（替代 Tomcat） |
 | 日志 | Log4j2（替代 Logback） |
 | 监控 | Actuator + Micrometer + Prometheus |

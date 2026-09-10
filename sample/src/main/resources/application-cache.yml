@@ -3,9 +3,11 @@
 cache:
   enabled: true
 
-# Caffeine 缓存规格（cache 模块将 hazelcast/caffeine 声明为 optional，sample 选用 caffeine）
-# 未在此声明的缓存名会由 SimpleCacheManager#getMissingCache 兜底创建
+# Caffeine 缓存规格（cache 模块将 caffeine 声明为 optional，需业务侧显式引入）
+# 未在此声明的缓存名按默认规格懒建，容量上限取 defaultMaximumSize（默认 10000，
+# 设为 -1 表示不限制；生产建议显式声明规格或调小该值）
 caffeine:
+  defaultMaximumSize: 10000
   cache:
     # 缓存名称 -> 规格，对应 @Cacheable(cacheNames = "sampleCache")
     sampleCache:
