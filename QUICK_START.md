@@ -1,6 +1,6 @@
 # TravelSky Dev Framework 快速上手指南
 
-> 15 分钟跑通一个基于 APD 框架的 CRUD 服务
+> 15 分钟跑通一个基于本框架的 CRUD 服务
 
 > **事实基准**：本文出现冲突时，以各模块 `README.md` 与模块源码为准。当前版本：`revision=3.0.0-SNAPSHOT`，
 > 父 POM `travelsky_dev_parent3:3.0.0-SNAPSHOT`，Spring Boot `3.5.8`，Java 17。

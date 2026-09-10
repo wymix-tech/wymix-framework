@@ -1,6 +1,5 @@
 # TravelSky Dev Framework 总框架设计文档
 
-> 代号 **APD**（TravelSky 企业级 Java 快速开发框架）
 > 基于 Spring Boot 3.5.8 + Java 17，Maven 多模块架构
 > Maven 坐标：`com.travelsky.base:travelsky_dev_parent3:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
 
@@ -14,7 +13,7 @@
 
 | 维度 | 说明 |
 |------|------|
-| 定位 | 面向航信内部业务系统的**快速开发底座**，封装认证、缓存、监控、数据权限、查询 DSL 等通用能力 |
+| 定位 | 面向企业级业务系统的**快速开发底座**，封装认证、缓存、监控、数据权限、查询 DSL 等通用能力 |
 | 目标用户 | 业务线后端团队，期望「引入模块即获得能力」，聚焦业务逻辑 |
 | 技术基线 | Spring Boot 3.5.8、Java 17、Log4j2（替代 Logback，仅在 `core` 等引入 starter 的模块中排除 logging）、Undertow（替代 Tomcat，由 `web` 模块引入并排除 Tomcat） |
 | 设计原则 | 分层解耦、按需引入、约定优于配置、自动配置条件化 |

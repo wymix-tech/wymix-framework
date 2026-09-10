@@ -1,6 +1,8 @@
 # travelsky_dev 快速开发框架
 
-企业级 Java 快速开发框架 · 基于 Spring Boot 3.5.x + Java 17 · Maven 多模块架构
+> 企业级 Java 快速开发框架 · 基于 Spring Boot 3.5.8 + Java 17 · Maven 多模块架构
+>
+> Maven 坐标：`com.travelsky.base:travelsky_dev_parent3:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
 
 ---
 
@@ -11,13 +13,14 @@
 | [QUICK_START.md](./QUICK_START.md) | **快速上手指南**：环境、依赖引入、最小 CRUD 示例、配置、FAQ |
 | [FRAMEWORK_DESIGN.md](./FRAMEWORK_DESIGN.md) | **总框架设计文档**：分层架构、模块职责、关键设计决策（ADR）、技术栈、已知风险 |
 | [FILTER_USAGE_GUIDE.md](./FILTER_USAGE_GUIDE.md) | 查询 DSL 前端使用指南（含 AI 提示词模板） |
+| [travelsky_dev_mybatis_repository/DevQueryVO用法.md](./travelsky_dev_mybatis_repository/DevQueryVO用法.md) | 查询 DSL 后端视角说明（filter / sorts 语法） |
 
 ---
 
 ## 框架结构
 
 ```
-travelsky_dev_parent
+travelsky_dev_parent3
 ├── 基础层
 │   ├── travelsky_dev_utils            工具类模块
 │   ├── travelsky_dev_threadpool       线程池管理模块
@@ -82,13 +85,18 @@ travelsky_dev_parent
     <dependency>
         <groupId>com.travelsky.base</groupId>
         <artifactId>travelsky_dev_web</artifactId>
+        <version>${revision}</version>
     </dependency>
     <dependency>
         <groupId>com.travelsky.base</groupId>
         <artifactId>travelsky_dev_mybatis_repository</artifactId>
+        <version>${revision}</version>
     </dependency>
 </dependencies>
 ```
+
+> `web` 的 pom 直接 compile 依赖 `travelsky_dev_security`，**仅引入 `web` 即会默认开启安全装配**
+> （`security.enabled` 默认 `matchIfMissing = true`）。暂不需要认证时请显式配置 `security.enabled: false`。
 
 ### 2. 创建启动类
 
@@ -97,7 +105,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.cache.annotation.EnableCaching;
 
 @SpringBootApplication
 public class Application extends SpringBootServletInitializer {
