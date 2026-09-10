@@ -20,6 +20,26 @@ public class CaffeineCacheProperties {
 
     private Map<String, CaffeineConfig> cache;
 
+    /**
+     * 未在 {@code caffeine.cache.<name>} 中声明规格的缓存名，其默认最大条目数。
+     *
+     * <p>默认 {@code 10000}（保守上限），避免业务只写 {@code @Cacheable(cacheNames="xxx")}
+     * 却未声明规格时开出无界本地缓存 —— 在 TTL 窗口内若 key 基数大（例如把请求参数拼进 key），
+     * 进程内存会无上限增长，是 OOM 风险点。
+     *
+     * <p>设为 {@code -1} 可显式恢复「默认规格不限容量」，此时请确保调用方会在
+     * {@code caffeine.cache} 中为每个缓存名声明规格。
+     */
+    private long defaultMaximumSize = 10000;
+
+    public long getDefaultMaximumSize() {
+        return defaultMaximumSize;
+    }
+
+    public void setDefaultMaximumSize(long defaultMaximumSize) {
+        this.defaultMaximumSize = defaultMaximumSize;
+    }
+
     public boolean isAsyncCacheMode() {
         return asyncCacheMode;
     }
@@ -41,6 +61,7 @@ public class CaffeineCacheProperties {
     }
 
     public static class CaffeineConfig {
+        /** 未声明时保持 -1，由上层按 {@code caffeine.defaultMaximumSize} 兜底（默认为 10000）。 */
         private long maximumSize = -1;
         private long maximumWeight = -1;
         private int initialCapacity = 16;

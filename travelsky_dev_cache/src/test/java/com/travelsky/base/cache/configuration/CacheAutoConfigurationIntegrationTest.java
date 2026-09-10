@@ -111,7 +111,7 @@ class CacheAutoConfigurationIntegrationTest {
                     (com.github.benmanes.caffeine.cache.Cache<?, ?>) specCache.getNativeCache();
             specNative.cleanUp();
             assertThat(specNative.estimatedSize()).isLessThanOrEqualTo(100);
-            // 懒建缓存使用默认规格（maximumSize=-1，不限容量），300 条全部保留
+            // 懒建缓存使用默认规格（caffeine.defaultMaximumSize 默认 10000），300 条全部保留
             for (int i = 0; i < 300; i++) {
                 lazy.put("k" + i, "v" + i);
             }
@@ -253,6 +253,138 @@ class CacheAutoConfigurationIntegrationTest {
             Cache cache = cacheManager.getCache("plain");
             cache.put("k", "v");
             assertThat(cache.get("k").get()).isEqualTo("v");
+        });
+    }
+
+    @Test
+    void allowNullValuesFalseShouldRejectNullValues() {
+        // 评审：allowNullValues 曾是死配置（CaffeineCache 第三个参数硬编码 true）。
+        // 修复后规格值真实传入构造器，allowNullValues=false 时 put(k, null) 必须抛异常
+        runner.withPropertyValues("caffeine.cache.nc.allowNullValues=false").run(context -> {
+            assertThat(context).hasNotFailed();
+            Cache cache = context.getBean(CacheManager.class).getCache("nc");
+            assertThat(cache).isNotNull();
+            org.assertj.core.api.Assertions
+                    .assertThatThrownBy(() -> cache.put("k", null))
+                    .isInstanceOf(IllegalArgumentException.class);
+            // 非 null 值正常存取
+            cache.put("k", "v");
+            assertThat(unwrap(cache.get("k"))).isEqualTo("v");
+        });
+    }
+
+    @Test
+    void allowNullValuesTrueStillAllowsNullValues() {
+        // 默认 true 保持既有行为：允许缓存 null（用 ValueWrapper 包裹）
+        runner.run(context -> {
+            Cache cache = context.getBean(CacheManager.class).getCache("nc-default");
+            cache.put("k", null);
+            assertThat(cache.get("k")).isNotNull();
+            assertThat(unwrap(cache.get("k"))).isNull();
+        });
+    }
+
+    @Test
+    void undeclaredCacheShouldBeBoundedByDefaultMaximumSize() {
+        // 评审 info：未声明规格的缓存名默认无界是 OOM 风险点。
+        // 修复后默认规格的 maximumSize 取自 caffeine.defaultMaximumSize（默认 10000）
+        runner.withPropertyValues("caffeine.defaultMaximumSize=50").run(context -> {
+            assertThat(context).hasNotFailed();
+            Cache lazilyBuilt = context.getBean(CacheManager.class).getCache("lazy-bounded");
+            for (int i = 0; i < 200; i++) {
+                lazilyBuilt.put("k" + i, "v" + i);
+            }
+            com.github.benmanes.caffeine.cache.Cache<?, ?> nativeCache =
+                    (com.github.benmanes.caffeine.cache.Cache<?, ?>) lazilyBuilt.getNativeCache();
+            nativeCache.cleanUp();
+            // 默认规格生效：容量收敛到 50 以内
+            assertThat(nativeCache.estimatedSize()).isLessThanOrEqualTo(50);
+        });
+    }
+
+    @Test
+    void undeclaredCacheShouldBeUnboundedWhenDefaultMaximumSizeIsNegative() {
+        // 显式关闭兜底（-1）时恢复「默认规格不限容量」，行为可预期且被用例固化
+        runner.withPropertyValues("caffeine.defaultMaximumSize=-1").run(context -> {
+            Cache unbounded = context.getBean(CacheManager.class).getCache("lazy-unbounded");
+            for (int i = 0; i < 500; i++) {
+                unbounded.put("k" + i, "v" + i);
+            }
+            assertThat(((com.github.benmanes.caffeine.cache.Cache<?, ?>) unbounded.getNativeCache())
+                    .estimatedSize()).isEqualTo(500);
+        });
+    }
+
+    @Test
+    void nameResolutionAliasTableShouldMatchVisibleCacheNames() throws Exception {
+        // 评审 info（getCacheNames 泄漏内部懒建名）的处理契约：
+        //   1) 归一化名 -> 实际名的别名表在实例可见期内与 getCacheNames() 一一对应，
+        //      不出现「有别名但 getCacheNames 看不到」或反之；
+        //   2) 别名请求不派生新的对外缓存名。
+        // 说明：旧实现「先建实例、后登记别名」的并发窗口在外部压测（5 拼写 × 200 轮、
+        // CyclicBarrier 同时放行、重复 5 次）下未能稳定复现，因此该窗口的消除由
+        // getCache() 内 computeIfAbsent 的实现方式保证，本用例只固化可观测的命名契约。
+        runner.withPropertyValues("caffeine.cache.sample-cache.maximumSize=100").run(context -> {
+            CacheManager cacheManager = context.getBean(CacheManager.class);
+            java.lang.reflect.Field aliasesField =
+                    CacheManagerConfiguration.SpecCacheManager.class.getDeclaredField("aliases");
+            aliasesField.setAccessible(true);
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, String> aliases = (java.util.Map<String, String>) aliasesField.get(cacheManager);
+
+            // 未声明的缓存名首次请求后即出现在别名表中，并解析为请求时的原始拼写
+            Cache lazy = cacheManager.getCache("NewlyRequested");
+            assertThat(lazy).isNotNull();
+            assertThat(aliases).containsEntry("newlyrequested", "NewlyRequested");
+
+            // 已声明缓存：构造期即登记别名（配置名优先），大小写/分隔符变体命中同一实例
+            assertThat(aliases).containsEntry("samplecache", "sample-cache");
+            assertThat(cacheManager.getCache("SampleCache")).isSameAs(cacheManager.getCache("samplecache"));
+            assertThat(cacheManager.getCache("SampleCache").getName()).isEqualTo("sample-cache");
+
+            // 别名表的值集合与 getCacheNames() 一一对应，不暴露归一化中间名
+            assertThat(cacheManager.getCacheNames()).containsExactlyInAnyOrder("sample-cache", "NewlyRequested");
+            for (String actual : aliases.values()) {
+                assertThat(cacheManager.getCacheNames()).contains(actual);
+                assertThat(cacheManager.getCache(actual)).isNotNull();
+            }
+            assertThat(cacheManager.getCacheNames()).doesNotContain("newlyrequested", "samplecache");
+        });
+    }
+
+    @Test
+    void concurrentFirstRequestWithDifferentSpellingsShouldConvergeToOneCache() throws Exception {
+        // 评审 info：别名登记晚于建实例，并发下不同拼写可能各自建实例，
+        // getCacheNames() 会泄漏多个拼写。修复后将「名解析 + 建实例」原子化。
+        // 用栅栏把 5 种拼写的首访线程同时放行，最大化命中旧实现的竞态窗口
+        runner.withPropertyValues("caffeine.cache.sample-cache.maximumSize=100").run(context -> {
+            CacheManager cacheManager = context.getBean(CacheManager.class);
+            String[] spellings = {"SampleCache", "sample-cache", "sample_cache", "SAMPLECACHE"};
+            java.util.Set<Cache> instances = java.util.concurrent.ConcurrentHashMap.newKeySet();
+            java.util.concurrent.CyclicBarrier barrier = new java.util.concurrent.CyclicBarrier(spellings.length);
+            java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(spellings.length);
+            java.util.concurrent.ExecutorService pool =
+                    java.util.concurrent.Executors.newFixedThreadPool(spellings.length);
+            for (String spelling : spellings) {
+                pool.submit(() -> {
+                    try {
+                        barrier.await(10, java.util.concurrent.TimeUnit.SECONDS);
+                        for (int round = 0; round < 200; round++) {
+                            instances.add(cacheManager.getCache(spelling));
+                        }
+                    } catch (Exception ex) {
+                        // 并发异常由后续断言暴露
+                    } finally {
+                        done.countDown();
+                    }
+                });
+            }
+            assertThat(done.await(30, java.util.concurrent.TimeUnit.SECONDS)).isTrue();
+            pool.shutdownNow();
+
+            // 所有拼写收敛到同一实例，且不派生多余的对外缓存名
+            assertThat(instances).hasSize(1);
+            assertThat(cacheManager.getCacheNames()).containsExactly("sample-cache");
         });
     }
 

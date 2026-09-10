@@ -37,11 +37,12 @@
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
 | `caffeine.asyncCacheMode` | 是否启用 Caffeine 异步缓存模式（`AsyncCache`）。`retrieve()` / `retrieve(key, Supplier)` 仅在开启时可用；关闭后这两个方法会抛 `IllegalStateException: No Caffeine AsyncCache available`（普通读写不受影响） | `true` |
+| `caffeine.defaultMaximumSize` | **未在 `caffeine.cache` 中声明规格的缓存名**的默认最大条目数（-1 表示不限制），避免无界本地缓存 | 10000 |
 | `caffeine.cache.<name>.maximumSize` | 最大条目数（-1 表示不限制） | -1 |
 | `caffeine.cache.<name>.maximumWeight` | 最大权重（-1 表示不限制；**与 `maximumSize` 互斥，同时配置启动报错**；> 0 时必须同时配置 `weigher`） | -1 |
 | `caffeine.cache.<name>.weigher` | 权重函数全限定类名（实现 Caffeine `Weigher`，需 public 无参构造；仅允许 `com.travelsky.*` 或 `com.github.benmanes.*` 包内类，其余包启动报可读错误），`maximumWeight > 0` 时必填 | — |
 | `caffeine.cache.<name>.initialCapacity` | 初始容量 | 16 |
-| `caffeine.cache.<name>.allowNullValues` | 是否允许 null | `true` |
+| `caffeine.cache.<name>.allowNullValues` | 是否允许 null（`false` 时 `put(k, null)` 抛 `IllegalArgumentException`） | `true` |
 | `caffeine.cache.<name>.expireInSec` | 过期秒数 | 600 |
 | `caffeine.cache.<name>.policy` | `AFTER_WRITE` / `AFTER_ACCESS` | `AFTER_WRITE` |
 | `caffeine.cache.<name>.refreshAfterWriterInSec` | **已不支持**：刷新需 `LoadingCache` + `CacheLoader` 回源实现，本模块未提供；配置 > 0 时启动报可读错误 | -1 |
@@ -56,6 +57,12 @@
   不会落到 Caffeine 内部异常；`maximumWeight` 单独使用时必须提供 `weigher`。
 - `weigher` 类名来自配置文件，仅允许 `com.travelsky.*` / `com.github.benmanes.*` 前缀，
   避免配置被污染时加载并实例化 classpath 上的任意类。
+- 未在 `caffeine.cache` 中声明规格的缓存名，默认规格的容量取自 `caffeine.defaultMaximumSize`
+  （默认 `10000`）。这样业务只写 `@Cacheable(cacheNames = "xxx")` 而未声明规格时，
+  也不会开出无界本地缓存（TTL 窗口内 key 基数大时会无上限增长，是 OOM 风险点）。
+  如需默认不限制容量，显式设 `caffeine.defaultMaximumSize=-1`，并自行保证为每个缓存名声明规格。
+- `allowNullValues` 会真实传入 `CaffeineCache` 构造器：设为 `false` 时该缓存拒绝写入 `null`
+  （抛 `IllegalArgumentException`），默认 `true` 保持「允许缓存 null、读取用 `ValueWrapper` 包裹」的行为。
 
 ## 集成类（自动装配）
 
@@ -74,7 +81,9 @@
 「小写 + 去掉 `-` / `_` / `.`」建立「请求名 → 声明名」别名，因此
 `@Cacheable(cacheNames = "SampleCache")`、`sample-cache`、`sample_cache` 会命中同一缓存实例，
 并以 `caffeine.cache.sample-cache.*` 中声明的规格生效。未在 `caffeine.cache` 中声明的缓存名
-首次请求时按默认规格懒建，以首次请求名作为实际缓存名。
+首次请求时按默认规格懒建，以首次请求名作为实际缓存名。归一化名的解析与缓存实例的创建
+在同一 `ConcurrentHashMap` 原子操作内完成，因此并发首访不同拼写不会各建实例，
+`getCacheNames()` 也不会同时出现多个拼写。
 
 KeyGenerator 由 `CacheManagerConfiguration` 提供：`<APP大写>:CACHE:<类名>:<方法名>:<参数JSON>`，
 参数为 `null` 时拼接 `null`，其余经 JSON 序列化；`<APP>` 取 `spring.application.name`，
@@ -121,7 +130,8 @@ public User getUser(Long id) { ... }
 ```
 
 > `cacheNames = "user"` 与 `caffeine.cache.user.*` 名称一致（归一化后大小写与分隔符不敏感）。
-> 未在 yaml 中声明规格的缓存名同样可用，按默认规格（`expireInSec=600`、不限容量）懒建。
+> 未在 yaml 中声明规格的缓存名同样可用，按默认规格（`expireInSec=600`、
+> `maximumSize=caffeine.defaultMaximumSize` 默认 `10000`）懒建。
 
 ## 降级说明（历史变更）
 

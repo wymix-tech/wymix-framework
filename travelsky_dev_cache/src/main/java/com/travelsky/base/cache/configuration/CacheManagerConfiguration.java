@@ -223,6 +223,9 @@ public class CacheManagerConfiguration {
         SpecCacheManager(CaffeineCacheProperties properties) {
             this.properties = properties;
             this.defaultSpec = new CaffeineCacheProperties.CaffeineConfig();
+            // 未声明规格的缓存名使用 caffeine.defaultMaximumSize 作为容量兜底
+            // （默认 10000），避免出现无界本地缓存；显式设为 -1 即恢复不限容量
+            this.defaultSpec.setMaximumSize(properties.getDefaultMaximumSize());
             Map<String, CaffeineCacheProperties.CaffeineConfig> configured = properties.getCache();
             if (configured != null) {
                 configured.forEach((name, config) -> {
@@ -239,20 +242,16 @@ public class CacheManagerConfiguration {
                 return null;
             }
             String normalized = CacheNameUtils.normalize(name);
-            String resolved = aliases.get(normalized);
-            String actual = resolved != null ? resolved : name;
-            Cache cache = caches.get(actual);
-            if (cache == null) {
-                Cache created = buildCache(actual);
-                Cache previous = caches.putIfAbsent(actual, created);
-                cache = previous != null ? previous : created;
-                if (previous == null) {
-                    // 首次出现才登记别名：未声明缓存以首次请求名为实际缓存名，
-                    // 大小写 / 分隔符不同的后续请求命中同一实例，且不派生新的缓存名
-                    aliases.putIfAbsent(normalized, actual);
-                }
-            }
-            return cache;
+            // 「名解析」与「实例创建」两步都原子化：
+            //  1. aliases.computeIfAbsent 先抢占归一化名 -> 实际名的映射，
+            //     并发下多个拼写（SampleCache / sample-cache / samplecache）只会有一个
+            //     成为实际名，其余请求解析到同一实例，不会各自建实例；
+            //  2. caches.computeIfAbsent 包住 buildCache，buildCache 不会返回 null，
+            //     可安全使用（并发不同实际名各自建一次，同名只建一次）。
+            // 若把别名登记放在建实例之后，别名登记前存在窗口会派生重复缓存名，
+            // getCacheNames() 会同时泄漏多个拼写。
+            String actual = aliases.computeIfAbsent(normalized, key -> name);
+            return caches.computeIfAbsent(actual, this::buildCache);
         }
 
         private Cache buildCache(String name) {
@@ -260,23 +259,35 @@ public class CacheManagerConfiguration {
             // 规格非法时在首次请求该缓存时报可读异常，而不是留到 Caffeine 内部
             CaffeineCacheProperties.CaffeineConfig config = specs.getOrDefault(name, defaultSpec);
             boolean async = properties.isAsyncCacheMode();
+            // allowNullValues 来自 caffeine.cache.<name>.allowNullValues，必须真实传入
+            // CaffeineCache 构造器；写死 true 会让该配置项成为死配置（配了 false 仍存 null，
+            // 与 README 声明不符）
+            boolean allowNullValues = config.isAllowNullValues();
             com.github.benmanes.caffeine.cache.Cache<Object, Object> nativeCache = buildCaffeine(config).build();
             if (async) {
                 // 异步模式：包装成 AsyncCache 形态的 CaffeineCache，retrieve 才可用。
                 // 两种形态共用同一个原生 Cache 实例，因此切换 caffeine.asyncCacheMode
                 // 只影响新建缓存，已建缓存的内容不会丢失
                 AsyncCache<Object, Object> asyncCache = new SameCacheAsyncAdapter(nativeCache);
-                return new org.springframework.cache.caffeine.CaffeineCache(name, asyncCache, true);
+                return new org.springframework.cache.caffeine.CaffeineCache(name, asyncCache, allowNullValues);
             }
-            return new org.springframework.cache.caffeine.CaffeineCache(name, nativeCache, true);
+            return new org.springframework.cache.caffeine.CaffeineCache(name, nativeCache, allowNullValues);
         }
 
         @Override
         public Collection<String> getCacheNames() {
             // 已声明的缓存名（即使尚未被请求，也属于本模块对外承诺的缓存集合）
-            // 加上已请求过的未声明缓存名，名称集合单调递增且稳定
-            java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>(caches.keySet());
+            // 加上已请求过的未声明缓存名，名称集合单调递增且稳定。
+            // 与 getCache() 一致地只暴露「实际缓存名」（aliases 的 value 集合），
+            // 不暴露归一化中间名 —— 别名登记先于实例创建完成，两者不会出现
+            // 「有别名但无实例」的空窗，故此处与 caches.keySet() 等价且更语义明确。
+            java.util.LinkedHashSet<String> names = new java.util.LinkedHashSet<>();
             names.addAll(declaredNames);
+            for (String actual : aliases.values()) {
+                if (caches.containsKey(actual)) {
+                    names.add(actual);
+                }
+            }
             return java.util.Collections.unmodifiableSet(names);
         }
     }

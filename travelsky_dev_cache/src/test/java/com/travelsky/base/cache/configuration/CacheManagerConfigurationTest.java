@@ -99,6 +99,12 @@ class CacheManagerConfigurationTest {
         }
 
         @Test
+        void propertiesDefaultMaximumSizeShouldBeConservativeUpperBound() {
+            // 未声明规格的缓存名容量兜底，避免无界本地缓存（OOM 风险）
+            assertEquals(10000, new CaffeineCacheProperties().getDefaultMaximumSize());
+        }
+
+        @Test
         void refreshAfterWritePositiveShouldFailWithReadableError() {
             // 未提供 CacheLoader，refreshAfterWriterInSec > 0 直接报可读错误
             IllegalStateException ex = assertThrows(IllegalStateException.class,
