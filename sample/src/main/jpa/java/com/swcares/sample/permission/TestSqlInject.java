@@ -2,19 +2,27 @@ package com.swcares.sample.permission;
 
 import com.travelsky.base.repository.datapermission.enums.InjectType;
 import com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector;
+import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.Map;
 
 /**
- * 数据权限 SQL 注入示例。
+ * 数据权限 SQL 注入示例（JPA 版）。
  *
- * <p>位于 {@code @EnableDataPermission(basePackages = ...)} 指定的扫描包下即可，
- * <b>无需</b>标注 {@code @Component}，注册器会自动扫描 {@link PermissionSqlInjector} 的实现并装配。
+ * <p><b>与 MyBatis 版的关键差异</b>：JPA 场景不使用 {@code @EnableDataPermission}，
+ * 没有注册器会自动扫描 {@link PermissionSqlInjector} 的实现，因此这里<b>必须</b>标注
+ * {@link Component}（或在配置类中声明 {@code @Bean}），否则 {@code SpecificationHelper} 取注入器时
+ * 会抛「未注册为 Spring Bean」的异常。MyBatis 版无需 {@code @Component} 是因为
+ * {@code DataPermissionInjectorRegistry} 会扫描并注册。
+ *
+ * <p>{@code injectSql()} 写数据库列名（{@code CREATED_BY}）或实体属性名（{@code createdBy}）均可，
+ * JPA 侧会先按属性名解析，失败再按 {@code @Column} / 下划线命名策略反查。
  *
  * <p>生效范围由方法上的 {@code @DataPermission(injectors = ...)} 决定，
  * 未标注的方法不会追加任何条件。
  */
+@Component
 public class TestSqlInject implements PermissionSqlInjector {
 
     /**
@@ -26,7 +34,7 @@ public class TestSqlInject implements PermissionSqlInjector {
     }
 
     /**
-     * 追加的过滤条件，会被拼接到原 SQL 的 WHERE 之后。
+     * 追加的过滤条件，由 JPA 侧翻译为 {@code Predicate} 追加到查询条件上。
      */
     @Override
     public String injectSql() {

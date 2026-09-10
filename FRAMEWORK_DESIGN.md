@@ -201,9 +201,9 @@
 | R6 | `code-generator` 硬编码 | **已修复** | 数据库凭证、包名（`GEN_BASE_PACKAGE`）、输出目录（`GEN_OUTPUT_DIR`）、类名前缀开关（`GEN_ROUTE_AS_CLASS_PREFIX`）均改为环境变量 / 系统属性注入，缺失时快速失败；Windows 路径硬编码已移除 |
 | R7 | `@DataChangeLog` 在多个模块重复定义 | **已修复** | 单一来源：`travelsky_dev_repository` 的 `...datachangelog.annotation.DataChangeLog` |
 | R8 | `@RepeatRequest` 默认不生效 | **已缓解（文档 + 开关）** | `web` 模块默认不注册切面（去重粒度需业务确认），README 已显著标注；新增 `travelsky.web.repeat-request.enabled=true` 开关注册内置切面，业务方自声明 Bean 仍优先（`@ConditionalOnMissingBean`） |
-| R9 | 数据权限仅 MyBatis 侧实现 | **已修复** | 数据权限上下文/注解/切面上提到 `travelsky_dev_repository`；JPA 侧由 `SpecificationHelper#applyDataPermission` 将 `WHERE_ADDITIONAL` 注入器翻译为 `Predicate` 追加（`REPLACE_TABLE_NAME` 不适用于 JPA，跳过） |
+| R9 | 数据权限仅 MyBatis 侧实现 | **已修复** | 数据权限上下文/注解/切面上提到 `travelsky_dev_repository`；JPA 侧由 `SpecificationHelper#applyDataPermission` 将 `WHERE_ADDITIONAL` 注入器翻译为 `Predicate` 追加（`REPLACE_TABLE_NAME` 跳过、`statementIds` 不支持按语句过滤会告警、字段名列名/属性名双向映射）；注入器获取与 injectSql 解析抽为 `DataPermissionSupport`，两侧共用且未注册为 Bean 时有明确异常
 | R10 | JWT 黑名单为单机内存态 | **未解决** | 集群部署需替换为 Redis 等共享存储的黑名单实现 |
-| R11 | MyBatis 分页 SQL 注入改写依赖 JSqlParser，`@DynamicDatasource` 注解查找存在实现缺陷 | **已修复** | 回退判空由 `Optional != null` 改为 `Optional.isPresent()`，父类逐级回退与 Mapper 父接口回退恢复生效（含 `getSuperclass()` 判空），补单测回归 |
+| R11 | MyBatis 分页 SQL 注入改写依赖 JSqlParser，`@DynamicDatasource` 注解查找存在实现缺陷 | **已修复** | 回退判空由 `Optional != null` 改为 `Optional.isPresent()`；Mapper 分支原取 `clazz.getSuperclass()`（接口恒为 `null`，该回退是死代码）改为遍历 `getInterfaces()`；`getSuperclass()` 判空；单测覆盖类继承回退、方法重写回退与 Mapper（父）接口回退 |
 
 > ⚠️ 历史评估报告 `project-evaluation-report.html` **已不在仓库中**（`e7d1dea` 移除），
 > 上述风险条目以本文档 §3 表格与各模块 README 的现状描述为准。

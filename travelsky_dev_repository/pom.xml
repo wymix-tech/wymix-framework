@@ -21,9 +21,11 @@
             <groupId>com.travelsky.base</groupId>
             <artifactId>travelsky_dev_core</artifactId>
         </dependency>
+        <!-- AOP：复用 core 已有的 spring-boot-starter-aop（其已传递引入 aspectjweaver），
+             不单独声明 aspectjweaver，避免依赖父 POM 版本管理带来的静默漂移 -->
         <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
