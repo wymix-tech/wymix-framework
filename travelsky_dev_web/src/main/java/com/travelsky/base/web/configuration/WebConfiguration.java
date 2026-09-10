@@ -5,11 +5,13 @@ import com.travelsky.base.utils.GlobalIdGenerator;
 import com.travelsky.base.utils.StringUtils;
 import com.travelsky.base.utils.json.NumberSerializer;
 import com.travelsky.base.web.advice.ControllerResponseAdvice;
+import com.travelsky.base.web.aop.RepeatRequestAspect;
 import com.travelsky.base.web.aop.SlowRequestAspect;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -112,10 +114,26 @@ public class WebConfiguration implements WebMvcConfigurer {
         return new SlowRequestAspect();
     }
 
-//    @Bean
-//    public RepeatRequestAspect repeatRequestAspect() {
-//        return new RepeatRequestAspect();
-//    }
+    /**
+     * {@code @RepeatRequest} 防重复提交切面。
+     *
+     * <p><b>默认不注册</b>（历史行为，去重粒度需业务确认）。两种启用方式（{@code 或} 的关系，二者取其一即可）：
+     * <ul>
+     *   <li>配置 {@code travelsky.web.repeat-request.enabled=true} —— 注册本默认实现；</li>
+     *   <li>业务方自行声明 {@code RepeatRequestAspect} Bean —— <b>无需配置开关</b>，
+     *   仍会生效（本声明 {@code @ConditionalOnMissingBean}，自动让位）。</li>
+     * </ul>
+     *
+     * <p>即：开关只控制「框架默认实现」是否注册，业务自声明的 Bean 永远优先，配不配开关都不受影响。
+     *
+     * <p>⚠️ 去重键存放在 {@code HttpSession}，仅同一会话内有效；无状态 / 分布式部署需自行改造为 Redis 等共享存储。
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "travelsky.web.repeat-request", name = "enabled", havingValue = "true")
+    public RepeatRequestAspect repeatRequestAspect() {
+        return new RepeatRequestAspect();
+    }
 
     @Bean
     public FilterRegistrationBean<OncePerRequestFilter> setLogTraceIdFilter() {

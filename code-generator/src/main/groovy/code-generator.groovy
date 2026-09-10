@@ -165,13 +165,19 @@ try {
 
 def allTables = fetcher.getAllTables()
 
-// 包名
-def basePackage = "com.swcares.ttimas"
+// 包名 / 输出目录 / 类名前缀开关均通过环境变量或系统属性注入（与凭证处理一致），缺失时快速失败
+def basePackage = System.getenv("GEN_BASE_PACKAGE") ?: System.getProperty("gen.base.package")
+def path = System.getenv("GEN_OUTPUT_DIR") ?: System.getProperty("gen.output.dir")
+def useRouteNameBeClassNamePrefix = (System.getenv("GEN_ROUTE_AS_CLASS_PREFIX")
+        ?: System.getProperty("gen.route.as.class.prefix", "true")).toBoolean()
 
-// 是否使用路由名称作为类名前缀
-def useRouteNameBeClassNamePrefix = true
-
-def path = "C:\\Project\\TTIMAS\\src\\main\\java"
+if (!basePackage || !path) {
+    println "[code-generator] Missing base package or output dir. Please set environment variables:"
+    println "  GEN_BASE_PACKAGE  e.g. com.example.app       (target base package of generated code)"
+    println "  GEN_OUTPUT_DIR    e.g. /path/to/project/src/main/java"
+    println "  GEN_ROUTE_AS_CLASS_PREFIX optional, default true (use route name as class name prefix)"
+    System.exit(1)
+}
 
 def scanner = new Scanner(System.in)
 

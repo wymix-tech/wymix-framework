@@ -153,9 +153,10 @@ public class DynamicDataSourceAnnotationInterceptor implements MethodInterceptor
         // 如果不是代理类, 从当前类开始, 不断的找父类的声明
         if (!Proxy.isProxyClass(targetClass)) {
             Class<?> currentClass = targetClass;
-            while (currentClass != Object.class) {
+            // 接口（如 MyBatis Mapper）的 getSuperclass() 为 null，须判空避免 NPE
+            while (currentClass != null && currentClass != Object.class) {
                 Optional<T> datasourceAttr = findDataSourceAttribute(currentClass, annotation);
-                if (datasourceAttr != null) {
+                if (datasourceAttr.isPresent()) {
                     return datasourceAttr;
                 }
                 currentClass = currentClass.getSuperclass();
@@ -166,11 +167,16 @@ public class DynamicDataSourceAnnotationInterceptor implements MethodInterceptor
             final Class<?> clazz = getMapperInterfaceClass(targetObject);
             if (clazz != null) {
                 Optional<T> datasourceAttr = findDataSourceAttribute(clazz, annotation);
-                if (datasourceAttr != null) {
+                if (datasourceAttr.isPresent()) {
                     return datasourceAttr;
                 }
-                // 尝试从其父接口获取
-                return findDataSourceAttribute(clazz.getSuperclass(), annotation);
+                // 尝试从其父接口获取（Mapper 接口为 interface，getSuperclass() 恒为 null，须遍历父接口）
+                for (Class<?> superInterface : clazz.getInterfaces()) {
+                    Optional<T> superAttr = findDataSourceAttribute(superInterface, annotation);
+                    if (superAttr.isPresent()) {
+                        return superAttr;
+                    }
+                }
             }
         }
         return Optional.empty();

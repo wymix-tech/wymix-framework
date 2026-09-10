@@ -36,6 +36,7 @@
 |------|------|
 | `@DataChangeLog` | 标记需要记录增删改的实体；`record()` 可指定记录的语句类型（INSERT/MODIFY/REMOVE） |
 | `@DataMigration` | 类级注解，标记实体发生变更时触发数据迁移（配合 `data_migration` 模块） |
+| `@DataPermission(injectors = {...})` | 方法/类级数据权限，指定生效的 `PermissionSqlInjector`；`statementIds` 默认 `"ALL"` |
 
 ## 继承类（业务方可继承/实现）
 
@@ -43,6 +44,10 @@
 |---------|------|
 | `DataChangeLogEventListener` | 变更日志事件监听器，业务方可声明子类 Bean 并重写 `changelog(DataChangeLogDTO)` 自定义处理（默认仅记录日志） |
 | `FilterParser` / `FilterStringParser` | filter DSL → AST 解析器，可直接使用或扩展 |
+| `PermissionSqlInjector` | 数据权限注入器接口：`injectSql()` / `additionalParameters()` / `type()` |
+| `DataPermissionAspect` | 数据权限切面（`@Aspect`，无 `@EnableAspectJAutoProxy`，依赖 core 的 AOP 自动代理）：进入方法写上下文、退出时**恢复**外层上下文（嵌套/重复注册时不丢条件） |
+| `DataPermissionContextHolder` | 数据权限上下文（`TransmittableThreadLocal`，仅 TTL 包装的线程池会透传） |
+| `DataPermissionSupport` | 注入器获取与 `injectSql` 解析的公共实现，MyBatis / JPA 两侧共用 |
 
 ## 扩展点
 

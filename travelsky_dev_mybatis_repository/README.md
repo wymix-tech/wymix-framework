@@ -66,6 +66,7 @@
 | `DataPermissionPlugin`（MyBatis `Interceptor`） | 由 `@EnableDataPermission` 自动注册，与 `DataPermissionAspect`（AOP 织入上下文）配合：按 `statementIds` 匹配 MappedStatement，经 JSqlParser 改写 SELECT/UPDATE/DELETE 追加数据权限条件 |
 | `DataChangeLogEventListener` Bean | 重写 `changelog(DataChangeLogDTO)` 自定义变更落地 |
 | `InjectType` / `DataPermissionContextHolder` | 数据权限上下文与注入类型扩展 |
+| `DataPermissionSupport` | 注入器获取与 `injectSql` 解析的公共实现（与 JPA 侧共用）：注入器未注册为 Bean 时退化为反射实例化并 `warn`，避免以 NPE / `NoSuchBeanDefinitionException` 形式暴露 |
 
 ## 使用示例
 

@@ -1,7 +1,7 @@
 package com.travelsky.base.repository.datapermission.plugin;
 
-import com.travelsky.base.core.context.ApplicationContextHolder;
 import com.travelsky.base.repository.datapermission.context.DataPermissionContextHolder;
+import com.travelsky.base.repository.datapermission.support.DataPermissionSupport;
 import com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector;
 import com.travelsky.base.repository.helper.SqlParseHelper;
 import net.sf.jsqlparser.expression.Expression;
@@ -58,7 +58,7 @@ public class DataPermissionPlugin implements Interceptor {
         BoundSql boundSql = statement.getBoundSql(parameterObject);
         String originalSql = boundSql.getSql();
 
-        if (Arrays.stream(context.getStatementIds()).anyMatch(statementId -> "ALL".equals(statementId)
+        if (Arrays.stream(context.getStatementIds()).anyMatch(statementId -> DataPermissionSupport.STATEMENT_ALL.equals(statementId)
                 || statementId.equals(statement.getId())) && !CollectionUtils.isEmpty(context.getInjectors())) {
             // 修改SQL
             List<Class<? extends PermissionSqlInjector>> injectorClasses = context.getInjectors();
@@ -66,7 +66,8 @@ public class DataPermissionPlugin implements Interceptor {
             List<PermissionSqlInjector> injectors = new ArrayList<>();
 
             for (Class<? extends PermissionSqlInjector> injectorClass : injectorClasses) {
-                injectors.add(ApplicationContextHolder.getBean(injectorClass));
+                // 与 JPA 侧共用解析入口：容器中没有时退化反射实例化并告警，仍失败则抛明确异常
+                injectors.add(DataPermissionSupport.resolveInjector(injectorClass));
             }
 
             String modifiedSql = modifySql(originalSql, injectors);

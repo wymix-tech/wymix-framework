@@ -22,15 +22,18 @@
 | 表名清单 | 需要生成的表 |
 | `baseRoute` / `useRouteNameBeClassNamePrefix` | 路由前缀与类名命名方式 |
 
-### 数据库凭证（必须通过环境变量/系统属性注入）
+### 参数化配置（必须通过环境变量/系统属性注入）
 
-数据库连接信息已不再硬编码，通过环境变量或系统属性注入，缺失时脚本启动即失败：
+数据库连接信息、包名、输出目录均已不再硬编码，通过环境变量或系统属性注入，缺失时脚本启动即失败：
 
 | 环境变量 | 系统属性 | 说明 |
 |------|------|------|
 | `GEN_DB_URL` | `gen.db.url` | JDBC 连接串 |
 | `GEN_DB_USER` | `gen.db.user` | 数据库用户名 |
 | `GEN_DB_PASSWORD` | `gen.db.password` | 数据库密码 |
+| `GEN_BASE_PACKAGE` | `gen.base.package` | 生成代码的根包名，如 `com.example.app` |
+| `GEN_OUTPUT_DIR` | `gen.output.dir` | 生成文件输出目录，如 `/path/to/project/src/main/java` |
+| `GEN_ROUTE_AS_CLASS_PREFIX` | `gen.route.as.class.prefix` | 可选，是否用路由名作类名前缀，默认 `true` |
 
 ## 组成（脚本清单）
 
@@ -59,6 +62,8 @@
 export GEN_DB_URL="jdbc:mysql://127.0.0.1:3306/your_db?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8"
 export GEN_DB_USER="your_user"
 export GEN_DB_PASSWORD="your_password"
+export GEN_BASE_PACKAGE="com.example.app"
+export GEN_OUTPUT_DIR="/path/to/project/src/main/java"
 # 2) 用 Groovy 运行
 groovy code-generator.groovy
 

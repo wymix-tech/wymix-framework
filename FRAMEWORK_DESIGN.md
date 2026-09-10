@@ -193,17 +193,17 @@
 
 | 编号 | 风险 | 状态 | 建议 |
 |------|------|------|------|
-| R1 | `ai` 模块为空壳（仅 `pom.xml` + README）；`data_migration` 迁移回放未实现（仅 debug 日志） | **未解决** | 明确范围，补实现或标注实验性；`ai` 模块 README 已声明「勿在生产直接依赖」 |
+| R1 | `ai` 模块为空壳（仅 `pom.xml` + README）；`data_migration` 迁移回放未实现 | **已标注（实验性）** | 均定位为实验性/预留模块：`ai` README 已声明「勿在生产直接依赖」；`data_migration` 回放未实现时输出 `warn` 级别日志提示 |
 | R2 | 安全 / `dynamic_datasource` / `core` / `monitor` 仍用 `spring.factories`，其余用 `AutoConfiguration.imports` | **部分不成立** | 上述 `spring.factories` 中注册的均为 `EnvironmentPostProcessor` / `ApplicationListener`（须先于自动装配与环境准备阶段执行），Boot 3 无替代注册方式，**属设计约束而非技术债**；真正的自动配置类已全部迁入 `AutoConfiguration.imports` |
 | R3 | `CachingConfigurerSupport` 在 Boot 3.x 已废弃 | **已修复** | `CacheManagerConfiguration.CacheCachingConfigurer` 已 `implements CachingConfigurer`（`b003f92` 起） |
 | R4 | `MyBatisConfiguration` / `MonitorConfiguration` 缺 `@ConditionalOnProperty` | **已修复** | 已分别添加 `travelsky.mybatis.enabled` / `travelsky.monitor.enabled`（`matchIfMissing = true`） |
 | R5 | Spring Cloud 3.1.3 与 Boot 3.5.8 存在版本落差 | **未解决（阻塞性）** | 对齐 Spring Cloud 到 2025.x；在此之前 `decentralization_discovery` 不可用（`FeignContext` 缺失），Feign 相关能力亦受影响 |
-| R6 | `code-generator` 硬编码 | **部分修复** | 数据库凭证已改为环境变量 / 系统属性注入（`GEN_DB_URL` / `GEN_DB_USER` / `GEN_DB_PASSWORD`）；脚本中**包名前缀与输出目录仍为硬编码**（默认 Windows 路径），建议一并参数化 |
+| R6 | `code-generator` 硬编码 | **已修复** | 数据库凭证、包名（`GEN_BASE_PACKAGE`）、输出目录（`GEN_OUTPUT_DIR`）、类名前缀开关（`GEN_ROUTE_AS_CLASS_PREFIX`）均改为环境变量 / 系统属性注入，缺失时快速失败；Windows 路径硬编码已移除 |
 | R7 | `@DataChangeLog` 在多个模块重复定义 | **已修复** | 单一来源：`travelsky_dev_repository` 的 `...datachangelog.annotation.DataChangeLog` |
-| R8 | `RepeatRequestAspect` 的 `@Bean` 注册被注释 | **未解决（设计取舍）** | `web` 模块刻意不注册该切面（去重粒度需业务确认），业务方自行声明 Bean 后 `@RepeatRequest` 生效；建议在 README 中显著标注 |
-| R9 | 数据权限仅 MyBatis 侧实现 | **未解决** | JPA 路线如需数据权限需业务侧自行实现（sample 中 JPA 版 `findAllWithDataPermission` 仅返回全量数据） |
+| R8 | `@RepeatRequest` 默认不生效 | **已缓解（文档 + 开关）** | `web` 模块默认不注册切面（去重粒度需业务确认），README 已显著标注；新增 `travelsky.web.repeat-request.enabled=true` 开关注册内置切面，业务方自声明 Bean 仍优先（`@ConditionalOnMissingBean`） |
+| R9 | 数据权限仅 MyBatis 侧实现 | **已修复** | 数据权限上下文/注解/切面上提到 `travelsky_dev_repository`；JPA 侧由 `SpecificationHelper#applyDataPermission` 将 `WHERE_ADDITIONAL` 注入器翻译为 `Predicate` 追加（`REPLACE_TABLE_NAME` 跳过、`statementIds` 不支持按语句过滤会告警、字段名列名/属性名双向映射）；注入器获取与 injectSql 解析抽为 `DataPermissionSupport`，两侧共用且未注册为 Bean 时有明确异常
 | R10 | JWT 黑名单为单机内存态 | **未解决** | 集群部署需替换为 Redis 等共享存储的黑名单实现 |
-| R11 | MyBatis 分页 SQL 注入改写依赖 JSqlParser，`@DynamicDatasource` 注解查找存在实现缺陷 | **未解决** | 动态数据源回退逻辑以 `Optional` 判空条件有误，深层回退实际不生效（详见 `travelsky_dev_dynamic_datasource/README.md`） |
+| R11 | MyBatis 分页 SQL 注入改写依赖 JSqlParser，`@DynamicDatasource` 注解查找存在实现缺陷 | **已修复** | 回退判空由 `Optional != null` 改为 `Optional.isPresent()`；Mapper 分支原取 `clazz.getSuperclass()`（接口恒为 `null`，该回退是死代码）改为遍历 `getInterfaces()`；`getSuperclass()` 判空；单测覆盖类继承回退、方法重写回退与 Mapper（父）接口回退 |
 
 > ⚠️ 历史评估报告 `project-evaluation-report.html` **已不在仓库中**（`e7d1dea` 移除），
 > 上述风险条目以本文档 §3 表格与各模块 README 的现状描述为准。
