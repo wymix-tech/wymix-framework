@@ -191,7 +191,7 @@ thread-pool:
 |-----------|------|
 | Swagger 文档 | `swagger.web.enabled: true` |
 | 监控指标 | 引入 `travelsky_dev_monitor` + `management.endpoints.web.exposure.include: health,metrics,prometheus` |
-| 分布式缓存 | 引入 `travelsky_dev_cache` + 配置 `spring.hazelcast.cache.*` |
+| 本地缓存 | 引入 `travelsky_dev_cache` + 引入 `caffeine` 依赖 + 配置 `caffeine.cache.<name>.*` |
 | 多数据源 | 引入 `travelsky_dev_dynamic_datasource` + `dynamic.datasource.enabled: true` |
 | 去中心化发现 | 引入 `travelsky_dev_decentralization_discovery` + `decentralization.discovery.enable: true` |
 | 异步/定时 | 引入 `travelsky_dev_core` 即自动生效（`async.enabled=false` 可关闭） |
@@ -232,8 +232,8 @@ A：这是预期的统一响应包装（`ControllerResponseAdvice`）。业务�
 **Q2：前端 Long id 变成字符串？**
 A：正常。`utils` 的 `NumberSerializer` 将 Long 转字符串避免 JS 精度丢失，Web 层写回时再转回 Long。
 
-**Q3：加了 `cache` 模块但没配 Hazelcast 也能启动？**
-A：Hazelcast 与 Caffeine 均为条件装配（依赖存在才注册）。若仅引入缓存 starter 而无对应依赖，不会强制建实例。
+**Q3：加了 `cache` 模块但没引入 Caffeine 依赖能启动吗？**
+A：能。`Caffeine` 为条件装配（`@ConditionalOnClass`），仅引入本模块而不引入 `caffeine` 依赖时不会注册任何缓存 Bean。本模块只提供 Caffeine 本地缓存，不含分布式缓存装配。
 
 **Q4：Spring Cloud 版本报警告？**
 A：框架使用 Spring Cloud 3.1.3，与 Spring Boot 3.5.8 存在版本落差，建议对齐到匹配的 Spring Cloud 版本（已知风险 R5）。

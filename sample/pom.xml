@@ -85,7 +85,7 @@
             <groupId>com.travelsky.base</groupId>
             <artifactId>travelsky_dev_cache</artifactId>
         </dependency>
-        <!-- cache 模块把 Caffeine / Hazelcast 都声明为 optional，此处显式选定 Caffeine -->
+        <!-- cache 模块把 Caffeine 声明为 optional，此处显式引入 -->
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>

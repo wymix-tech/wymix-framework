@@ -3,7 +3,7 @@
 cache:
   enabled: true
 
-# Caffeine 缓存规格（cache 模块将 hazelcast/caffeine 声明为 optional，sample 选用 caffeine）
+# Caffeine 缓存规格（cache 模块将 caffeine 声明为 optional，需业务侧显式引入）
 # 未在此声明的缓存名会由 SimpleCacheManager#getMissingCache 兜底创建
 caffeine:
   cache:

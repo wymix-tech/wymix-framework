@@ -1,10 +1,21 @@
 # travelsky_dev_cache 缓存模块
 
-> 多级缓存：Hazelcast 分布式缓存 + Caffeine 本地缓存，按命名空间配置过期策略。
+> Caffeine 本地缓存：引入依赖即获得配置化的进程内缓存能力。
 
 ## 模块说明
 
-`travelsky_dev_cache` 在 Spring Cache 抽象之上封装多级缓存能力。提供 Hazelcast 分布式缓存（支持单例/集群/客户端三种部署模式）与 Caffeine 本地缓存（条件装配，依赖存在时自动启用）。通过 `@ConditionalOnClass` 实现真正的按需加载；可通过 `cache.enabled=false`（任意非 `true` 值均可）关闭整个模块的自动装配，两个内嵌子配置将一并失效，默认 `matchIfMissing = true` 即开启。
+`travelsky_dev_cache` 的职责是**为开发人员引入 Caffeine 本地缓存并托管其配置装配**：
+
+- 基于 Spring Cache 抽象，业务侧直接使用 `@Cacheable` / `@CachePut` / `@CacheEvict`；
+- 通过 `@EnableCaching` 开启缓存，并提供统一的默认 `KeyGenerator`；
+- 缓存规格集中在 `caffeine.cache.<name>.*` 声明，未声明的缓存名按默认规格懒建。
+
+本模块**不提供分布式缓存，也不做多级/组合缓存**：需要分布式缓存（如 Hazelcast/Redis）时，
+请由业务工程自行引入实现并在业务侧声明 `CacheManager`——主次顺序、写入策略、回源语义
+属于业务决策，不由框架预设，否则必然出现「配了就崩」或「读到的值与预期不符」这类隐式行为。
+
+可通过 `cache.enabled=false`（任意非 `true` 值均可）关闭整个模块的自动装配，默认
+`matchIfMissing = true` 即开启。
 
 ## 依赖引入
 
@@ -16,31 +27,16 @@
 </dependency>
 ```
 
-> Hazelcast 与 Caffeine 在本模块中为 `optional` 依赖，不会随本模块传递引入。需在业务工程中自行引入 `hazelcast-spring`（分布式缓存）或 `caffeine`（本地缓存）依赖，对应缓存能力才会生效。
->
+> `caffeine` 在本模块中为 `optional` 依赖，不会随本模块传递引入，需业务工程自行引入，缓存能力才会生效。
 > 本模块继承父 pom：`travelsky_dev_parent3:3.0.0-SNAPSHOT`，Java 17 / Spring Boot 3.5.8。
 
 ## 配置项
 
-Hazelcast 前缀：`spring.hazelcast.cache`
+前缀：`caffeine`
 
 | 配置项 | 说明 | 默认值 |
 |--------|------|--------|
-| `spring.hazelcast.cache.instanceName` | 实例名 | — |
-| `spring.hazelcast.cache.mode` | 部署模式：`SINGLETON`/`CLUSTER`/`CLIENT` | `SINGLETON` |
-| `spring.hazelcast.cache.tcpIpEnabled` | 是否使用 TCP-IP 发现，`buildConfig()` 直接读取该字段 | `true` |
-| `spring.hazelcast.cache.publicAddress` | 对外地址 | `127.0.0.1:5701` |
-| `spring.hazelcast.cache.members` | 集群成员列表 | `127.0.0.1` |
-| `spring.hazelcast.cache.namespace.<ns>.timeToLiveInSeconds` | 命名空间 TTL | 86400 |
-| `spring.hazelcast.cache.namespace.<ns>.evictionPolicy` | 淘汰策略（LRU 等，按 id） | LRU |
-| `spring.hazelcast.cache.namespace.<ns>.maxSizePolicy` | 容量策略（PER_NODE 等） | PER_NODE |
-| `spring.hazelcast.cache.namespace.<ns>.size` | 最大条目数 | 10000 |
-| `spring.hazelcast.cache.namespace.<ns>.keyTimeToLiveInSeconds` | key 级 TTL | 86400 |
-
-Caffeine 前缀：`caffeine`
-
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
+| `caffeine.asyncCacheMode` | 是否启用 Caffeine 异步缓存模式（`AsyncCache`）。`retrieve()` / `retrieve(key, Supplier)` 仅在开启时可用；关闭后这两个方法会抛 `IllegalStateException: No Caffeine AsyncCache available`（普通读写不受影响） | `true` |
 | `caffeine.cache.<name>.maximumSize` | 最大条目数（-1 表示不限制） | -1 |
 | `caffeine.cache.<name>.maximumWeight` | 最大权重（-1 表示不限制；**与 `maximumSize` 互斥，同时配置启动报错**；> 0 时必须同时配置 `weigher`） | -1 |
 | `caffeine.cache.<name>.weigher` | 权重函数全限定类名（实现 Caffeine `Weigher`，需 public 无参构造；仅允许 `com.travelsky.*` 或 `com.github.benmanes.*` 包内类，其余包启动报可读错误），`maximumWeight > 0` 时必填 | — |
@@ -50,45 +46,70 @@ Caffeine 前缀：`caffeine`
 | `caffeine.cache.<name>.policy` | `AFTER_WRITE` / `AFTER_ACCESS` | `AFTER_WRITE` |
 | `caffeine.cache.<name>.refreshAfterWriterInSec` | **已不支持**：刷新需 `LoadingCache` + `CacheLoader` 回源实现，本模块未提供；配置 > 0 时启动报可读错误 | -1 |
 
+配置项说明补充：
+
+- `caffeine.asyncCacheMode`（默认 `true`）。开启时缓存以 Caffeine `AsyncCache` 形态构建，
+  普通读写行为不变，额外获得 `Cache#retrieve` 能力（Spring 6.1 的响应式/异步缓存路径依赖它）。
+  代价是该模式下不能设置 `CacheLoader`（Caffeine 的 `AsyncCacheLoader` 与 `CacheLoader` 互斥），
+  因此本模块不支持 `refreshAfterWriterInSec`。
+- `maximumSize` 与 `maximumWeight` 互斥，两者同时 `> 0` 时启动即抛可读的 `IllegalStateException`，
+  不会落到 Caffeine 内部异常；`maximumWeight` 单独使用时必须提供 `weigher`。
+- `weigher` 类名来自配置文件，仅允许 `com.travelsky.*` / `com.github.benmanes.*` 前缀，
+  避免配置被污染时加载并实例化 classpath 上的任意类。
+
 ## 集成类（自动装配）
 
 | 类 | 说明 |
 |----|------|
-| `CacheManagerConfiguration` | 自动装配入口，内嵌两个条件装配子配置： |
-| ├─ `HazelcastCacheConfiguration` | `@ConditionalOnClass(HazelcastInstance)` 时构建分布式 `CacheManager`（未配置 `default` 命名空间时自动补充 `<app>:default`，TTL 86400s/LRU；自动补充的容量为 `EvictionConfig.DEFAULT_MAX_ENTRY_COUNT * 999 = 9990000`（同时固定为 LRU / PER_NODE），未写入任何命名空间配置项；注意 `CustomHazelcastCacheManager` 对未声明命名空间的 readTimeout 另为硬编码 `3600`s，与该 TTL 无关） |
-| └─ `CaffeineCacheConfiguration` | `@ConditionalOnClass(Caffeine)` 时构建本地 `CacheManager` |
-| `CustomHazelcastCacheManager` | 自定义 Hazelcast CacheManager，`appPrefix` 由装配方构造器注入（`spring.application.name`，默认 `default`），缓存 key 自动拼接 `<APP>:CACHE:类:方法:参数` |
+| `CacheManagerConfiguration` | 自动装配入口：`@ConditionalOnClass(Caffeine)` + `@ConditionalOnProperty(cache.enabled)`，注册 `cacheManager` 与默认 `keyGenerator` |
+| `CacheManagerConfiguration.SpecCacheManager` | 包装 `CaffeineCacheManager`：按 `caffeine.cache.<name>` 应用逐缓存规格，并对缓存名做归一化 |
+| `CacheManagerConfiguration.CacheCachingConfigurer` | 将默认 `keyGenerator` 接入 Spring Cache 切面（见下） |
+| `CaffeineCacheProperties` | `caffeine.*` 配置绑定 |
+| `CacheNameUtils` | 缓存名归一化工具（见下） |
 
-> 缓存命名空间为 `<app>:<cacheName>` 格式；`appName` 单一来源：`CacheManagerConfiguration` 读取 `spring.application.name`（缺失时默认 `default`），并在装配 `CustomHazelcastCacheManager` 时通过构造器显式传入，未配置应用名时命名空间前缀回退为 `default` 而非 `null`。未在 `spring.hazelcast.cache.namespace` 中声明的名称统一回退到 `default` 命名空间。**两级命名空间说明**：组合缓存下两级 key 并不对齐——Hazelcast 侧为 `<app>:<name>`，Caffeine 侧为原始名（当前为有意设计：Hazelcast 命名空间用于多应用共享集群隔离，Caffeine 为应用内本地缓存无需前缀）；`CompositeCacheManager.getCacheNames()` 聚合的是两级底层命名（Hazelcast 侧含 `<app>:` 前缀）。KeyGenerator 由 `CacheManagerConfiguration` 提供：`<APP大写>:CACHE:<类名>:<方法名>:<参数JSON>`，参数为 null 时拼接 `null`，其余经 JSON 序列化。
+装配条件：`cache.enabled` 非 `false`（默认开启）、classpath 存在 Caffeine、业务侧未声明
+名为 `cacheManager` 的 Bean。
+
+缓存名归一化：Spring 的 `CacheManager#getCache(String)` 对名称**不做任何规范化**。本模块按
+「小写 + 去掉 `-` / `_` / `.`」建立「请求名 → 声明名」别名，因此
+`@Cacheable(cacheNames = "SampleCache")`、`sample-cache`、`sample_cache` 会命中同一缓存实例，
+并以 `caffeine.cache.sample-cache.*` 中声明的规格生效。未在 `caffeine.cache` 中声明的缓存名
+首次请求时按默认规格懒建，以首次请求名作为实际缓存名。
+
+KeyGenerator 由 `CacheManagerConfiguration` 提供：`<APP大写>:CACHE:<类名>:<方法名>:<参数JSON>`，
+参数为 `null` 时拼接 `null`，其余经 JSON 序列化；`<APP>` 取 `spring.application.name`，
+缺失时回退为 `default`（单一来源常量 `CacheManagerConfiguration.DEFAULT_APP_NAME`）。
 
 ## 继承类 / 扩展点
 
 | 扩展点 | 说明 |
 |--------|------|
 | 标准 Spring Cache 注解 | `@Cacheable` / `@CachePut` / `@CacheEvict` 直接使用 |
-| 自定义 KeyGenerator | 直接声明名为 `keyGenerator` 的 Bean 即可覆盖默认实现（默认实现带 `@ConditionalOnMissingBean(KeyGenerator.class)` 保护）。若要自定义整个 `CachingConfigurer`：模块固定注册内嵌 `CacheCachingConfigurer`（见下），与其为**二选一**关系——业务侧须先整体关闭模块自动装配（`cache.enabled=false`）再声明自己的 `CachingConfigurer`，否则容器内出现 2 个实现，启动报 `2 implementations of CachingConfigurer were found` |
-| 自定义 CacheManager | 路径一：`cache.enabled=false` 关闭模块自动装配后完全自管；路径二：声明名为 `cacheManager` 的 Bean 并加 `@Primary`（组合缓存带 `@ConditionalOnMissingBean(name = "cacheManager")` 保护，业务 Bean 优先；`@Primary` 用于让 `@EnableCaching` 切面解析唯一主 CacheManager）。注意：仅加 `@Primary` + **其他**自定义 Bean 名不可行，会与自动装配的组合 `cacheManager` 形成双 `@Primary`，启动报 `more than one 'primary' bean found` |
-| 依赖引入即生效 | 只加 hazelcast 依赖 → 分布式缓存（`hazelcastCacheManager`）；只加 caffeine 依赖 → 本地缓存（`caffeineCacheManager`）；**两者同时引入可共存**：自动装配组合 `CacheManager`（Bean 名 `cacheManager`，`@Primary`），主 = Hazelcast 分布式、次 = Caffeine 本地，读按主→次，写双写（本地写失败不影响分布式写，仅 warn 日志留痕）；**读路径双向回填**：主命中回填本地、本地命中回填主缓存、`get(key, valueLoader)` 回源成功后回填本地——保证主/次任一级因 TTL 或容量淘汰后，下次读取即重建另一级，不出现「本地残留旧值被一直读取」或「本地缓存只在首个过期窗口内有效」的问题；`evict()`/`clear()` 与写路径一致做异常隔离（本地失败仅 warn 留痕，主级驱逐/清空不受影响，短暂不一致由读路径回填机制收敛）；`getCacheNames()` 只聚合两级底层 CacheManager 声明的命名（Hazelcast 侧命名空间为 `<app>:<name>`），不含运行期懒加载产生的缓存名 |
+| 自定义 KeyGenerator | 直接声明名为 `keyGenerator` 的 Bean 即可覆盖默认实现（默认实现带 `@ConditionalOnMissingBean(KeyGenerator.class)` 保护），模块的 `CacheCachingConfigurer` 会自动引用它 |
+| 自定义 CacheManager | 路径一：声明**名为 `cacheManager`** 的 Bean（模块的 `cacheManager` 带 `@ConditionalOnMissingBean(name = "cacheManager")` 保护，业务 Bean 优先）；路径二：`cache.enabled=false` 关闭模块自动装配后完全自管。注意：业务 Bean 若用**其他名称**，模块的 `cacheManager` 仍会注册，两者共存需业务侧自行用 `@Primary` + 自定义 `CachingConfigurer` 决定解析结果 |
+| 自定义 `CachingConfigurer` | 模块固定注册内嵌 `CacheCachingConfigurer`，与业务侧实现是**二选一**关系：业务侧须先整体关闭模块自动装配（`cache.enabled=false`）再声明自己的 `CachingConfigurer`，否则容器内出现 2 个实现，启动报 `2 implementations of CachingConfigurer were found` |
+| 业务自行引入分布式缓存 | 本模块不再提供分布式缓存装配。业务侧引入 Hazelcast/Redis 等实现并声明自己的 `CacheManager` + `CachingConfigurer`（或组合它们）即可，本模块不参与 |
 
-> 默认 `keyGenerator` Bean 通过内嵌 `CacheCachingConfigurer`（`implements CachingConfigurer`，**无条件注册**）接入 Spring Cache 切面——切面只从 `CachingConfigurer` 获取 keyGenerator，不会按名查找容器中的 `keyGenerator` Bean。该内嵌配置同时覆写了 `cacheManager()`（经 `ObjectProvider` 返回模块装配的组合/单级 CacheManager）与 `cacheResolver()`（返回 null 走 Spring 默认），切面直接从 `CachingConfigurer` 解析 CacheManager，不依赖 `@Primary` 兜底。Spring 启动期收集全部 `CachingConfigurer`，超过 1 个即失败，且 `@ConditionalOnMissingBean` 对独立自动装配的业务配置并不可靠（条件评估时对方尚未注册），因此该内嵌配置不承诺「自动让位」：业务侧如需自定义 `CachingConfigurer`，必须先整体关闭模块自动装配（`cache.enabled=false`）。同时通过 `@EnableCaching(order = Ordered.LOWEST_PRECEDENCE - 1)` 控制切面优先级。Hazelcast 实例由 `@Bean(destroyMethod = "shutdown")` + `@ConditionalOnMissingBean(HazelcastInstance.class)` 声明（业务侧可自定义 `HazelcastInstance` Bean，不会同名冲突），应用关闭时自动 `shutdown()`。
+> 默认 `keyGenerator` 通过内嵌 `CacheCachingConfigurer`（`implements CachingConfigurer`，
+> **无条件注册**）接入切面——切面只从 `CachingConfigurer` 获取 keyGenerator，不会按名查找
+> 容器中的 `keyGenerator` Bean。`@ConditionalOnMissingBean` 在此处不可靠（业务侧实现若来自
+> 另一批独立配置，条件评估时对方可能尚未注册），故不承诺「自动让位」，而是明确二选一。
+> 该内嵌配置的 `cacheManager()` / `cacheResolver()` 均返回 `null`，不接管解析，由 Spring 从容器
+> 按类型解析；同时通过 `@EnableCaching(order = Ordered.LOWEST_PRECEDENCE - 1)` 控制切面优先级。
 
 ## 使用示例
 
 ```yaml
 # application.yml
-spring:
-  hazelcast:
-    cache:
-      mode: CLUSTER
-      members:
-        - 10.0.0.1
-        - 10.0.0.2
-      namespace:
-        user:
-          timeToLiveInSeconds: 3600
-          size: 5000
+cache:
+  enabled: true
 caffeine:
+  asyncCacheMode: true
   cache:
+    user:
+      maximumSize: 5000
+      expireInSec: 3600
+      policy: AFTER_WRITE
     dict:
       maximumSize: 1000
       expireInSec: 300
@@ -98,3 +119,18 @@ caffeine:
 @Cacheable(cacheNames = "user", key = "#id")
 public User getUser(Long id) { ... }
 ```
+
+> `cacheNames = "user"` 与 `caffeine.cache.user.*` 名称一致（归一化后大小写与分隔符不敏感）。
+> 未在 yaml 中声明规格的缓存名同样可用，按默认规格（`expireInSec=600`、不限容量）懒建。
+
+## 降级说明（历史变更）
+
+本模块此前同时装配 Hazelcast 分布式缓存与 Caffeine 本地缓存，并试图在两者同时存在时提供
+「组合缓存」语义。该组合语义涉及主次顺序、写入策略、命名空间对齐、异常隔离等大量隐式约定，
+评审中反复出现读后不一致、本地缓存实际失效、`retrieve()` 形态不匹配等问题，已整体移除：
+
+- 删除 `HazelcastCacheProperties`、`CustomHazelcastCacheManager`、`CompositeCacheManager`；
+- 删除 `hazelcast-spring` 依赖与 `spring.hazelcast.cache.*` 全部配置项；
+- 模块收敛为「引入 Caffeine 本地缓存 + 托管其配置」这一件事。
+
+需要分布式缓存或多个 CacheManager 的组合语义时，请由业务侧显式装配。
