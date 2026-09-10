@@ -59,11 +59,11 @@
 
 | 注解 | 说明 |
 |------|------|
-| `@DynamicDatasource("slave")` | 类/方法级注解（`@Target({TYPE, METHOD})`、`@Inherited`），属性 `value`（默认 `""`）；标注后方法执行期间切换到指定数据源，目标数据源不存在时抛 `BusinessException("datasource.not.exist")`；查找顺序为：方法声明接口 → 实现类方法 → 实现类 → 实现类接口 → 桥接方法及其声明类（兼容 MyBatis / MyBatis-Plus Mapper 代理）；更深层回退实际不生效，见下方说明 |
+| `@DynamicDatasource("slave")` | 类/方法级注解（`@Target({TYPE, METHOD})`、`@Inherited`），属性 `value`（默认 `""`）；标注后方法执行期间切换到指定数据源，目标数据源不存在时抛 `BusinessException("datasource.not.exist")`；查找顺序为：方法声明接口 → 实现类方法 → 实现类 → 实现类接口 → 桥接方法及其声明类（兼容 MyBatis / MyBatis-Plus Mapper 代理）→ 父类逐级向上 → Mapper 父接口 |
 
 > ⚠️ 注解方式仅在 AOP 代理方法调用时生效，同类内部方法直接调用不触发切换。每次切面执行（`invoke`）结束后在 `finally` 中调用 `DynamicDataSourceContextHolder.clear()` 清理 `ThreadLocal`。
 
-> ⚠️ 上述查找顺序之后的「父类逐级向上」「MyBatis 父接口回退」属代码意图，当前实现下实际不生效：回退逻辑以 `datasourceAttr != null` 判断命中，而 `findDataSourceAttribute` 始终返回非 null 的 `Optional`（未命中为 `Optional.empty()`），循环首轮即返回空。注解仅按前述顺序查找，未命中时回退为空值并可能抛 `BusinessException("datasource.not.exist")`。该判空条件属源码实现缺陷，超出本文档修订范围。
+> ℹ️ 历史缺陷已修复：回退逻辑曾以 `datasourceAttr != null` 判断命中（`Optional` 恒非 null），导致「父类逐级向上」「MyBatis 父接口回退」实际不生效；现改为 `Optional.isPresent()`，深层回退正常工作并有单测覆盖（`DynamicDataSourceAnnotationInterceptorTest`）。
 
 ## 扩展点
 

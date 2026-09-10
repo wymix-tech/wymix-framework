@@ -30,7 +30,8 @@ public class DataMigrationEventListener implements ApplicationListener<DataChang
      * <p>Experimental: not yet implemented, see README of travelsky_dev_data_migration.
      */
     private void dataMigration(DataChangeLogDTO dataChangeLogDTO) {
-        log.debug("DataMigration event received but replay is not implemented yet, className={}",
+        // 实验性能力：迁移回放未实现。用 warn 级别提示（而非 debug），避免生产环境误以为迁移已生效
+        log.warn("DataMigration replay is not implemented yet (experimental module), className={}",
                 dataChangeLogDTO.getClassName());
     }
 }
