@@ -34,6 +34,7 @@ import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.cache.caffeine.CaffeineCache;
 import org.springframework.cache.caffeine.CaffeineCacheManager;
 import org.springframework.cache.annotation.CachingConfigurer;
+import org.springframework.cache.interceptor.CacheResolver;
 import org.springframework.cache.interceptor.KeyGenerator;
 import org.springframework.cache.support.SimpleCacheManager;
 import org.springframework.context.annotation.Bean;
@@ -275,6 +276,27 @@ public class CacheManagerConfiguration {
         @Autowired
         @Qualifier("keyGenerator")
         private KeyGenerator keyGenerator;
+
+        /**
+         * 主 CacheManager：任意一个可用的模块 CacheManager（组合缓存或单级退化）。
+         * 覆写此方法让切面直接从本配置解析 CacheManager，不再依赖 {@code @Primary} 兜底。
+         */
+        @Autowired
+        private ObjectProvider<CacheManager> cacheManagerProvider;
+
+        @Override
+        public CacheManager cacheManager() {
+            // 单级或组合缓存都由此返回；模块整体未装配时返回 null，
+            // 走 Spring 默认逻辑（按类型/名称解析容器的 CacheManager Bean）
+            return cacheManagerProvider.getIfAvailable();
+        }
+
+        @Override
+        public CacheResolver cacheResolver() {
+            // 未提供自定义 CacheResolver：返回 null，Spring 基于 cacheManager()
+            // 构建 SimpleCacheResolver，与框架默认行为一致
+            return null;
+        }
 
         @Override
         public KeyGenerator keyGenerator() {

@@ -67,16 +67,65 @@ class CompositeCacheManagerTest {
     }
 
     @Test
-    void readThroughPrimaryMissShouldFallbackToLocal() {
+    void readThroughPrimaryMissShouldFallbackToLocalAndBackfillPrimary() {
         CountingCache primary = new CountingCache("c");
         CountingCache local = new CountingCache("c");
         local.put("k", "local-v");
         CompositeCacheManager manager = new CompositeCacheManager(managerOf(primary), managerOf(local));
         Cache cache = manager.getCache("c");
 
-        // 主 miss、次 hit：返回次的值，且不回写主缓存（读路径不产生副作用）
+        // 主 miss、次 hit：返回次的值，且回填主缓存——否则主缓存 TTL/淘汰后
+        // 本地残留旧值会被一直读到且永不刷新（第四轮评审严重项 1：写后读不一致）
         assertThat(cache.get("k").get()).isEqualTo("local-v");
-        assertThat(primary.get("k")).isNull();
+        assertThat(primary.get("k").get()).isEqualTo("local-v");
+    }
+
+    @Test
+    void primaryHitShouldBackfillLocalAfterLocalExpiry() {
+        // 第四轮评审严重项 2 对偶场景：主命中时本地也必须被回填，
+        // 保证本地过期/被淘汰后重新受益于本地读加速
+        CountingCache primary = new CountingCache("c");
+        CountingCache local = new CountingCache("c");
+        primary.put("k", "primary-v");
+        CompositeCacheManager manager = new CompositeCacheManager(managerOf(primary), managerOf(local));
+        Cache cache = manager.getCache("c");
+
+        assertThat(cache.get("k").get()).isEqualTo("primary-v");
+        assertThat(local.get("k").get()).isEqualTo("primary-v");
+    }
+
+    @Test
+    void primaryHitShouldBackfillLocalAfterLocalEviction() {
+        // 模拟本地缓存条目被淘汰后再次读取：主命中 → 本地重建
+        CountingCache primary = new CountingCache("c");
+        CountingCache local = new CountingCache("c");
+        CompositeCacheManager manager = new CompositeCacheManager(managerOf(primary), managerOf(local));
+        Cache cache = manager.getCache("c");
+
+        cache.put("k", "v");
+        local.evict("k");
+        assertThat(local.get("k")).isNull();
+
+        assertThat(cache.get("k").get()).isEqualTo("v");
+        assertThat(local.get("k").get()).isEqualTo("v");
+    }
+
+    @Test
+    void primaryBackfillFailureShouldNotBreakRead() {
+        // 主缓存写入失败（如集群抖动）时，本地命中路径仍应正常返回
+        Cache brokenPut = new ConcurrentMapCache("c", true) {
+            @Override
+            public void put(Object key, Object value) {
+                throw new IllegalStateException("primary put down");
+            }
+        };
+        CountingCache local = new CountingCache("c");
+        local.put("k", "local-v");
+        CompositeCacheManager manager = new CompositeCacheManager(managerOf(brokenPut), managerOf(local));
+        Cache cache = manager.getCache("c");
+
+        // 本地命中、主回填失败：读取仍成功，异常被吞掉仅留 warn
+        assertThat(cache.get("k").get()).isEqualTo("local-v");
     }
 
     @Test
@@ -129,6 +178,34 @@ class CompositeCacheManagerTest {
         cache.clear();
         assertThat(primary.get("k2")).isNull();
         assertThat(local.get("k2")).isNull();
+    }
+
+    @Test
+    void localEvictFailureShouldNotBreakBusinessRequest() {
+        // 第四轮评审警告项 3：evict/clear 与 put 策略一致，本地失败仅留痕，
+        // 不把「缓存失效」变成业务请求失败
+        CountingCache primary = new CountingCache("c");
+        Cache brokenLocal = new ConcurrentMapCache("c", true) {
+            @Override
+            public void evict(Object key) {
+                throw new IllegalStateException("local evict down");
+            }
+
+            @Override
+            public void clear() {
+                throw new IllegalStateException("local clear down");
+            }
+        };
+        CompositeCacheManager manager = new CompositeCacheManager(managerOf(primary), managerOf(brokenLocal));
+        Cache cache = manager.getCache("c");
+        cache.put("k", "v");
+
+        org.assertj.core.api.Assertions.assertThatCode(() -> cache.evict("k"))
+                .doesNotThrowAnyException();
+        org.assertj.core.api.Assertions.assertThatCode(() -> cache.clear())
+                .doesNotThrowAnyException();
+        // 主缓存驱逐/清空不受影响
+        assertThat(primary.get("k")).isNull();
     }
 
     @Test
@@ -188,6 +265,29 @@ class CompositeCacheManagerTest {
     }
 
     @Test
+    void retrieveDegradeToLocalHitShouldBackfillPrimary() {
+        // 主缓存不支持 retrieve 且 miss、本地命中：结果必须回填主缓存（读路径一致性）
+        Cache unsupportedPrimary = new ConcurrentMapCache("c", true) {
+            @Override
+            public <T> CompletableFuture<T> retrieve(Object key,
+                    java.util.function.Supplier<CompletableFuture<T>> valueLoader) {
+                throw new UnsupportedOperationException("not supported");
+            }
+        };
+        CountingCache local = new CountingCache("c");
+        local.put("k", "local-v");
+        CompositeCacheManager manager = new CompositeCacheManager(managerOf(unsupportedPrimary), managerOf(local));
+        Cache cache = manager.getCache("c");
+
+        CompletableFuture<Object> future = cache.retrieve("k", () -> {
+            throw new AssertionError("valueSupplier must not be invoked when local hits");
+        });
+        assertThat(future.join()).isEqualTo("local-v");
+        // 主缓存（底层）已被回填
+        assertThat(unsupportedPrimary.get("k").get()).isEqualTo("local-v");
+    }
+
+    @Test
     void retrieveShouldThrowReadableErrorWhenBothUnsupported() {
         Cache unsupportedPrimary = new ConcurrentMapCache("c", true) {
             @Override
@@ -220,10 +320,11 @@ class CompositeCacheManagerTest {
 
         // 主命中
         assertThat(cache.retrieve("k").join()).isEqualTo("v");
-        // 主 miss、次命中
+        // 主 miss、次命中：返回本地的值并回填主缓存（读路径一致性）
         primary.evict("k");
         assertThat(cache.retrieve("k").join()).isEqualTo("v");
-        // 双 miss
+        // 双 miss（本地 evict 后主已被上一步回填，需同时清空两级）
+        primary.evict("k");
         local.evict("k");
         assertThat(cache.retrieve("k")).isNull();
     }

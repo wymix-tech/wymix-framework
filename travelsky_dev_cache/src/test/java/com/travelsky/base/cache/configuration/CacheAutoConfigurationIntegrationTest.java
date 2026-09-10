@@ -188,6 +188,23 @@ class CacheAutoConfigurationIntegrationTest {
     }
 
     @Test
+    void cachingConfigurerShouldProvideCacheManagerWithoutPrimaryReliance() {
+        // 第四轮评审警告项 5：CacheCachingConfigurer 覆写 cacheManager()，
+        // 切面直接从 CachingConfigurer 解析 CacheManager，不再依赖 @Primary 兜底。
+        // 通过 CachingConfigurer 接口取到的 CacheManager 必须是模块装配的那个
+        runner.run(context -> {
+            assertThat(context).hasNotFailed();
+            org.springframework.cache.annotation.CachingConfigurer configurer =
+                    context.getBean(org.springframework.cache.annotation.CachingConfigurer.class);
+            assertThat(configurer).isInstanceOf(
+                    CacheManagerConfiguration.CacheCachingConfigurer.class);
+            CacheManager fromConfigurer = configurer.cacheManager();
+            assertThat(fromConfigurer).isNotNull();
+            assertThat(fromConfigurer).isSameAs(context.getBean(CacheManager.class));
+        });
+    }
+
+    @Test
     void businessCacheManagerAsNamedCacheManagerShouldNotConflict() {
         // README 路径二（修正版）：业务声明名为 cacheManager 的 Bean，组合缓存的
         // @ConditionalOnMissingBean(name="cacheManager") 让位，无 @Primary 冲突

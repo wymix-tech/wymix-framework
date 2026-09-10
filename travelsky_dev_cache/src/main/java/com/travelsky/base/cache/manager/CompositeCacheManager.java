@@ -128,18 +128,61 @@ public class CompositeCacheManager implements CacheManager {
         public ValueWrapper get(Object key) {
             ValueWrapper wrapper = primaryCache != null ? primaryCache.get(key) : null;
             if (wrapper != null) {
+                // 主命中时同步回填本地，本地过期/被淘汰后可重新受益于本地读加速
+                backfillLocal(key, wrapper.get());
                 return wrapper;
             }
-            return localCache != null ? localCache.get(key) : null;
+            ValueWrapper localWrapper = localCache != null ? localCache.get(key) : null;
+            if (localWrapper != null) {
+                // 本地命中但主 miss（主缓存 TTL/淘汰后）：回填主缓存，
+                // 否则本地残留旧值会被一直读到且永不刷新（写后读不一致）
+                backfillPrimary(key, localWrapper.get());
+                return localWrapper;
+            }
+            return null;
+        }
+
+        /**
+         * 回填主缓存（失败仅 warn 留痕，不影响读路径返回）。
+         */
+        private void backfillPrimary(Object key, Object value) {
+            if (value == null || primaryCache == null) {
+                return;
+            }
+            try {
+                primaryCache.put(key, value);
+            } catch (RuntimeException ex) {
+                log.warn("主缓存回填失败，不影响本次读取，cache={}", getName(), ex);
+            }
+        }
+
+        /**
+         * 回填本地缓存（失败仅 warn 留痕，不影响读路径返回）。
+         */
+        private void backfillLocal(Object key, Object value) {
+            if (value == null || localCache == null) {
+                return;
+            }
+            try {
+                localCache.put(key, value);
+            } catch (RuntimeException ex) {
+                log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
+            }
         }
 
         @Override
         public <T> T get(Object key, Class<T> type) {
             T value = primaryCache != null ? primaryCache.get(key, type) : null;
             if (value != null) {
+                backfillLocal(key, value);
                 return value;
             }
-            return localCache != null ? localCache.get(key, type) : null;
+            T localValue = localCache != null ? localCache.get(key, type) : null;
+            if (localValue != null) {
+                backfillPrimary(key, localValue);
+                return localValue;
+            }
+            return null;
         }
 
         @Override
@@ -147,14 +190,10 @@ public class CompositeCacheManager implements CacheManager {
             if (primaryCache != null) {
                 T value = primaryCache.get(key, valueLoader);
                 if (value != null) {
-                    // 回源成功后同步回填本地缓存，保证「本地读加速」对回源路径同样成立
-                    if (localCache != null) {
-                        try {
-                            localCache.put(key, value);
-                        } catch (RuntimeException ex) {
-                            log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
-                        }
-                    }
+                    // 主命中（含主缓存回源路径）：无论值来自主缓存还是经 valueLoader 回源，
+                    // 都同步回填本地缓存。否则 Hazelcast 侧过期后本应能加速的本地缓存
+                    // 只在启动后首个 expireInSec 窗口内有效（读路径本地缓存恒失效）
+                    backfillLocal(key, value);
                     return value;
                 }
                 return null;
@@ -184,13 +223,20 @@ public class CompositeCacheManager implements CacheManager {
             }
             if (future == null) {
                 if (localCache != null) {
-                    // 本地缓存（如 CaffeineCache）支持 retrieve 时直接委托
+                    // 本地缓存（如 CaffeineCache）支持 retrieve 时委托，
+                    // 结果非空时回填主缓存（与 get(Object) 的主 miss 本地命中语义一致）
                     try {
-                        return localCache.retrieve(key, valueSupplier);
+                        return localCache.retrieve(key, valueSupplier)
+                                .thenApply(value -> {
+                                    if (value != null) {
+                                        backfillPrimary(key, value);
+                                    }
+                                    return value;
+                                });
                     } catch (UnsupportedOperationException ex) {
                         // 本地也不支持：先回填本地（同 get(key, valueLoader) 语义），再抛可读异常
                         if (primaryFailure != null) {
-                            fillLocal(key, valueSupplier, primaryFailure);
+                            fillLocal(key, valueSupplier);
                         }
                         throw ex;
                     }
@@ -201,12 +247,8 @@ public class CompositeCacheManager implements CacheManager {
                 return null;
             }
             return future.thenApply(value -> {
-                if (value != null && localCache != null) {
-                    try {
-                        localCache.put(key, value);
-                    } catch (RuntimeException ex) {
-                        log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
-                    }
+                if (value != null) {
+                    backfillLocal(key, value);
                 }
                 return value;
             });
@@ -216,15 +258,18 @@ public class CompositeCacheManager implements CacheManager {
          * 两级均不支持 CompletableFuture 检索时的兜底：以阻塞方式回源并回填本地缓存，
          * 保证缓存链路仍能工作，随后将原始异常抛给调用方。
          */
-        private <T> void fillLocal(Object key, Supplier<CompletableFuture<T>> valueSupplier,
-                UnsupportedOperationException cause) {
+        private <T> void fillLocal(Object key, Supplier<CompletableFuture<T>> valueSupplier) {
             try {
                 T value = valueSupplier.get().get();
                 if (value != null) {
                     put(key, value);
                 }
-            } catch (java.util.concurrent.ExecutionException | InterruptedException ex) {
+            } catch (InterruptedException ex) {
+                // 仅响应中断时恢复中断标志，避免把正常回源失败也标记为中断（中断标志粘性
+                // 会污染后续所有阻塞操作）；ExecutionException 归入通用失败仅留痕
                 Thread.currentThread().interrupt();
+                log.warn("retrieve 降级回源被中断，cache={}", getName(), ex);
+            } catch (java.util.concurrent.ExecutionException ex) {
                 log.warn("retrieve 降级回源失败，cache={}", getName(), ex);
             } catch (RuntimeException ex) {
                 log.warn("retrieve 降级回源失败，cache={}", getName(), ex);
@@ -256,7 +301,13 @@ public class CompositeCacheManager implements CacheManager {
                     if (localFuture == null) {
                         return null;
                     }
-                    return localFuture.thenApply(this::unwrap);
+                    return localFuture.thenApply(value -> {
+                        Object actual = unwrap(value);
+                        if (actual != null) {
+                            backfillPrimary(key, actual);
+                        }
+                        return actual;
+                    });
                 }
                 if (primaryFailure != null) {
                     throw primaryFailure;
@@ -266,23 +317,23 @@ public class CompositeCacheManager implements CacheManager {
             return future.thenCompose(value -> {
                 Object actual = unwrap(value);
                 if (actual != null) {
-                    if (localCache != null) {
-                        try {
-                            localCache.put(key, actual);
-                        } catch (RuntimeException ex) {
-                            log.warn("本地缓存回填失败，不影响分布式缓存，cache={}", getName(), ex);
-                        }
-                    }
+                    backfillLocal(key, actual);
                     return CompletableFuture.completedFuture(actual);
                 }
-                // 主 miss：降级查本地
+                // 主 miss：降级查本地，本地命中回填主缓存（写后读一致性）
                 if (localCache != null) {
                     CompletableFuture<Object> localFuture =
                             (CompletableFuture<Object>) localCache.retrieve(key);
                     if (localFuture == null) {
                         return CompletableFuture.completedFuture(null);
                     }
-                    return localFuture.thenApply(this::unwrap);
+                    return localFuture.thenApply(localValue -> {
+                        Object localActual = unwrap(localValue);
+                        if (localActual != null) {
+                            backfillPrimary(key, localActual);
+                        }
+                        return localActual;
+                    });
                 }
                 return CompletableFuture.completedFuture(null);
             });
@@ -318,7 +369,14 @@ public class CompositeCacheManager implements CacheManager {
                 primaryCache.evict(key);
             }
             if (localCache != null) {
-                localCache.evict(key);
+                try {
+                    localCache.evict(key);
+                } catch (RuntimeException ex) {
+                    // 与 put 策略一致：本地失败不阻断业务，但留痕。
+                    // 注意两级短暂不一致（本地可能残留已被驱逐的旧值），
+                    // 会被读路径的互相回填机制收敛（主 miss 时以主为准重建本地）
+                    log.warn("本地缓存驱逐失败，cache={}", getName(), ex);
+                }
             }
         }
 
@@ -328,7 +386,11 @@ public class CompositeCacheManager implements CacheManager {
                 primaryCache.clear();
             }
             if (localCache != null) {
-                localCache.clear();
+                try {
+                    localCache.clear();
+                } catch (RuntimeException ex) {
+                    log.warn("本地缓存清空失败，cache={}", getName(), ex);
+                }
             }
         }
     }
