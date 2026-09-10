@@ -1,6 +1,6 @@
-# travelsky_dev 快速开发框架（APD）
+# travelsky_dev 快速开发框架
 
-> 航信（TravelSky）企业级 Java 快速开发框架 · 基于 Spring Boot 3.5.x + Java 17 · Maven 多模块架构
+企业级 Java 快速开发框架 · 基于 Spring Boot 3.5.x + Java 17 · Maven 多模块架构
 
 ---
 
@@ -11,7 +11,6 @@
 | [QUICK_START.md](./QUICK_START.md) | **快速上手指南**：环境、依赖引入、最小 CRUD 示例、配置、FAQ |
 | [FRAMEWORK_DESIGN.md](./FRAMEWORK_DESIGN.md) | **总框架设计文档**：分层架构、模块职责、关键设计决策（ADR）、技术栈、已知风险 |
 | [FILTER_USAGE_GUIDE.md](./FILTER_USAGE_GUIDE.md) | 查询 DSL 前端使用指南（含 AI 提示词模板） |
-| [project-evaluation-report.html](./project-evaluation-report.html) | 框架评估报告（功能清单 + 优缺点 + 改进建议） |
 
 ---
 
