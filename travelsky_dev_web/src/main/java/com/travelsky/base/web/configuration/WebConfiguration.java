@@ -5,11 +5,13 @@ import com.travelsky.base.utils.GlobalIdGenerator;
 import com.travelsky.base.utils.StringUtils;
 import com.travelsky.base.utils.json.NumberSerializer;
 import com.travelsky.base.web.advice.ControllerResponseAdvice;
+import com.travelsky.base.web.aop.RepeatRequestAspect;
 import com.travelsky.base.web.aop.SlowRequestAspect;
 import org.apache.logging.log4j.ThreadContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -112,10 +114,21 @@ public class WebConfiguration implements WebMvcConfigurer {
         return new SlowRequestAspect();
     }
 
-//    @Bean
-//    public RepeatRequestAspect repeatRequestAspect() {
-//        return new RepeatRequestAspect();
-//    }
+    /**
+     * {@code @RepeatRequest} 防重复提交切面。
+     *
+     * <p><b>默认不注册</b>（历史行为，去重粒度需业务确认）。两种启用方式：
+     * <ul>
+     *   <li>配置 {@code travelsky.web.repeat-request.enabled=true} 开启本默认实现；</li>
+     *   <li>或业务方自行声明 {@code RepeatRequestAspect} Bean（本声明 {@code @ConditionalOnMissingBean}，会自动让位）。</li>
+     * </ul>
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    @ConditionalOnProperty(prefix = "travelsky.web.repeat-request", name = "enabled", havingValue = "true")
+    public RepeatRequestAspect repeatRequestAspect() {
+        return new RepeatRequestAspect();
+    }
 
     @Bean
     public FilterRegistrationBean<OncePerRequestFilter> setLogTraceIdFilter() {

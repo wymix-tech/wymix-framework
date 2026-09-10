@@ -117,9 +117,14 @@ public abstract class AbstractBaseServiceImpl<T, ID, REPOSITORY extends BaseRepo
      *
      * <p>注意：不分页且不带条件，数据量大时请改用 {@link #findAll(DevQueryVO)}。
      */
+    /**
+     * 全量查询。通过空 Specification 执行，以便 {@code @DataPermission} 上下文
+     * （see {@link SpecificationHelper#applyDataPermission}）能像 MyBatis 侧插件一样追加过滤条件；
+     * 无权限上下文时行为与普通 {@code findAll()} 一致。
+     */
     @Override
     public List<T> findAll() {
-        return this.getRepository().findAll();
+        return this.getRepository().findAll((root, query, criteriaBuilder) -> SpecificationHelper.applyDataPermission(root, criteriaBuilder));
     }
 
     private ID findIdValueInEntity(T entity) {

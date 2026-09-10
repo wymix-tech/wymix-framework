@@ -16,6 +16,10 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  *     <li>{@link EntityScan}：显式声明实体所在包（示例包与主类同级，缺省也能扫到，此处显式声明以示用法）。</li>
  * </ul>
  * 数据变更日志同样由 jpa_repository 自动装配（{@code data-changelog.enabled}）。
+ *
+ * <p>数据权限注入器示例类位于 {@code com.swcares.sample.permission}，
+ * 由 {@code SampleUserService#findAllWithDataPermission} 上的 {@code @DataPermission} 直接引用类名，
+ * 无需 {@code @EnableDataPermission} 扫描（该注解为 MyBatis 侧注册插件使用）。
  */
 @Configuration
 @EnableJpaRepositories(basePackages = {"com.swcares.sample.dao"})

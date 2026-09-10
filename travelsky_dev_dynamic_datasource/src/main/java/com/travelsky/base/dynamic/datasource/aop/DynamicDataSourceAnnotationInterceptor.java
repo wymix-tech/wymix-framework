@@ -155,7 +155,7 @@ public class DynamicDataSourceAnnotationInterceptor implements MethodInterceptor
             Class<?> currentClass = targetClass;
             while (currentClass != Object.class) {
                 Optional<T> datasourceAttr = findDataSourceAttribute(currentClass, annotation);
-                if (datasourceAttr != null) {
+                if (datasourceAttr.isPresent()) {
                     return datasourceAttr;
                 }
                 currentClass = currentClass.getSuperclass();
@@ -166,11 +166,14 @@ public class DynamicDataSourceAnnotationInterceptor implements MethodInterceptor
             final Class<?> clazz = getMapperInterfaceClass(targetObject);
             if (clazz != null) {
                 Optional<T> datasourceAttr = findDataSourceAttribute(clazz, annotation);
-                if (datasourceAttr != null) {
+                if (datasourceAttr.isPresent()) {
                     return datasourceAttr;
                 }
                 // 尝试从其父接口获取
-                return findDataSourceAttribute(clazz.getSuperclass(), annotation);
+                Class<?> superclass = clazz.getSuperclass();
+                if (superclass != null) {
+                    return findDataSourceAttribute(superclass, annotation);
+                }
             }
         }
         return Optional.empty();

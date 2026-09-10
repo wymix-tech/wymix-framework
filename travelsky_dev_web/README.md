@@ -29,6 +29,7 @@
 | `swagger.description` | API 文档描述 | `Api Docs` |
 | `swagger.version` | API 文档版本号 | `1.0.0` |
 | `springdoc.packages-to-scan` | 默认分组的扫描包（逗号分隔，数组绑定）；未配置则不限定包 | 空 |
+| `travelsky.web.repeat-request.enabled` | 是否注册内置的 `RepeatRequestAspect`（`@RepeatRequest` 防重复提交切面）；也可不开启、由业务方自行声明 `RepeatRequestAspect` Bean | `false` |
 
 ## 集成类（自动装配）
 
@@ -61,7 +62,7 @@
 
 | 注解 | 说明 |
 |------|------|
-| `@RepeatRequest(expiredTimeInMills = 1000)` | 防重复提交（仅支持 Controller 方法；当前切面 Bean 注册被注释，需自行声明 `RepeatRequestAspect` Bean 启用） |
+| `@RepeatRequest(expiredTimeInMills = 1000)` | 防重复提交（仅支持 Controller 方法）。**默认不生效**，需配置 `travelsky.web.repeat-request.enabled=true` 或自行声明 `RepeatRequestAspect` Bean |
 
 ## 扩展点
 
