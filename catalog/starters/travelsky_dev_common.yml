@@ -1,0 +1,11 @@
+id: travelsky_dev_common
+category: tool
+maintainer: internal
+description: 统一返回体 / 分页查询模型 / 审计 VO / 安全上下文（跨层契约）
+required: true
+requires: [travelsky_dev_utils]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_common
+linkages: {}

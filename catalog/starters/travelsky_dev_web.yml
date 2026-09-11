@@ -1,0 +1,21 @@
+id: travelsky_dev_web
+category: web
+maintainer: internal
+description: Web 层能力（统一响应包装、TraceId、Long 精度、i18n、慢请求、Swagger）
+required: true
+requires: [travelsky_dev_core, travelsky_dev_security]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_web
+linkages:
+  config-package: "{basePackage}.config"
+  templates:
+    - source: "starters/travelsky_dev_web/OpenApiConfig.java.ftl"
+      target: "src/main/java/{packagePath}/config/OpenApiConfig.java"
+  abstract-classes:
+    - fqcn: "com.travelsky.base.web.api.impl.AbstractBaseController"
+      alias: abstractBaseController
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_web/application-web.yml"
+      merge-strategy: append

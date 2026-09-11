@@ -1,0 +1,23 @@
+id: travelsky_dev_mybatis_repository
+category: data
+maintainer: internal
+description: MyBatis-Plus 持久化实现（分页插件、数据权限、审计填充、查询 DSL）
+required: false
+requires: [travelsky_dev_repository]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_mybatis_repository
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity"
+      alias: abstractAuditEntity
+    - fqcn: "com.travelsky.base.repository.mybatis.api.BaseRepository"
+      alias: baseRepository
+    - fqcn: "com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl"
+      alias: abstractBaseServiceImpl
+    - fqcn: "com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector"
+      alias: permissionSqlInjector
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_mybatis_repository/application-mybatis-repository.yml"
+      merge-strategy: append

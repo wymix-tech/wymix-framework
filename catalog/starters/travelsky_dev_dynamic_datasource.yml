@@ -1,0 +1,14 @@
+id: travelsky_dev_dynamic_datasource
+category: data
+maintainer: internal
+description: 动态多数据源（环境准备期注入 + 注解/编程式路由，默认关闭）
+required: false
+requires: [travelsky_dev_repository]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_dynamic_datasource
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_dynamic_datasource/application-dynamic-datasource.yml"
+      merge-strategy: append

@@ -1,0 +1,15 @@
+# travelsky_dev_decentralization_discovery —— 去中心化服务发现（JmDNS/mDNS）
+# 属性来源：com.travelsky.base.discovery.properties.DecentralizedDiscoveryProperties
+# 注意：
+#   1. 默认关闭，需 decentralization.discovery.enable=true 才会装配
+#   2. jmdns 为 optional 依赖，需自行引入后 mDNS 注册/发现才生效
+#   3. mDNS 多播在容器/K8s/跨网段环境通常被禁用，仅适用于局域网
+decentralization:
+  discovery:
+    enable: true
+    # 服务域命名空间，拼为 _<namespace>._tcp.local.
+    namespace: %24{DISCOVERY_NAMESPACE:app}
+    # 服务名 -> 实例地址列表
+    service:
+      app:
+        - http://127.0.0.1:8080

@@ -1,0 +1,17 @@
+# travelsky_dev_security —— 认证与访问控制
+# 属性来源：com.travelsky.base.security.properties.CustomSecurityProperties（prefix = security）
+# 值为框架真实默认值；jwt 为框架必须的签发密钥，请通过环境变量注入
+security:
+  enabled: true
+  formLoginEnable: true
+  # loginPage: /login
+  loginProcessingUrl: /login
+  logoutUrl: /logout
+  # 放行 URL（逗号分隔）
+  # ignoreUrls: /actuator/**,/doc.html
+  jwt:
+    # true 时启动随机生成密钥（重启失效）；false 时读取 secret
+    randomSecret: false
+    secret: %24{SECURITY_JWT_SECRET:please-change-this-32-bytes-secret}
+    # 令牌过期时间（秒），0 表示不校验过期
+    expiredTime: %24{SECURITY_JWT_EXPIRED:86400}

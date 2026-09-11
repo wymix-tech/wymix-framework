@@ -1,0 +1,14 @@
+id: travelsky_dev_monitor
+category: middleware
+maintainer: internal
+description: 应用可观测性（Actuator + Micrometer/Prometheus，自动放行 /actuator/**）
+required: false
+requires: [travelsky_dev_core]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_monitor
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_monitor/application-monitor.yml"
+      merge-strategy: append

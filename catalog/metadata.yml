@@ -1,0 +1,44 @@
+# 脚手架平台元数据 —— 由 travelsky_dev_parent3 框架仓库自动生成
+# 框架父 POM：com.travelsky.base:travelsky_dev_parent3:${revision}（revision=3.0.0-SNAPSHOT）
+# 该父 POM 本身继承 org.springframework.boot:spring-boot-starter-parent:3.5.8，并集中
+# dependencyManagement 管理全部 16 个内部模块，因此生成项目只需继承它即可免写版本。
+#
+# 注意：本文件不再维护 starters 节。展示名 / 坐标 / 必选 / 依赖联动全部来自
+# catalog/starters/*.yml（平台发布时自动合并进元数据）。
+
+javaVersions:
+  - id: "17"
+    label: "Java 17"
+    deprecated: false
+    recommendedBootVersion: "3.5.8"
+  - id: "21"
+    label: "Java 21"
+    deprecated: false
+    recommendedBootVersion: "3.5.8"
+
+bootVersions:
+  - id: "3.5.8"
+    label: "Spring Boot 3.5.8"
+    official: true
+    supportedJavaVersions: ["17", "21"]
+    # 框架实际提供的能力模块 id（= 各子模块 <artifactId> 原文）
+    starters:
+      - "travelsky_dev_utils"
+      - "travelsky_dev_common"
+      - "travelsky_dev_threadpool"
+      - "travelsky_dev_core"
+      - "travelsky_dev_repository"
+      - "travelsky_dev_jpa_repository"
+      - "travelsky_dev_mybatis_repository"
+      - "travelsky_dev_dynamic_datasource"
+      - "travelsky_dev_data_migration"
+      - "travelsky_dev_security"
+      - "travelsky_dev_cache"
+      - "travelsky_dev_monitor"
+      - "travelsky_dev_decentralization_discovery"
+      - "travelsky_dev_web"
+      - "travelsky_dev_test"
+    frameworkParent:
+      groupId: com.travelsky.base
+      artifactId: travelsky_dev_parent3
+      version: "${revision}"

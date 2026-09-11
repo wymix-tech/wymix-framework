@@ -1,0 +1,19 @@
+# travelsky_dev_dynamic_datasource —— 动态多数据源
+# 属性来源：com.travelsky.base.dynamic.datasource.properties.DynamicDatasourceProperties
+# 注意：
+#   1. 本模块默认不启用（enabled 默认 false），需显式设为 true
+#   2. primary 必须出现在 items 中，否则构建 DataSource 时抛 NPE
+#   3. 需自行引入数据库驱动与连接池（默认 type 为 HikariDataSource，需引入 HikariCP）
+#   4. 密码可配合 security 模块的 ENC(...) 解密
+dynamic:
+  datasource:
+    enabled: true
+    # 主数据源名称，必须对应 items 中的某个 key
+    primary: master
+    items:
+      master:
+        url: %24{DS_MASTER_URL:jdbc:mysql://127.0.0.1:3306/app_db?useSSL=false&serverTimezone=Asia/Shanghai}
+        username: %24{DS_MASTER_USERNAME:root}
+        password: %24{DS_MASTER_PASSWORD:}
+        driverClassName: %24{DS_MASTER_DRIVER:com.mysql.cj.jdbc.Driver}
+        type: com.zaxxer.hikari.HikariDataSource

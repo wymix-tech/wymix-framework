@@ -1,0 +1,14 @@
+id: travelsky_dev_cache
+category: middleware
+maintainer: internal
+description: Caffeine 本地缓存（进程内缓存托管 + 统一 KeyGenerator）
+required: false
+requires: [travelsky_dev_utils]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_cache
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_cache/application-cache.yml"
+      merge-strategy: append

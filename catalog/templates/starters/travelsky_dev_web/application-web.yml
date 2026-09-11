@@ -1,0 +1,31 @@
+# travelsky_dev_web —— Web 层能力
+# 属性来源：ApiDocAutoConfiguration（prefix = swagger）、WebConfiguration 的 @Value 默认值
+swagger:
+  enabled: true
+  # true 时框架额外注册 IgnoreUrlContext 放行 /doc.html、/api-docs.json 等路径
+  web:
+    enabled: false
+  title: Api Docs
+  description: Api Docs
+  version: 1.0.0
+
+# 慢请求阈值（秒）：SlowRequestAspect 超过即输出 WARN 日志
+app:
+  slow:
+    request:
+      inSecond: 5
+
+# Bean Validation 国际化文案 basename（数组）
+spring:
+  validate:
+    messages: i18n/validation/ValidationMessages
+
+# 应用时区（WebConfiguration 启动时设置）
+user:
+  timezone: GMT+08
+
+travelsky:
+  web:
+    repeat-request:
+      # 是否注册框架内置 @RepeatRequest 防重复提交切面（业务自声明 Bean 时无需开启）
+      enabled: false

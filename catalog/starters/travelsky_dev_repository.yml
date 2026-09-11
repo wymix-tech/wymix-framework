@@ -1,0 +1,16 @@
+id: travelsky_dev_repository
+category: data
+maintainer: internal
+description: 数据访问抽象层（变更日志 / 数据迁移注解 / 统一查询 DSL 解析器）
+required: false
+requires: [travelsky_dev_core]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_repository
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector"
+      alias: permissionSqlInjector
+    - fqcn: "com.travelsky.base.repository.datachangelog.listener.DataChangeLogEventListener"
+      alias: dataChangeLogEventListener

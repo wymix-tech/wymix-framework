@@ -1,0 +1,17 @@
+id: travelsky_dev_decentralization_discovery
+category: middleware
+maintainer: internal
+description: 去中心化服务发现（JmDNS/mDNS，Leader 选举与心跳，默认关闭）
+required: false
+requires: [travelsky_dev_core, travelsky_dev_threadpool]
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_decentralization_discovery
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.discovery.broadcast.handler.EventHandler"
+      alias: eventHandler
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_decentralization_discovery/application-decentralization-discovery.yml"
+      merge-strategy: append
