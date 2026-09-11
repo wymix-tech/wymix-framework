@@ -1,0 +1,376 @@
+# 脚手架平台 —— 模板清单（单文件多文档，文档之间用 `---` 分隔）
+# 每段：name = 模板路径（相对 catalog/templates/，与 starters.yml 中
+# linkages[].source 逐字对应）；content = 模板正文（YAML 块标量，缩进 2 空格）。
+# 占位符白名单：${basePackage} / ${packagePath} / ${configPackage} / ${artifact} /
+# ${groupId} / ${version}；yml 片段中的 $ 已统一转义为 %24。
+
+name: starters/travelsky_dev_threadpool/application-threadpool.yml
+content: |
+  # travelsky_dev_threadpool —— 命名线程池注册中心
+  # 属性来源：com.travelsky.base.tp.properties.ThreadPoolProperties（Binder 绑定前缀 thread-pool）
+  # 未配置任何 pool.<name> / scheduled.<name> 时不会创建默认线程池
+  travelsky:
+    threadpool:
+      enabled: true
+
+  thread-pool:
+    pool:
+      # <name> 即线程池 Bean 名，使用时配合 @Qualifier("<name>") 注入
+      bizThreadPool:
+        corePoolSize: 4
+        maxPoolSize: 8
+        queueCapacity: 100
+        keepAliveSeconds: 60
+        # ABORT_POLICY / DISCARD_POLICY / DISCARD_OLDEST_POLICY / CALLER_RUNS_POLICY / CUSTOM_POLICY
+        rejectedPolicy: ABORT_POLICY
+        # 仅 rejectedPolicy=CUSTOM_POLICY 时生效：拒绝策略实现类全限定名
+        # rejectedPolicyClassName: com.example.support.MyRejectedHandler
+    scheduled:
+      bizScheduledThreadPool:
+        corePoolSize: 4
+        rejectedPolicy: ABORT_POLICY
+---
+name: starters/travelsky_dev_core/application-core.yml
+content: |
+  # travelsky_dev_core —— 核心模块配置
+  # 属性来源：com.travelsky.base.core.configuration.AsyncScheduleProperties（prefix = async）
+  # 值为框架真实默认值，未列出的属性可按需追加
+  travelsky:
+    core:
+      enabled: true
+
+  async:
+    # 异步/调度自动装配总开关
+    enabled: true
+    corePoolSize: 4
+    maxPoolSize: 8
+    queueCapacity: 300
+    threadNamePrefix: application-
+    keepAliveSeconds: 60
+    waitForTasksToCompleteOnShutdown: true
+    awaitTerminationSeconds: 60
+    schedule:
+      poolSize: 4
+      threadNamePrefix: application-schedule-
+---
+name: starters/travelsky_dev_jpa_repository/application-jpa-repository.yml
+content: |
+  # travelsky_dev_jpa_repository —— JPA 持久化实现
+  travelsky:
+    jpa:
+      # JPA 基础装配（审计字段自动填充）
+      enabled: true
+      data-permission:
+        # 是否注册数据权限切面 DataPermissionAspect
+        # 同时引入 MyBatis 侧 @EnableDataPermission 时建议设为 false，只保留一个切面实例
+        enabled: true
+
+  # 变更日志开关与实体扫描包
+  data-changelog:
+    enabled: true
+  data:
+    changelog:
+      basePackages: %24{DATA_CHANGELOG_PACKAGES:}
+
+  spring:
+    jpa:
+      hibernate:
+        ddl-auto: none
+      show-sql: false
+      properties:
+        hibernate:
+          format_sql: true
+---
+name: starters/travelsky_dev_mybatis_repository/application-mybatis-repository.yml
+content: |
+  # travelsky_dev_mybatis_repository —— MyBatis-Plus 持久化实现
+  travelsky:
+    mybatis:
+      # MyBatis 基础装配（分页插件、审计填充、雪花 ID 生成）
+      enabled: true
+
+  # 变更日志开关与实体扫描包（同时扫描 @DataChangeLog 与 @DataMigration 实体）
+  data-changelog:
+    enabled: true
+  data:
+    changelog:
+      basePackages: %24{DATA_CHANGELOG_PACKAGES:}
+
+  # 框架已通过 MybatisPlusPropertiesCustomizer 默认设置：
+  #   mapUnderscoreToCamelCase=true、jdbcTypeForNull=NULL、ID 生成接入 GlobalIdGenerator
+  mybatis-plus:
+    mapper-locations: classpath*:mapper/**/*.xml
+    configuration:
+      log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+---
+name: starters/travelsky_dev_dynamic_datasource/application-dynamic-datasource.yml
+content: |
+  # travelsky_dev_dynamic_datasource —— 动态多数据源
+  # 属性来源：com.travelsky.base.dynamic.datasource.properties.DynamicDatasourceProperties
+  # 注意：
+  #   1. 本模块默认不启用（enabled 默认 false），需显式设为 true
+  #   2. primary 必须出现在 items 中，否则构建 DataSource 时抛 NPE
+  #   3. 需自行引入数据库驱动与连接池（默认 type 为 HikariDataSource，需引入 HikariCP）
+  #   4. 密码可配合 security 模块的 ENC(...) 解密
+  dynamic:
+    datasource:
+      enabled: true
+      # 主数据源名称，必须对应 items 中的某个 key
+      primary: master
+      items:
+        master:
+          url: %24{DS_MASTER_URL:jdbc:mysql://127.0.0.1:3306/app_db?useSSL=false&serverTimezone=Asia/Shanghai}
+          username: %24{DS_MASTER_USERNAME:root}
+          password: %24{DS_MASTER_PASSWORD:}
+          driverClassName: %24{DS_MASTER_DRIVER:com.mysql.cj.jdbc.Driver}
+          type: com.zaxxer.hikari.HikariDataSource
+---
+name: starters/travelsky_dev_data_migration/application-data-migration.yml
+content: |
+  # travelsky_dev_data_migration —— 数据迁移
+  # 装配开关 travelsky.data-migration.enabled
+  # 注意：data.migration.* 前缀的 DataMigrationProperties 当前未注册为 Bean，写入不会生效
+  travelsky:
+    data-migration:
+      enabled: true
+
+  # 变更日志（数据迁移的事件来源，由 ORM 模块装配）
+  data-changelog:
+    enabled: true
+  data:
+    changelog:
+      # 变更日志实体扫描包，多个用逗号分隔
+      basePackages: %24{DATA_CHANGELOG_PACKAGES:}
+---
+name: starters/travelsky_dev_security/SecurityUserDetailsConfig.java.ftl
+content: |
+  package ${configPackage};
+
+  import com.travelsky.base.security.customizer.SecurityCustomizer;
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+  import org.springframework.security.core.userdetails.User;
+  import org.springframework.security.core.userdetails.UserDetailsService;
+  import org.springframework.security.crypto.password.PasswordEncoder;
+  import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
+  /**
+   * 安全模块接入配置。
+   *
+   * <p>travelsky_dev_security 的 CustomSecurityConfiguration 已由
+   * META-INF/spring/...AutoConfiguration.imports 自动装配，无需继承任何框架基类；
+   * 业务方只需提供 UserDetailsService Bean 作为用户来源即可启用表单登录。
+   *
+   * <p>生产环境请替换为数据库实现（实现 UserDetailsService 并注册为 Bean），
+   * 并删除下方基于内存用户的 InMemoryUserDetailsManager 示例。
+   */
+  @Configuration
+  public class SecurityUserDetailsConfig {
+
+      private final PasswordEncoder passwordEncoder;
+
+      public SecurityUserDetailsConfig(PasswordEncoder passwordEncoder) {
+          this.passwordEncoder = passwordEncoder;
+      }
+
+      /**
+       * 用户来源：此处以内存用户演示，请替换为真实数据源。
+       */
+      @Bean
+      public UserDetailsService userDetailsService() {
+          InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
+          manager.createUser(
+                  User.withUsername("admin")
+                          .password("ChangeMe@123")
+                          .passwordEncoder(passwordEncoder::encode)
+                          .authorities("admin")
+                          .build()
+          );
+          return manager;
+      }
+
+      /**
+       * 可选扩展：定制 HttpSecurity（权限规则、OAuth2 等）。
+       * 声明 SecurityCustomizer Bean 即被 CustomSecurityConfiguration#securityFilterChain 收集调用；
+       * 不需要定制时删除本 Bean 即可。
+       */
+      @Bean
+      public SecurityCustomizer securityCustomizer() {
+          return httpSecurity -> {
+              // 示例：追加业务自定义授权规则
+              // httpSecurity.authorizeHttpRequests(r -> r.requestMatchers("/public/**").permitAll());
+          };
+      }
+  }
+---
+name: starters/travelsky_dev_security/application-security.yml
+content: |
+  # travelsky_dev_security —— 认证与访问控制
+  # 属性来源：com.travelsky.base.security.properties.CustomSecurityProperties（prefix = security）
+  # 值为框架真实默认值；jwt 为框架必须的签发密钥，请通过环境变量注入
+  security:
+    enabled: true
+    formLoginEnable: true
+    # loginPage: /login
+    loginProcessingUrl: /login
+    logoutUrl: /logout
+    # 放行 URL（逗号分隔）
+    # ignoreUrls: /actuator/**,/doc.html
+    jwt:
+      # true 时启动随机生成密钥（重启失效）；false 时读取 secret
+      randomSecret: false
+      secret: %24{SECURITY_JWT_SECRET:please-change-this-32-bytes-secret}
+      # 令牌过期时间（秒），0 表示不校验过期
+      expiredTime: %24{SECURITY_JWT_EXPIRED:86400}
+---
+name: starters/travelsky_dev_web/OpenApiConfig.java.ftl
+content: |
+  package ${configPackage};
+
+  import com.travelsky.base.web.api.impl.AbstractBaseController;
+  import io.swagger.v3.oas.models.OpenAPI;
+  import io.swagger.v3.oas.models.info.Info;
+  import org.springframework.context.annotation.Bean;
+  import org.springframework.context.annotation.Configuration;
+
+  /**
+   * Web 模块接入配置。
+   *
+   * <p>travelsky_dev_web 的 WebConfiguration / ApiDocAutoConfiguration 已自动装配：
+   * 统一响应包装、TraceId 透传、Long 精度防护、i18n、慢请求切面与 Swagger 文档均已生效。
+   *
+   * <p>CRUD 控制器只需继承 AbstractBaseController 即可获得标准增删改查端点，
+   * 无需在此声明任何 Bean；本文件仅演示两个最常见的可选定制点。
+   */
+  @Configuration
+  public class OpenApiConfig {
+
+      /**
+       * 可选：覆盖框架默认 OpenAPI Bean（ApiDocAutoConfiguration#openAPI 标注了
+       * {@code @ConditionalOnMissingBean}，声明即让位）。
+       *
+       * <p>注意：框架内部 Auth 分组的 securityOpenAPI 未加 {@code @ConditionalOnMissingBean}，
+       * 声明本 Bean 不会覆盖它（见 ApiDocAutoConfiguration 说明）。
+       */
+      @Bean
+      public OpenAPI openAPI() {
+          return new OpenAPI().info(new Info()
+                  .title("${artifact}")
+                  .description("基于 travelsky_dev 框架生成的服务")
+                  .version("1.0.0"));
+      }
+
+      /**
+       * 参考：业务 CRUD 控制器写法示例（复制为独立类使用，不要在配置类里定义控制器）。
+       *
+       * <pre>
+       * // T=实体，V=VO，ID=主键类型，SERVICE 需继承框架 AbstractBaseServiceImpl
+       * public class XxxController
+       *         extends AbstractBaseController&lt;XxxEntity, XxxVO, Long, XxxService&gt; {
+       *     // 覆写 mappedToVO / mappedToPO 可替换默认 VO↔PO 反射转换
+       *     // 覆写 beforeSave / afterSave / beforeUpdate / afterUpdate 可挂业务钩子
+       * }
+       * </pre>
+       *
+       * @see AbstractBaseController
+       */
+      public void crudUsageNote() {
+          // 仅作用法说明占位，无需实现
+      }
+  }
+---
+name: starters/travelsky_dev_web/application-web.yml
+content: |
+  # travelsky_dev_web —— Web 层能力
+  # 属性来源：ApiDocAutoConfiguration（prefix = swagger）、WebConfiguration 的 @Value 默认值
+  swagger:
+    enabled: true
+    # true 时框架额外注册 IgnoreUrlContext 放行 /doc.html、/api-docs.json 等路径
+    web:
+      enabled: false
+    title: Api Docs
+    description: Api Docs
+    version: 1.0.0
+
+  # 慢请求阈值（秒）：SlowRequestAspect 超过即输出 WARN 日志
+  app:
+    slow:
+      request:
+        inSecond: 5
+
+  # Bean Validation 国际化文案 basename（数组）
+  spring:
+    validate:
+      messages: i18n/validation/ValidationMessages
+
+  # 应用时区（WebConfiguration 启动时设置）
+  user:
+    timezone: GMT+08
+
+  travelsky:
+    web:
+      repeat-request:
+        # 是否注册框架内置 @RepeatRequest 防重复提交切面（业务自声明 Bean 时无需开启）
+        enabled: false
+---
+name: starters/travelsky_dev_cache/application-cache.yml
+content: |
+  # travelsky_dev_cache —— Caffeine 本地缓存
+  # 属性来源：com.travelsky.base.cache.properties.CaffeineCacheProperties（prefix = caffeine）
+  # 注意：caffeine 依赖在本模块中为 optional，需业务工程自行引入后缓存能力才生效
+  cache:
+    enabled: true
+
+  caffeine:
+    # 是否启用 Caffeine 异步缓存模式（AsyncCache），retrieve() 仅在开启时可用
+    asyncCacheMode: true
+    # 未在 caffeine.cache 中声明规格的缓存名的默认最大条目数（-1 表示不限制）
+    defaultMaximumSize: 10000
+    cache:
+      # 缓存名 -> 规格（缓存名经 CacheNameUtils#normalize 归一化，
+      # @Cacheable(cacheNames = "sampleCache") 可命中 sample-cache）
+      sampleCache:
+        maximumSize: 500
+        initialCapacity: 16
+        # AFTER_WRITE（写入后过期）| AFTER_ACCESS（访问后过期）
+        policy: AFTER_WRITE
+        expireInSec: 600
+---
+name: starters/travelsky_dev_monitor/application-monitor.yml
+content: |
+  # travelsky_dev_monitor —— Actuator + Micrometer/Prometheus 可观测性
+  # 装配开关 travelsky.monitor.enabled；开启时监听器会注入下列 Actuator 默认值
+  # （注入源位于属性源列表最后，业务配置可覆盖）
+  travelsky:
+    monitor:
+      enabled: true
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include: health,info,metrics,prometheus
+    endpoint:
+      health:
+        show-details: always
+    metrics:
+      tags:
+        application: %24{spring.application.name:app}
+---
+name: starters/travelsky_dev_decentralization_discovery/application-decentralization-discovery.yml
+content: |
+  # travelsky_dev_decentralization_discovery —— 去中心化服务发现（JmDNS/mDNS）
+  # 属性来源：com.travelsky.base.discovery.properties.DecentralizedDiscoveryProperties
+  # 注意：
+  #   1. 默认关闭，需 decentralization.discovery.enable=true 才会装配
+  #   2. jmdns 为 optional 依赖，需自行引入后 mDNS 注册/发现才生效
+  #   3. mDNS 多播在容器/K8s/跨网段环境通常被禁用，仅适用于局域网
+  decentralization:
+    discovery:
+      enable: true
+      # 服务域命名空间，拼为 _<namespace>._tcp.local.
+      namespace: %24{DISCOVERY_NAMESPACE:app}
+      # 服务名 -> 实例地址列表
+      service:
+        app:
+          - http://127.0.0.1:8080

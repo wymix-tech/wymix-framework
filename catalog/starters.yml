@@ -1,0 +1,265 @@
+# 脚手架平台 —— starters 清单（单文件多文档，文档之间用 `---` 分隔）
+# 每一段是一个 starter 定义：id 逐字取自子模块 <artifactId>，与
+# dependencies[0].artifactId 一致；required=true 的 5 项为生成项目时必选。
+# bootVersions 取值与 catalog/metadata.yml 的 bootVersions[].id 对应（travelsky_dev_v3）。
+# requires 为「与」关系；嵌套数组（如 data_migration）为「或」关系。
+
+id: travelsky_dev_utils
+category: tool
+maintainer: internal
+description: 基础工具集（JSON/Long 精度、雪花 ID、反射、日期、HTTP）
+required: true
+requires: []
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_utils
+linkages: {}
+---
+id: travelsky_dev_common
+category: tool
+maintainer: internal
+description: 统一返回体 / 分页查询模型 / 审计 VO / 安全上下文（跨层契约）
+required: true
+requires: [travelsky_dev_utils]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_common
+linkages: {}
+---
+id: travelsky_dev_threadpool
+category: tool
+maintainer: internal
+description: 命名线程池注册中心（运行时可观测调参 + TTL 上下文透传）
+required: true
+requires: []
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_threadpool
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_threadpool/application-threadpool.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_core
+category: core
+maintainer: internal
+description: 框架核心（启动监听、异步调度、Feign 动态实例、消息门面）
+required: true
+requires: [travelsky_dev_common, travelsky_dev_threadpool]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_core
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_core/application-core.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_repository
+category: data
+maintainer: internal
+description: 数据访问抽象层（变更日志 / 数据迁移注解 / 统一查询 DSL 解析器）
+required: false
+requires: [travelsky_dev_core]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_repository
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector"
+      alias: permissionSqlInjector
+    - fqcn: "com.travelsky.base.repository.datachangelog.listener.DataChangeLogEventListener"
+      alias: dataChangeLogEventListener
+---
+id: travelsky_dev_jpa_repository
+category: data
+maintainer: internal
+description: JPA 持久化实现（审计填充、变更日志、数据权限、查询 DSL 翻译）
+required: false
+requires: [travelsky_dev_repository]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_jpa_repository
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.repository.jpa.audit.domain.AbstractAuditEntity"
+      alias: abstractAuditEntity
+    - fqcn: "com.travelsky.base.repository.jpa.api.BaseRepository"
+      alias: baseRepository
+    - fqcn: "com.travelsky.base.repository.jpa.api.AbstractBaseServiceImpl"
+      alias: abstractBaseServiceImpl
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_jpa_repository/application-jpa-repository.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_mybatis_repository
+category: data
+maintainer: internal
+description: MyBatis-Plus 持久化实现（分页插件、数据权限、审计填充、查询 DSL）
+required: false
+requires: [travelsky_dev_repository]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_mybatis_repository
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity"
+      alias: abstractAuditEntity
+    - fqcn: "com.travelsky.base.repository.mybatis.api.BaseRepository"
+      alias: baseRepository
+    - fqcn: "com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl"
+      alias: abstractBaseServiceImpl
+    - fqcn: "com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector"
+      alias: permissionSqlInjector
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_mybatis_repository/application-mybatis-repository.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_dynamic_datasource
+category: data
+maintainer: internal
+description: 动态多数据源（环境准备期注入 + 注解/编程式路由，默认关闭）
+required: false
+requires: [travelsky_dev_repository]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_dynamic_datasource
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_dynamic_datasource/application-dynamic-datasource.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_data_migration
+category: data
+maintainer: internal
+description: 数据迁移（变更事件监听 + @DataMigration 回调骨架）
+required: false
+requires: [[travelsky_dev_jpa_repository, travelsky_dev_mybatis_repository]]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_data_migration
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.repository.datamigration.annotations.DataMigration"
+      alias: dataMigration
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_data_migration/application-data-migration.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_security
+category: security
+maintainer: internal
+description: 认证与访问控制（JWT 无状态认证、令牌黑名单、ENC() 配置解密）
+required: false
+requires: [travelsky_dev_core]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_security
+linkages:
+  config-package: "{basePackage}.config"
+  templates:
+    - source: "starters/travelsky_dev_security/SecurityUserDetailsConfig.java.ftl"
+      target: "src/main/java/{packagePath}/config/SecurityUserDetailsConfig.java"
+  abstract-classes:
+    - fqcn: "com.travelsky.base.security.customizer.SecurityCustomizer"
+      alias: securityCustomizer
+    - fqcn: "com.travelsky.base.security.context.JwtTokenBlackList"
+      alias: jwtTokenBlackList
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_security/application-security.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_web
+category: web
+maintainer: internal
+description: Web 层能力（统一响应包装、TraceId、Long 精度、i18n、慢请求、Swagger）
+required: true
+requires: [travelsky_dev_core, travelsky_dev_security]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_web
+linkages:
+  config-package: "{basePackage}.config"
+  templates:
+    - source: "starters/travelsky_dev_web/OpenApiConfig.java.ftl"
+      target: "src/main/java/{packagePath}/config/OpenApiConfig.java"
+  abstract-classes:
+    - fqcn: "com.travelsky.base.web.api.impl.AbstractBaseController"
+      alias: abstractBaseController
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_web/application-web.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_cache
+category: middleware
+maintainer: internal
+description: Caffeine 本地缓存（进程内缓存托管 + 统一 KeyGenerator）
+required: false
+requires: [travelsky_dev_utils]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_cache
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_cache/application-cache.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_monitor
+category: middleware
+maintainer: internal
+description: 应用可观测性（Actuator + Micrometer/Prometheus，自动放行 /actuator/**）
+required: false
+requires: [travelsky_dev_core]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_monitor
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_monitor/application-monitor.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_decentralization_discovery
+category: middleware
+maintainer: internal
+description: 去中心化服务发现（JmDNS/mDNS，Leader 选举与心跳，默认关闭）
+required: false
+requires: [travelsky_dev_core, travelsky_dev_threadpool]
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_decentralization_discovery
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.discovery.broadcast.handler.EventHandler"
+      alias: eventHandler
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_decentralization_discovery/application-decentralization-discovery.yml"
+      merge-strategy: append
+---
+id: travelsky_dev_test
+category: tool
+maintainer: internal
+description: 测试基础设施（Testcontainers 数据库容器 + DBUnit Excel 数据集）
+required: false
+requires: []
+bootVersions: ["travelsky_dev_v3"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_test
+    scope: test
+linkages:
+  abstract-classes:
+    - fqcn: "com.travelsky.base.test.containers.db.AbstractDbContainer"
+      alias: abstractDbContainer

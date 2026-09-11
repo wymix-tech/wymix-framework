@@ -4,21 +4,22 @@
 # dependencyManagement 管理全部 16 个内部模块，因此生成项目只需继承它即可免写版本。
 #
 # 注意：本文件不再维护 starters 节。展示名 / 坐标 / 必选 / 依赖联动全部来自
-# catalog/starters/*.yml（平台发布时自动合并进元数据）。
+# catalog/starters.yml（平台发布时自动合并进元数据）。
 
 javaVersions:
   - id: "17"
     label: "Java 17"
     deprecated: false
-    recommendedBootVersion: "3.5.8"
+    recommendedBootVersion: "travelsky_dev_v3"
   - id: "21"
     label: "Java 21"
     deprecated: false
-    recommendedBootVersion: "3.5.8"
+    recommendedBootVersion: "travelsky_dev_v3"
 
 bootVersions:
-  - id: "3.5.8"
-    label: "Spring Boot 3.5.8"
+  - id: "travelsky_dev_v3"
+    label: "travelsky_dev_v3（Spring Boot 3.5.8）"
+    springBootVersion: "3.5.8"
     official: true
     supportedJavaVersions: ["17", "21"]
     # 框架实际提供的能力模块 id（= 各子模块 <artifactId> 原文）
