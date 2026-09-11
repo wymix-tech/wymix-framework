@@ -42,4 +42,4 @@ bootVersions:
     frameworkParent:
       groupId: com.travelsky.base
       artifactId: travelsky_dev_parent3
-      version: "${revision}"
+      version: "3.0.0-SNAPSHOT"
