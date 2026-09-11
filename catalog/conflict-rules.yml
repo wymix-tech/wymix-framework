@@ -1,3 +1,5 @@
-# 冲突规则：仅收录「会导致应用启动失败」的组合（同名 Bean / 同类型 Bean 且无兜底）。
-# 纯「共用底层资源」（如都使用 DataSource、都依赖线程池）不属于冲突，此处不产出规则。
-rules: []
+rules:                              # 必填。规则列表（可为空列表）
+  - id: jpa-vs-mybatis              # 必填。规则唯一 ID，同一份配置内不可重复
+    type: pair                      # 必填。pair（恰好两个互斥）/ group（两个及以上互斥）
+    starters: [travelsky_dev_jpa_repository, travelsky_dev_mybatis_repository]        # 必填。涉及的 starter ID；pair 恰好 2 个，group 至少 2 个
+    message: JPA与 Mybatis不可同时选择
