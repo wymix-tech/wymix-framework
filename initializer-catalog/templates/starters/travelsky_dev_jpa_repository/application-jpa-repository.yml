@@ -1,0 +1,17 @@
+# travelsky_dev_jpa_repository：Spring Data JPA 实现
+# 开关：travelsky.jpa.enabled=false 关闭 JPA 侧装配；data-changelog.enabled=false 关闭变更日志
+travelsky:
+  jpa:
+    enabled: true
+    data-permission:
+      # JPA 侧数据权限切面（DataPermissionAspect）开关；同时引入 MyBatis 侧 @EnableDataPermission 时建议置 false，只保留一个切面实例
+      enabled: true
+# 数据变更日志开关（JPA / MyBatis 两侧共用同一前缀，任一实现均读取）
+data-changelog:
+  enabled: true
+# JPA/Hibernate 连接与方言由业务方自行按数据库补充，例如：
+# spring:
+#   datasource:
+#     url: jdbc:mysql://127.0.0.1:3306/demo?useSSL=false&serverTimezone=Asia/Shanghai
+#     username: demo
+#     password: ENC(********)

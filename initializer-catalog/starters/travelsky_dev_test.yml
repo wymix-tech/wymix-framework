@@ -1,0 +1,12 @@
+id: travelsky_dev_test
+category: tool
+maintainer: official
+description: 测试基础设施：Testcontainers 数据库容器（MySQL/PostgreSQL/Oracle）与 DBUnit Excel 数据集编排
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_test
+    version: "${revision}"
+    scope: test
+linkages: {}

@@ -1,0 +1,21 @@
+# travelsky_dev_monitor：Actuator + Prometheus
+# 启动期自动注入 management 默认值（exposure.include=*、health.showDetails=always、prometheus 开启）
+travelsky:
+  monitor:
+    enabled: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,beans,env
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+# /actuator/info 返回内容
+info:
+  app:
+    name: "%24{spring.application.name:app}"
+    description: TravelSky Dev Framework Application

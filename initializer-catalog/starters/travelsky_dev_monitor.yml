@@ -1,0 +1,15 @@
+id: travelsky_dev_monitor
+category: middleware
+maintainer: official
+description: 监控：Actuator/Prometheus 默认端点与指标注入，并放行 /actuator/**
+requires:
+  - travelsky_dev_core
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_monitor
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_monitor/application-monitor.yml"
+      merge-strategy: append

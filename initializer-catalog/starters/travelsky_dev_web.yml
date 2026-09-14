@@ -1,0 +1,15 @@
+id: travelsky_dev_web
+category: web
+maintainer: official
+description: Web 层横切能力：统一响应包装、TraceId 透传、Long→String 精度防护、i18n、慢请求监控、CRUD 基类与 Swagger
+requires:
+  - travelsky_dev_core
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_web
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_web/application-web.yml"
+      merge-strategy: append

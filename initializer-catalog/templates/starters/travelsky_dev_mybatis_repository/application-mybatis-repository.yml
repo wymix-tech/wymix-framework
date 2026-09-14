@@ -1,0 +1,19 @@
+# travelsky_dev_mybatis_repository：MyBatis-Plus 实现
+# 开关：travelsky.mybatis.enabled=false 关闭 MyBatis 侧装配；data-changelog.enabled=false 关闭变更日志
+travelsky:
+  mybatis:
+    enabled: true
+# 数据变更日志开关（JPA / MyBatis 两侧共用同一前缀，任一实现均读取）
+data-changelog:
+  enabled: true
+# 变更日志实体扫描包（多个用逗号分隔），供 DataChangeLogTableRegistry 读取
+data:
+  changelog:
+    basePackages: ""
+# MyBatis-Plus 基础配置由框架自动补齐（下划线转驼峰、全局雪花 ID、分页插件 maxLimit=10000），
+# 数据源请业务方按数据库补充：
+# spring:
+#   datasource:
+#     url: jdbc:mysql://127.0.0.1:3306/demo?useSSL=false&serverTimezone=Asia/Shanghai
+#     username: demo
+#     password: ENC(********)

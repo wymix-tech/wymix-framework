@@ -1,0 +1,25 @@
+# travelsky_dev_threadpool：按配置自动注册命名线程池 Bean（Bean 名 = 下方 key，注入时用 @Qualifier）
+# 开关：travelsky.threadpool.enabled=false 关闭装配
+travelsky:
+  threadpool:
+    enabled: true
+# 普通线程池字典：key 即注册到容器的 Bean 名
+thread-pool:
+  pool: {}
+#   pool:
+#     testThreadPool:
+#       corePoolSize: 4
+#       maxPoolSize: 8
+#       queueCapacity: 100
+#       keepAliveSeconds: 60
+#       # ABORT_POLICY | DISCARD_POLICY | DISCARD_OLDEST_POLICY | CALLER_RUNS_POLICY | CUSTOM_POLICY
+#       rejectedPolicy: ABORT_POLICY
+#       # rejectedPolicy=CUSTOM_POLICY 时生效（RejectedExecutionHandler 全类名）
+#       rejectedPolicyClassName: ""
+# 调度线程池字典：key 即注册到容器的 Bean 名
+  scheduled: {}
+#   scheduled:
+#     testScheduledThreadPool:
+#       corePoolSize: 2
+#       rejectedPolicy: ABORT_POLICY
+#       rejectedPolicyClassName: ""

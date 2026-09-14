@@ -1,0 +1,15 @@
+id: travelsky_dev_security
+category: web
+maintainer: official
+description: 安全认证：表单登录 + JWT 无状态鉴权、令牌黑名单、配置密码 ENC() 解密、BCrypt 编码器
+requires:
+  - travelsky_dev_core
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_security
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_security/application-security.yml"
+      merge-strategy: append
