@@ -1,0 +1,13 @@
+id: travelsky_dev_utils
+category: tool
+maintainer: official
+description: 通用工具集（JSON 与 Long 精度、雪花 ID、反射、日期、HTTP、并发 Map），框架最底层基础包
+required: true
+hidden: true
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_utils
+    version: "${revision}"
+linkages: {}

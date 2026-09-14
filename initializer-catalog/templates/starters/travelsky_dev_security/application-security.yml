@@ -1,0 +1,21 @@
+# travelsky_dev_security：表单登录 + JWT 无状态认证、令牌黑名单、配置密码 ENC() 解密
+# 开关：security.enabled=false 关闭装配（引入 travelsky_dev_web 会传递本模块并默认开启）
+security:
+  enabled: true
+  # 表单登录开关，false 时全部放行（纯接口 + 网关鉴权场景可关）
+  formLoginEnable: true
+  # 自定义登录页路径，留空使用默认
+  loginPage: ""
+  # 登录处理地址
+  loginProcessingUrl: /login
+  # 免认证 URL 白名单，逗号分隔
+  ignoreUrls: ""
+  # 登出地址
+  logoutUrl: /logout
+  jwt:
+    # 是否每次启动随机生成密钥（true 时重启后历史令牌全部失效）
+    randomSecret: false
+    # 固定密钥，长度需 32 位以上
+    secret: change-me-please-32-characters-secret
+    # 令牌有效期（秒）
+    expiredTime: 86400

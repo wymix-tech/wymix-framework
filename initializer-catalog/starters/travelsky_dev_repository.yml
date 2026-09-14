@@ -1,0 +1,12 @@
+id: travelsky_dev_repository
+category: middleware
+maintainer: official
+description: 数据访问抽象层（ORM 无关）：数据变更日志与数据迁移注解、统一查询 DSL 解析器（filter → AST）
+hidden: true
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_repository
+    version: "${revision}"
+linkages: {}

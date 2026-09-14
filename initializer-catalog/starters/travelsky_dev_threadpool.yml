@@ -1,0 +1,14 @@
+id: travelsky_dev_threadpool
+category: middleware
+maintainer: official
+description: 命名线程池注册中心，按 thread-pool.* 自动注册线程池 Bean 并支持运行时可观测与动态调参
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_threadpool
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_threadpool/application-threadpool.yml"
+      merge-strategy: append

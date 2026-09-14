@@ -1,0 +1,16 @@
+id: travelsky_dev_data_migration
+category: middleware
+maintainer: official
+description: 数据迁移骨架：监听数据变更事件，对标注 @DataMigration 的实体触发迁移回调（回放待业务实现）
+requires:
+  - - travelsky_dev_jpa_repository
+    - travelsky_dev_mybatis_repository
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_data_migration
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_data_migration/application-data-migration.yml"
+      merge-strategy: append

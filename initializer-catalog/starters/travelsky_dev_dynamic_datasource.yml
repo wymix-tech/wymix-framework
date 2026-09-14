@@ -1,0 +1,15 @@
+id: travelsky_dev_dynamic_datasource
+category: middleware
+maintainer: official
+description: 动态数据源：环境准备期注入多数据源，支持 @DynamicDatasource 注解与编程式路由切换
+requires:
+  - travelsky_dev_repository
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_dynamic_datasource
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_dynamic_datasource/application-dynamic-datasource.yml"
+      merge-strategy: append
