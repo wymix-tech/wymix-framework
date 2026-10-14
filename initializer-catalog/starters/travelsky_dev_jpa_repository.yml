@@ -1,0 +1,16 @@
+id: travelsky_dev_jpa_repository
+category: middleware
+maintainer: official
+description: 基于 Spring Data JPA 的数据访问实现：审计字段自动填充、数据变更日志、Specification 查询 DSL 翻译
+requires:
+  - - travelsky_dev_jpa_repository
+    - travelsky_dev_mybatis_repository
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_jpa_repository
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_jpa_repository/application-jpa-repository.yml"
+      merge-strategy: append

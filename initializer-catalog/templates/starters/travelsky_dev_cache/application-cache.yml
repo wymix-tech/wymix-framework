@@ -1,0 +1,26 @@
+# travelsky_dev_cache：Caffeine 本地缓存
+# 开关：cache.enabled=false 关闭装配（需业务方自行引入 com.github.ben-manes.caffeine:caffeine）
+cache:
+  enabled: true
+caffeine:
+  # 是否启用异步缓存模式（AsyncCache，可额外获得 Cache#retrieve 能力）
+  asyncCacheMode: true
+  # 未在 caffeine.cache.<name> 声明规格的缓存名，其默认最大条目数；-1 表示不限容量
+  defaultMaximumSize: 10000
+  # 逐缓存规格：key 为缓存名（对应 @Cacheable(cacheNames = "xxx")，名称按中划线/驼峰归一化匹配）
+  cache:
+    sample-cache:
+      # maximumSize 与 maximumWeight 互斥，只能配置其中一个
+      maximumSize: 500
+      maximumWeight: -1
+      initialCapacity: 16
+      # 是否允许缓存 null 值
+      allowNullValues: true
+      # 过期秒数
+      expireInSec: 600
+      # AFTER_WRITE（写入后过期）| AFTER_ACCESS（访问后过期）
+      policy: AFTER_WRITE
+      # 需要 LoadingCache 的回源刷新，框架未提供回源实现，请勿配置（>0 会直接抛异常）
+      refreshAfterWriterInSec: -1
+      # maximumWeight > 0 时必填，Caffeine Weigher 实现类全限定名（仅允许 com.travelsky.* 或 com.github.benmanes.* 前缀）
+      weigher: ""

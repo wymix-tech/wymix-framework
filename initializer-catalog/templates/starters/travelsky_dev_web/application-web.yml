@@ -1,0 +1,35 @@
+# travelsky_dev_web：统一响应、TraceId、Long 精度、i18n、慢请求、CRUD 基类与 Swagger
+# 注意：本模块 compile 依赖 travelsky_dev_security，仅引入 web 也会默认开启安全装配
+swagger:
+  # Swagger 总开关
+  enabled: true
+  # 是否把 /doc.html、/api-docs.json 等注册为免认证白名单
+  web:
+    enabled: false
+  title: Api Docs
+  description: Api Docs
+  version: 1.0.0
+springdoc:
+  swagger-ui:
+    path: /doc.html
+  api-docs:
+    path: /api-docs.json
+  # 默认分组扫描包，逗号分隔；未配置则不限定
+  packages-to-scan: ""
+spring:
+  validate:
+    # Bean Validation 国际化文案资源 basename
+    messages: i18n/validation/ValidationMessages
+# 慢请求阈值（秒），超过输出 WARN 日志
+app:
+  slow:
+    request:
+      inSecond: 5
+# 应用时区
+user:
+  timezone: GMT+08
+travelsky:
+  web:
+    repeat-request:
+      # 是否注册框架内置 RepeatRequestAspect（@RepeatRequest 防重复提交）；业务自声明 Bean 时无需开启
+      enabled: false

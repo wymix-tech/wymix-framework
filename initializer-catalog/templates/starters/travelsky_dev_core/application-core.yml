@@ -1,0 +1,34 @@
+# travelsky_dev_core：框架核心（启动监听/日志默认值、异步与调度线程池、Feign 动态实例、消息门面）
+# 开关：travelsky.core.enabled=false 关闭基础装配；async.enabled=false 关闭异步调度装配
+travelsky:
+  core:
+    # 是否启用核心自动装配（ApplicationContextHolder / MessageService / EmailSenderService）
+    enabled: true
+async:
+  # 异步/调度总开关
+  enabled: true
+  # 异步线程池核心线程数
+  corePoolSize: 4
+  # 异步线程池最大线程数
+  maxPoolSize: 8
+  # 异步队列容量
+  queueCapacity: 300
+  # 异步线程名前缀
+  threadNamePrefix: "application-"
+  # 空闲线程存活秒数
+  keepAliveSeconds: 60
+  # 关闭时是否等待任务完成
+  waitForTasksToCompleteOnShutdown: true
+  # 关闭等待超时秒数
+  awaitTerminationSeconds: 60
+  schedule:
+    # 定时任务线程池核心线程数
+    poolSize: 4
+    # 定时任务线程名前缀
+    threadNamePrefix: "application-schedule-"
+# Feign 动态实例清单：启动期自动映射为 spring.cloud.discovery.client.simple.instances.*
+# 同一服务可配置多个 uri 实现负载均衡；*.retry.* 会映射为 spring.cloud.loadbalancer.<svc>.retry.*
+# http:
+#   requests:
+#     user-service:
+#       - uri: http://127.0.0.1:8080

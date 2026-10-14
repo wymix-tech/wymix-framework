@@ -1,0 +1,13 @@
+id: travelsky_dev_common
+category: tool
+maintainer: official
+description: 跨层公共契约（统一返回体 ResultVO、分页查询 DevQueryVO、审计 VO、登录人上下文、业务异常）
+required: true
+hidden: true
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_common
+    version: "${revision}"
+linkages: {}

@@ -1,0 +1,5 @@
+# travelsky_dev_data_migration：数据迁移骨架（监听 DataChangeLogEvent，对 @DataMigration 实体触发回调）
+# 开关：travelsky.data-migration.enabled=false 关闭；装配期按 classpath 条件导入 JPA 或 MyBatis 的变更日志配置
+travelsky:
+  data-migration:
+    enabled: true

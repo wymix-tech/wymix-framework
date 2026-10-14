@@ -1,0 +1,9 @@
+# 冲突规则：仅登记「会导致应用启动失败」的同名/同类型 Bean 组合
+rules:
+  - id: travelsky_dev_jpa_repository-vs-travelsky_dev_mybatis_repository
+    type: pair
+    starters: [travelsky_dev_jpa_repository, travelsky_dev_mybatis_repository]
+    message: >-
+      两者均注册数据变更日志监听器 DataChangeLogEventListener（JPA: com.travelsky.base.repository.jpa.datachangelog.configuration.DataChangeLogConfiguration#dataChangeLogEventListener / MyBatis: com.travelsky.base.repository.mybatis.datachangelog.configuration.DataChangeLogConfiguration#defaultDataChangeLogEventListener），
+      并各自注册 PlatformTransactionManager（spring-boot-starter-data-jpa 的 JpaBaseConfiguration#transactionManager 与 mybatis-plus-spring-boot3-starter 的 DataSourceTransactionManagerAutoConfiguration#transactionManager），
+      同时引入会因同名事务管理器 Bean 冲突导致启动失败。请二选一并搭配 travelsky_dev_data_migration（其装配会按 classpath 条件导入对应实现）。

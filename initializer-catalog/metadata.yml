@@ -1,0 +1,18 @@
+# TravelSky Dev Framework 脚手架元数据
+# 框架：com.travelsky.base:travelsky_dev_parent3（Spring Boot 3.5.8 + Java 17）
+# 各能力 starter 的清单统一维护在 starters/*.yml，本文件不再重复登记 starters 节
+javaVersions:
+  - id: "17"
+    label: "Java 17"
+    deprecated: false
+    recommendedBootVersion: "3.5.8"
+
+bootVersions:
+  - id: "3.5.8"
+    label: "Spring Boot 3.5.8"
+    official: true
+    supportedJavaVersions: ["17"]
+    frameworkParent:
+      groupId: com.travelsky.base
+      artifactId: travelsky_dev_parent3
+      version: "${revision}"

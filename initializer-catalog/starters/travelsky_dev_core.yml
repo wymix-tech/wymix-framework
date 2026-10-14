@@ -1,0 +1,15 @@
+id: travelsky_dev_core
+category: web
+maintainer: official
+description: 框架核心：启动监听与日志默认值、异步调度线程池、Feign 动态实例与负载均衡、消息/邮件门面
+required: true
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_core
+    version: "${revision}"
+linkages:
+  application-yml-fragments:
+    - source: "starters/travelsky_dev_core/application-core.yml"
+      merge-strategy: append

@@ -1,0 +1,15 @@
+# travelsky_dev_decentralization_discovery：JmDNS 去中心化服务发现（默认关闭，需显式 enable: true）
+# 注意：JmDNS 为 optional 依赖，需业务方显式引入 org.jmdns:jmdns；mDNS 多播在容器/K8s 环境通常不可用
+decentralization:
+  discovery:
+    enable: false
+    # 服务域命名空间，实际类型为 _<namespace>._tcp.local.
+    namespace: application
+    # 服务名 -> 节点地址列表
+    service: {}
+#    service:
+#      application:
+#        - http://127.0.0.1:8080
+    heartbeat:
+      # 心跳周期（秒）
+      periodInSeconds: 30

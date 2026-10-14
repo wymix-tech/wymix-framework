@@ -1,0 +1,21 @@
+# travelsky_dev_dynamic_datasource：多数据源（默认关闭，需显式 enabled: true）
+# 注意：启用后数据源由本配置接管，spring.datasource.* 不再生效；
+#      primary 必须出现在 items 中，且需自行引入 JDBC 驱动与连接池（默认 type 为 HikariDataSource）
+dynamic:
+  datasource:
+    enabled: false
+    primary: master
+    items:
+      master:
+        url: jdbc:mysql://127.0.0.1:3306/master_db?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+        username: demo
+        # 配合 travelsky_dev_security 的 ENC() 配置解密能力使用，明文亦可
+        password: ENC(********)
+        driverClassName: com.mysql.cj.jdbc.Driver
+        type: com.zaxxer.hikari.HikariDataSource
+      slave:
+        url: jdbc:mysql://127.0.0.1:3306/slave_db?useSSL=false&serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf8
+        username: demo
+        password: ENC(********)
+        driverClassName: com.mysql.cj.jdbc.Driver
+        type: com.zaxxer.hikari.HikariDataSource

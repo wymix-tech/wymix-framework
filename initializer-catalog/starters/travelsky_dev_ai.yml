@@ -1,0 +1,11 @@
+id: travelsky_dev_ai
+category: tool
+maintainer: official
+description: AI 能力预留模块（空壳占位，仅提供 Maven 坐标，无自动装配，勿在生产直接依赖）
+requires: []
+bootVersions: ["3.5.8"]
+dependencies:
+  - groupId: com.travelsky.base
+    artifactId: travelsky_dev_ai
+    version: "${revision}"
+linkages: {}
