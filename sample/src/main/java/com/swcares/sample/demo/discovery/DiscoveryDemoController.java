@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,13 +35,26 @@ public class DiscoveryDemoController {
     }
 
     @GetMapping("node")
-    @Operation(summary = "查看本节点信息与集群命名空间")
+    @Operation(summary = "查看本节点信息与按配置登记的集群成员")
     public Map<String, Object> node() {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("selfNodeName", nodeService.getSelfNodeName());
         result.put("namespace", properties.getNamespace());
-        result.put("serviceType", properties.type());
-        result.put("services", properties.getService().keySet());
+        result.put("services", properties.getService());
+        return result;
+    }
+
+    /**
+     * 按配置重新同步集群节点。
+     *
+     * <p>模块不做自动发现，节点只来自 {@code service.<svc>} 配置与其它实例的主动注册；
+     * 本接口与 {@code POST /actuator/nodeRefresh} 等价，仅用于演示。
+     */
+    @PostMapping("refresh")
+    @Operation(summary = "按配置重新同步集群节点")
+    public Map<String, Object> refresh() {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("result", nodeService.syncConfiguredNodes());
         return result;
     }
 }

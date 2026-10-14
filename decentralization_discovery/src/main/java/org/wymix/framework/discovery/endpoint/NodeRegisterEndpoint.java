@@ -34,14 +34,26 @@ public class NodeRegisterEndpoint {
     @Autowired
     private ElectionService electionService;
 
+    /**
+     * 接收对端注册。
+     *
+     * <p><b>参数名必须是 {@code nodes}</b>：actuator 的 {@code @WriteOperation} 会把 JSON 请求体按
+     * <b>参数名</b>绑定（{@code {"nodes":...}} 里的值赋给名为 {@code nodes} 的参数），而不是把整个
+     * 请求体反序列化成参数对象。调用方 {@code DiscoveryFeignClient#register} 发送的是
+     * {@link HeartbeatDTO}（字段 {@code nodes}），恰好与参数名对应。
+     * 一旦把参数改成 {@code HeartbeatDTO} 或改名，绑定就会失败并报
+     * {@code MissingParametersException}，节点注册全部 400。
+     */
     @WriteOperation
-    public String register(String nodes) {
+    public NodeInfo register(String nodes) {
         NodeInfo nodeInfo = JsonUtils.jsonToEntity(NodeInfo.class, nodes);
         nodeInfo.setSelf(false);
         nodeInfo.setLeader(false);
         NodeRegistry.signUp(nodeInfo);
         electionService.electLeader(true);
-        return JsonUtils.entityToJson(NodeRegistry.self());
+        // 必须返回对象：返回 JSON 字符串会被引擎按 application/json 二次编码成带引号的字符串，
+        // 调用方（DiscoveryFeignClient#register 声明为 NodeInfo）将反序列化失败
+        return NodeRegistry.self();
     }
 
 }

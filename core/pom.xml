@@ -52,6 +52,11 @@
             <artifactId>spring-boot-starter-mail</artifactId>
             <optional>true</optional>
         </dependency>
+        <!-- core 代码直接使用（FilenameUtils 等），原先靠 spring-cloud-context 传递引入，升级后该路径已不存在 -->
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
         <dependency>
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-core</artifactId>

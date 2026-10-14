@@ -63,7 +63,10 @@ public class PriorityUtils {
         finalScore = Math.max(0, Math.min(100, finalScore));
 
         // 保留 4 位小数
-        return finalScore;
+        // 这一步不能省：得分里含 upDuration * 7.5e-12 这类由 System.currentTimeMillis() 推导的项，
+        // 各实例本地时钟只要有毫秒级漂移，同一候选在不同实例上就会算出不同的得分。
+        // 量化到 4 位小数可把这些漂移压成同一值，选举时才能真正比出（或判平）同一个 winner。
+        return Math.round(finalScore * 10000) / 10000.0;
     }
 
     /**

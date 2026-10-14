@@ -71,7 +71,15 @@ public class HeartbeatService {
     }
 
     public boolean heartbeat0() {
-        List<NodeInfo> nodeInfos = NodeRegistry.nodes().get(NodeRegistry.self().getServiceName());
+        NodeInfo self = NodeRegistry.self();
+        if (self == null) {
+            // 自身节点尚未登记（启动未完成或注册表被重置），本轮无心跳可发
+            return true;
+        }
+        List<NodeInfo> nodeInfos = NodeRegistry.nodes().get(self.getServiceName());
+        if (nodeInfos == null || nodeInfos.isEmpty()) {
+            return true;
+        }
         LocalDateTime now = LocalDateTime.now();
         if (NodeRegistry.self().isLeader()) {
             boolean flag = true;
@@ -102,25 +110,32 @@ public class HeartbeatService {
             }
             return flag;
         } else {
-            long duration = Duration.between(NodeRegistry.leader().getLastSeenSuccess(), now).toMillis() / (period * 1000);
+            NodeInfo leader = NodeRegistry.leader();
+            if (leader == null) {
+                // 集群无主（首次启动尚未选出，或 Leader 引用丢失），立即补一次选举，
+                // 否则本实例会一直走「探测 Leader」分支而永远等不到 Leader
+                electionService.electLeader(false);
+                return true;
+            }
+            long duration = Duration.between(leader.getLastSeenSuccess(), now).toMillis() / (period * 1000);
             if (duration > 1.2 && duration < 2.2) {
-                discoveryFeignClientHardCodedTarget.setUrl(NodeRegistry.leader().url());
+                discoveryFeignClientHardCodedTarget.setUrl(leader.url());
                 try {
                     discoveryFeignClient.checkLeaderStatus();
-                    NodeRegistry.leader().setLastSeen(now);
-                    NodeRegistry.leader().setLastSeenSuccess(now);
+                    leader.setLastSeen(now);
+                    leader.setLastSeenSuccess(now);
                 } catch (Exception e) {
-                    NodeRegistry.leader().setStatus(HealthStatus.ERROR);
+                    leader.setStatus(HealthStatus.ERROR);
                 }
             } else if (duration >= 2.2) {
-                discoveryFeignClientHardCodedTarget.setUrl(NodeRegistry.leader().url());
+                discoveryFeignClientHardCodedTarget.setUrl(leader.url());
                 try {
                     discoveryFeignClient.checkLeaderStatus();
-                    NodeRegistry.leader().setLastSeen(now);
-                    NodeRegistry.leader().setLastSeenSuccess(now);
+                    leader.setLastSeen(now);
+                    leader.setLastSeenSuccess(now);
                 } catch (Exception e) {
-                    NodeRegistry.leader().setStatus(HealthStatus.DOWN);
-                    String serviceName = NodeRegistry.leader().instanceName();
+                    leader.setStatus(HealthStatus.DOWN);
+                    String serviceName = leader.instanceName();
                     NodeRegistry.signOut(serviceName);
                     electionService.electLeader(false);
                     try {
