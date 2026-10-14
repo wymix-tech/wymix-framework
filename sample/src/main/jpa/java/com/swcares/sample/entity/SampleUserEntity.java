@@ -1,9 +1,9 @@
 package com.swcares.sample.entity;
 
-import com.travelsky.base.repository.datachangelog.annotation.DataChangeLog;
-import com.travelsky.base.repository.datachangelog.enums.StatementType;
-import com.travelsky.base.repository.datamigration.annotations.DataMigration;
-import com.travelsky.base.repository.jpa.audit.domain.AbstractAuditEntity;
+import org.wymix.framework.repository.datachangelog.annotation.DataChangeLog;
+import org.wymix.framework.repository.datachangelog.enums.StatementType;
+import org.wymix.framework.repository.datamigration.annotations.DataMigration;
+import org.wymix.framework.repository.jpa.audit.domain.AbstractAuditEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

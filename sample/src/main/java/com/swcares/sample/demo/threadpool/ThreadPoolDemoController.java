@@ -1,7 +1,7 @@
 package com.swcares.sample.demo.threadpool;
 
-import com.travelsky.base.tp.supports.ExecutorWrapper;
-import com.travelsky.base.tp.supports.ThreadPoolHolder;
+import org.wymix.framework.tp.supports.ExecutorWrapper;
+import org.wymix.framework.tp.supports.ThreadPoolHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * travelsky_dev_threadpool 示例。
+ * threadpool 示例。
  *
  * <p>threadpool 模块会读取 {@code thread-pool.pool.*} / {@code thread-pool.scheduled.*}
  * （见 {@code application-async.yml}），并以配置项名为 BeanName 自动注册线程池。

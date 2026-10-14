@@ -1,7 +1,7 @@
 package com.swcares.sample.configuration;
 
-import com.travelsky.base.repository.datachangelog.dto.DataChangeLogDTO;
-import com.travelsky.base.repository.datachangelog.listener.DataChangeLogEventListener;
+import org.wymix.framework.repository.datachangelog.dto.DataChangeLogDTO;
+import org.wymix.framework.repository.datachangelog.listener.DataChangeLogEventListener;
 import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,7 +21,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * 由 {@code SampleUserService#findAllWithDataPermission} 上的 {@code @DataPermission} 直接引用类名；
  * JPA 场景没有 {@code @EnableDataPermission} 注册器（该注解为 MyBatis 侧注册插件使用），
  * 因此示例注入器 {@code TestSqlInject} 自行标注了 {@code @Component} 以纳入容器，
- * 切面则由 jpa_repository 自动装配（{@code travelsky.jpa.data-permission.enabled}）。
+ * 切面则由 jpa_repository 自动装配（{@code wymix.jpa.data-permission.enabled}）。
  */
 @Configuration
 @EnableJpaRepositories(basePackages = {"com.swcares.sample.dao"})

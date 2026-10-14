@@ -2,12 +2,12 @@ package com.swcares.sample.demo.dynamicds;
 
 import com.swcares.sample.entity.SampleUserEntity;
 import com.swcares.sample.service.SampleUserService;
-import com.travelsky.base.dynamic.datasource.annotations.DynamicDatasource;
-import com.travelsky.base.dynamic.datasource.support.DynamicDataSourceContextHolder;
+import org.wymix.framework.dynamic.datasource.annotations.DynamicDatasource;
+import org.wymix.framework.dynamic.datasource.support.DynamicDataSourceContextHolder;
 import org.springframework.stereotype.Service;
 
 /**
- * travelsky_dev_dynamic_datasource 示例。
+ * dynamic_datasource 示例。
  *
  * <p>两种方式切换数据源：
  * <ol>

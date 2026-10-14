@@ -1,0 +1,2 @@
+org.wymix.framework.web.configuration.WebConfiguration
+org.wymix.framework.web.configuration.ApiDocAutoConfiguration

@@ -1,11 +1,11 @@
 # 查询 Filter 使用指南（前端版）
 
-> 适用后端：travelsky 查询框架（`DevQueryVO` + `FilterParser` + 翻译层）
+> 适用后端：wymix 查询框架（`DevQueryVO` + `FilterParser` + 翻译层）
 > 用途：前端拼接查询条件时，按本规范构造 `filter` 字符串，后端自动解析为 SQL。
 >
 > **事实基准**：本文描述以 `common` / `repository` / `jpa_repository` / `mybatis_repository` 的**源码**为准，
-> 冲突时源码优先。解析器源码：`travelsky_dev_repository` 的 `FilterStringParser`（词法）、`FilterParser`（语法→AST）；
-> 翻译层：`travelsky_dev_mybatis_repository` 的 `QueryParseHelper`、`travelsky_dev_jpa_repository` 的 `SpecificationHelper`。
+> 冲突时源码优先。解析器源码：`repository` 的 `FilterStringParser`（词法）、`FilterParser`（语法→AST）；
+> 翻译层：`mybatis_repository` 的 `QueryParseHelper`、`jpa_repository` 的 `SpecificationHelper`。
 
 ---
 
@@ -42,7 +42,7 @@ public class DevQueryVO implements Serializable {
 | `page` | Long | 页码，从 1 开始，默认 1 |
 | `limit` | Long | 每页条数，默认 20；MyBatis 侧分页插件上限 `10000`（超出部分被截为 10000） |
 
-> 典型端点：`GET /{资源}`（由 `AbstractBaseController` 暴露），详见 `travelsky_dev_web/README.md`。
+> 典型端点：`GET /{资源}`（由 `AbstractBaseController` 暴露），详见 `web/README.md`。
 
 ---
 
@@ -159,7 +159,7 @@ WHERE name = 'john'
 
 ## 3. 操作符一览
 
-全部操作符定义在 `com.travelsky.base.common.query.OperateSymbol`（含别名）。
+全部操作符定义在 `org.wymix.framework.common.query.OperateSymbol`（含别名）。
 
 | 语义 | filter 中写法（别名用 `/` 分隔） | MyBatis 翻译结果 | JPA 翻译结果 | 值个数 |
 |------|------------------|------------------|--------------|--------|
@@ -380,10 +380,10 @@ filter DSL 的解析与执行已分层收敛：
 
 | 层 | 模块 | 职责 |
 |---|---|---|
-| 词法解析 | `travelsky_dev_repository`（`FilterStringParser`） | filter 字符串 → 嵌套结构化列表；负责括号配对、逗号/空白分隔 |
-| 语法归一律 | `travelsky_dev_repository`（`FilterParser`） | 结构化列表 → `FilterNode` AST（`ConditionNode` / `LogicalNode` / `GroupNode`）；AND/OR 优先级归一（AND 优先）、多条件默认 AND、`in`/`between` 值写法归一（`[f,in,[a,b]]` 与 `[f,in,a,b]` 等价） |
-| MyBatis 翻译层 | `travelsky_dev_mybatis_repository`（`QueryParseHelper`） | `FilterNode` AST → MyBatis-Plus `QueryWrapper`；列名驼峰转大写下划线、`@TableAlias` 别名、排序翻译 |
-| JPA 翻译层 | `travelsky_dev_jpa_repository`（`SpecificationHelper`） | `FilterNode` AST → JPA `Predicate`；支持 `a.b.c` 嵌套属性路径、按实体字段类型转换 |
+| 词法解析 | `repository`（`FilterStringParser`） | filter 字符串 → 嵌套结构化列表；负责括号配对、逗号/空白分隔 |
+| 语法归一律 | `repository`（`FilterParser`） | 结构化列表 → `FilterNode` AST（`ConditionNode` / `LogicalNode` / `GroupNode`）；AND/OR 优先级归一（AND 优先）、多条件默认 AND、`in`/`between` 值写法归一（`[f,in,[a,b]]` 与 `[f,in,a,b]` 等价） |
+| MyBatis 翻译层 | `mybatis_repository`（`QueryParseHelper`） | `FilterNode` AST → MyBatis-Plus `QueryWrapper`；列名驼峰转大写下划线、`@TableAlias` 别名、排序翻译 |
+| JPA 翻译层 | `jpa_repository`（`SpecificationHelper`） | `FilterNode` AST → JPA `Predicate`；支持 `a.b.c` 嵌套属性路径、按实体字段类型转换 |
 
 新增操作符时：在 `OperateSymbol`（`common` 模块）定义符号，再在两个翻译层各补一个分支，
 **解析层（`FilterParser` / `FilterStringParser`）无需改动**。
@@ -391,10 +391,10 @@ filter DSL 的解析与执行已分层收敛：
 ### 后端侧构造 filter
 
 前端拼接之外的另一种方式（后端代码里避免手写字符串）：`DevQueryVO#addFilters(Triple<String, OperateSymbol, String>...)`
-把若干三元组与已有 `filter` 按 AND 合并。详见 `travelsky_dev_common/README.md`。
+把若干三元组与已有 `filter` 按 AND 合并。详见 `common/README.md`。
 
 ### 相关文档
 
-- 后端视角的 DevQueryVO 说明：`travelsky_dev_mybatis_repository/DevQueryVO用法.md`
+- 后端视角的 DevQueryVO 说明：`mybatis_repository/DevQueryVO用法.md`
 - 操作符取值表：`common` 模块的 `OperateSymbol`
-- 本文的校验依据：`travelsky_dev_repository/src/test/.../FilterParserTest.java`、`travelsky_dev_mybatis_repository/src/test/.../QueryParseHelperTest.java`
+- 本文的校验依据：`repository/src/test/.../FilterParserTest.java`、`mybatis_repository/src/test/.../QueryParseHelperTest.java`

@@ -11,7 +11,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * travelsky_dev_dynamic_datasource 示例入口。
+ * dynamic_datasource 示例入口。
  */
 @RestController
 @RequestMapping("demo/dynamicDatasource")

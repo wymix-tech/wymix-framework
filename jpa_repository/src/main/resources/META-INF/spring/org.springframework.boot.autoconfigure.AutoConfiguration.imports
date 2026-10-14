@@ -1,0 +1,2 @@
+org.wymix.framework.repository.configuration.JpaConfiguration
+org.wymix.framework.repository.jpa.datachangelog.configuration.DataChangeLogConfiguration

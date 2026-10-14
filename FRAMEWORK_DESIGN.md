@@ -1,7 +1,7 @@
-# TravelSky Dev Framework 总框架设计文档
+# Wymix Dev Framework 总框架设计文档
 
 > 基于 Spring Boot 3.5.8 + Java 17，Maven 多模块架构
-> Maven 坐标：`com.travelsky.base:travelsky_dev_parent3:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
+> Maven 坐标：`org.wymix.framework:dev_parent:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
 
 > **事实基准**：本文为各模块 `README.md` 的上层总览；描述冲突时**以模块 README 与源码为准**。
 
@@ -82,17 +82,17 @@
 | 层 | 模块 | 一句话职责 | 装配开关（前缀） |
 |----|------|-----------|------------------|
 | 基础 | utils | 通用工具（JSON/Long 精度、雪花 ID、反射、网络/日期） | 无自动配置（纯工具类） |
-| 基础 | threadpool | 命名线程池注册中心 + 运行时可观测 + TTL 透传 | `travelsky.threadpool.enabled`(默认 true) |
+| 基础 | threadpool | 命名线程池注册中心 + 运行时可观测 + TTL 透传 | `wymix.threadpool.enabled`(默认 true) |
 | 基础 | common | 统一返回/分页/审计 VO/安全上下文/异常（跨层契约） | 无自动配置（数据契约） |
-| 核心 | core | 启动引导与监听器、异步调度、Feign 动态实例、邮件/消息门面 | `travelsky.core.enabled`、`async.enabled`(默认 true) |
+| 核心 | core | 启动引导与监听器、异步调度、Feign 动态实例、邮件/消息门面 | `wymix.core.enabled`、`async.enabled`(默认 true) |
 | 数据 | repository | ORM 无关抽象：变更日志、迁移注解、filter DSL 解析器（词法+语法→AST） | 无自动配置（抽象契约） |
-| 数据 | jpa_repository | JPA 实现：审计填充、变更日志、Spec DSL 翻译 | `travelsky.jpa.enabled`、`data-changelog.enabled`(默认 true) |
-| 数据 | mybatis_repository | MyBatis-Plus 实现：查询 DSL 翻译、数据权限、分页 | `travelsky.mybatis.enabled`、`data-changelog.enabled`(默认 true) |
+| 数据 | jpa_repository | JPA 实现：审计填充、变更日志、Spec DSL 翻译 | `wymix.jpa.enabled`、`data-changelog.enabled`(默认 true) |
+| 数据 | mybatis_repository | MyBatis-Plus 实现：查询 DSL 翻译、数据权限、分页 | `wymix.mybatis.enabled`、`data-changelog.enabled`(默认 true) |
 | 数据 | dynamic_datasource | 环境准备期多数据源注入 + 注解/编程式路由 | `dynamic.datasource.enabled`(**默认 false**) |
-| 数据 | data_migration | 变更事件→迁移回调（迁移回放未实现） | `travelsky.data-migration.enabled`(默认 true) |
+| 数据 | data_migration | 变更事件→迁移回调（迁移回放未实现） | `wymix.data-migration.enabled`(默认 true) |
 | 设施 | security | JWT/表单认证、令牌黑名单、配置解密、BCrypt | `security.enabled`(默认 true) |
 | 设施 | cache | Caffeine 本地缓存装配（`@ConditionalOnClass(Caffeine)`，`caffeine` 为 optional 依赖） | `cache.enabled`(默认 true) |
-| 设施 | monitor | Actuator 默认值注入 + `/actuator/**` 放行 | `travelsky.monitor.enabled`(默认 true) |
+| 设施 | monitor | Actuator 默认值注入 + `/actuator/**` 放行 | `wymix.monitor.enabled`(默认 true) |
 | 设施 | decentralization_discovery | JmDNS 去中心化服务发现（JmDNS 为 optional 依赖） | `decentralization.discovery.enable`(**默认 false**) |
 | 应用 | web | 统一响应、TraceId、Long 精度、i18n、慢请求、CRUD 基类、Swagger | `swagger.enabled`(默认 true)、`swagger.web.enabled`(默认 false) |
 | 应用 | test | Testcontainers + DBUnit 测试基础设施 | 测试域，无装配开关 |
@@ -112,7 +112,7 @@
   JPA 的 `SpecificationHelper` 与 MyBatis 的 `QueryParseHelper` 均降级为「AST 翻译器」，各自只做
   AST → `Specification` / `QueryWrapper`，新增操作符只需在两个翻译层各加一个分支。
 - **现状补充**：`@DataChangeLog` / `@DataMigration` 注解已单一来源定义在 `repository`
-  （`com.travelsky.base.repository.datachangelog.annotation` / `...datamigration.annotations`），
+  （`org.wymix.framework.repository.datachangelog.annotation` / `...datamigration.annotations`），
   历史重复定义问题已消解。两套 ORM 的**业务基类包路径已隔离**（`...repository.mybatis.*` 与 `...repository.jpa.*`），可并存引入。
 - **能力差异（非对称）**：数据权限（`@DataPermission` / `PermissionSqlInjector`）**仅 MyBatis 侧提供**，JPA 侧无对应实现。
 
@@ -158,7 +158,7 @@
 
 - **背景**：避免「引入即强制生效」带来的干扰（如不需要缓存也强制建缓存实例）。
 - **决策**：`cache`、`dynamic_datasource`、`decentralization_discovery`、`web`（swagger）等采用 `@ConditionalOnClass` / `@ConditionalOnProperty` 按需装配。
-- **现状（R4 已修复）**：`MyBatisConfiguration`（`travelsky.mybatis.enabled`）与 `MonitorConfiguration`（`travelsky.monitor.enabled`）
+- **现状（R4 已修复）**：`MyBatisConfiguration`（`wymix.mybatis.enabled`）与 `MonitorConfiguration`（`wymix.monitor.enabled`）
   **均已具备 `@ConditionalOnProperty(matchIfMissing = true)` 开关**，各主要装配的条件开关已补齐。
 - **后果**：真正按需加载；仍存的差异是 `dynamic_datasource` / `decentralization_discovery` 为 opt-in（默认关闭），
   其余业务能力默认开启——引入依赖前建议先确认该模块的开关前缀（见 §3 表格）。
@@ -182,7 +182,7 @@
 | 监控 | Actuator + Micrometer + Prometheus | 随 Boot 管理 |
 | 发现 | JmDNS（mDNS，`optional`） | 3.5.12 |
 | 安全 | JJWT | 0.13.0（`<jjwt.version>`） |
-| 测试 | Testcontainers 1.20.6、DBUnit 2.8.0、POI 4.1.0、JUnit 5.7.2 | `travelsky_dev_test`（test scope） |
+| 测试 | Testcontainers 1.20.6、DBUnit 2.8.0、POI 4.1.0、JUnit 5.7.2 | `test`（test scope） |
 | 构建 | Maven（`flatten-maven-plugin` + `${revision}` 统一版本） | `<revision>3.0.0-SNAPSHOT</revision>` |
 
 ---
@@ -196,12 +196,12 @@
 | R1 | `ai` 模块为空壳（仅 `pom.xml` + README）；`data_migration` 迁移回放未实现 | **已标注（实验性）** | 均定位为实验性/预留模块：`ai` README 已声明「勿在生产直接依赖」；`data_migration` 回放未实现时输出 `warn` 级别日志提示 |
 | R2 | 安全 / `dynamic_datasource` / `core` / `monitor` 仍用 `spring.factories`，其余用 `AutoConfiguration.imports` | **部分不成立** | 上述 `spring.factories` 中注册的均为 `EnvironmentPostProcessor` / `ApplicationListener`（须先于自动装配与环境准备阶段执行），Boot 3 无替代注册方式，**属设计约束而非技术债**；真正的自动配置类已全部迁入 `AutoConfiguration.imports` |
 | R3 | `CachingConfigurerSupport` 在 Boot 3.x 已废弃 | **已修复** | `CacheManagerConfiguration.CacheCachingConfigurer` 已 `implements CachingConfigurer`（`b003f92` 起） |
-| R4 | `MyBatisConfiguration` / `MonitorConfiguration` 缺 `@ConditionalOnProperty` | **已修复** | 已分别添加 `travelsky.mybatis.enabled` / `travelsky.monitor.enabled`（`matchIfMissing = true`） |
+| R4 | `MyBatisConfiguration` / `MonitorConfiguration` 缺 `@ConditionalOnProperty` | **已修复** | 已分别添加 `wymix.mybatis.enabled` / `wymix.monitor.enabled`（`matchIfMissing = true`） |
 | R5 | Spring Cloud 3.1.3 与 Boot 3.5.8 存在版本落差 | **未解决（阻塞性）** | 对齐 Spring Cloud 到 2025.x；在此之前 `decentralization_discovery` 不可用（`FeignContext` 缺失），Feign 相关能力亦受影响 |
 | R6 | `code-generator` 硬编码 | **已修复** | 数据库凭证、包名（`GEN_BASE_PACKAGE`）、输出目录（`GEN_OUTPUT_DIR`）、类名前缀开关（`GEN_ROUTE_AS_CLASS_PREFIX`）均改为环境变量 / 系统属性注入，缺失时快速失败；Windows 路径硬编码已移除 |
-| R7 | `@DataChangeLog` 在多个模块重复定义 | **已修复** | 单一来源：`travelsky_dev_repository` 的 `...datachangelog.annotation.DataChangeLog` |
-| R8 | `@RepeatRequest` 默认不生效 | **已缓解（文档 + 开关）** | `web` 模块默认不注册切面（去重粒度需业务确认），README 已显著标注；新增 `travelsky.web.repeat-request.enabled=true` 开关注册内置切面，业务方自声明 Bean 仍优先（`@ConditionalOnMissingBean`） |
-| R9 | 数据权限仅 MyBatis 侧实现 | **已修复** | 数据权限上下文/注解/切面上提到 `travelsky_dev_repository`；JPA 侧由 `SpecificationHelper#applyDataPermission` 将 `WHERE_ADDITIONAL` 注入器翻译为 `Predicate` 追加（`REPLACE_TABLE_NAME` 跳过、`statementIds` 不支持按语句过滤会告警、字段名列名/属性名双向映射）；注入器获取与 injectSql 解析抽为 `DataPermissionSupport`，两侧共用且未注册为 Bean 时有明确异常
+| R7 | `@DataChangeLog` 在多个模块重复定义 | **已修复** | 单一来源：`repository` 的 `...datachangelog.annotation.DataChangeLog` |
+| R8 | `@RepeatRequest` 默认不生效 | **已缓解（文档 + 开关）** | `web` 模块默认不注册切面（去重粒度需业务确认），README 已显著标注；新增 `wymix.web.repeat-request.enabled=true` 开关注册内置切面，业务方自声明 Bean 仍优先（`@ConditionalOnMissingBean`） |
+| R9 | 数据权限仅 MyBatis 侧实现 | **已修复** | 数据权限上下文/注解/切面上提到 `repository`；JPA 侧由 `SpecificationHelper#applyDataPermission` 将 `WHERE_ADDITIONAL` 注入器翻译为 `Predicate` 追加（`REPLACE_TABLE_NAME` 跳过、`statementIds` 不支持按语句过滤会告警、字段名列名/属性名双向映射）；注入器获取与 injectSql 解析抽为 `DataPermissionSupport`，两侧共用且未注册为 Bean 时有明确异常
 | R10 | JWT 黑名单为单机内存态 | **未解决** | 集群部署需替换为 Redis 等共享存储的黑名单实现 |
 | R11 | MyBatis 分页 SQL 注入改写依赖 JSqlParser，`@DynamicDatasource` 注解查找存在实现缺陷 | **已修复** | 回退判空由 `Optional != null` 改为 `Optional.isPresent()`；Mapper 分支原取 `clazz.getSuperclass()`（接口恒为 `null`，该回退是死代码）改为遍历 `getInterfaces()`；`getSuperclass()` 判空；单测覆盖类继承回退、方法重写回退与 Mapper（父）接口回退 |
 
@@ -225,4 +225,4 @@
 
 ---
 
-*相关文档：各模块 `README.md`、`QUICK_START.md`、`FILTER_USAGE_GUIDE.md`、`travelsky_dev_mybatis_repository/DevQueryVO用法.md`、根目录 `README.md`（模块导航）*
+*相关文档：各模块 `README.md`、`QUICK_START.md`、`FILTER_USAGE_GUIDE.md`、`mybatis_repository/DevQueryVO用法.md`、根目录 `README.md`（模块导航）*

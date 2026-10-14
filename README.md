@@ -1,8 +1,8 @@
-# travelsky_dev 快速开发框架
+# wymix_dev 快速开发框架
 
 > 企业级 Java 快速开发框架 · 基于 Spring Boot 3.5.8 + Java 17 · Maven 多模块架构
 >
-> Maven 坐标：`com.travelsky.base:travelsky_dev_parent3:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
+> Maven 坐标：`org.wymix.framework:dev_parent:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
 
 ---
 
@@ -13,35 +13,35 @@
 | [QUICK_START.md](./QUICK_START.md) | **快速上手指南**：环境、依赖引入、最小 CRUD 示例、配置、FAQ |
 | [FRAMEWORK_DESIGN.md](./FRAMEWORK_DESIGN.md) | **总框架设计文档**：分层架构、模块职责、关键设计决策（ADR）、技术栈、已知风险 |
 | [FILTER_USAGE_GUIDE.md](./FILTER_USAGE_GUIDE.md) | 查询 DSL 前端使用指南（含 AI 提示词模板） |
-| [travelsky_dev_mybatis_repository/DevQueryVO用法.md](./travelsky_dev_mybatis_repository/DevQueryVO用法.md) | 查询 DSL 后端视角说明（filter / sorts 语法） |
+| [mybatis_repository/DevQueryVO用法.md](./mybatis_repository/DevQueryVO用法.md) | 查询 DSL 后端视角说明（filter / sorts 语法） |
 
 ---
 
 ## 框架结构
 
 ```
-travelsky_dev_parent3
+dev_parent
 ├── 基础层
-│   ├── travelsky_dev_utils            工具类模块
-│   ├── travelsky_dev_threadpool       线程池管理模块
-│   └── travelsky_dev_common           通用类封装模块
+│   ├── utils            工具类模块
+│   ├── threadpool       线程池管理模块
+│   └── common           通用类封装模块
 ├── 核心层
-│   └── travelsky_dev_core             框架核心（启动/异步/Feign/邮件）
+│   └── core             框架核心（启动/异步/Feign/邮件）
 ├── 数据层
-│   ├── travelsky_dev_repository       数据访问抽象层（ORM 无关）
-│   ├── travelsky_dev_jpa_repository   基于 JPA 的数据库交互模块
-│   ├── travelsky_dev_mybatis_repository  基于 MyBatis 的数据库交互模块
-│   ├── travelsky_dev_dynamic_datasource  动态数据源模块
-│   └── travelsky_dev_data_migration   数据迁移模块
+│   ├── repository       数据访问抽象层（ORM 无关）
+│   ├── jpa_repository   基于 JPA 的数据库交互模块
+│   ├── mybatis_repository  基于 MyBatis 的数据库交互模块
+│   ├── dynamic_datasource  动态数据源模块
+│   └── data_migration   数据迁移模块
 ├── 基础设施层
-│   ├── travelsky_dev_security         认证模块
-│   ├── travelsky_dev_cache            缓存模块
-│   ├── travelsky_dev_monitor          监控模块
-│   └── travelsky_dev_decentralization_discovery  去中心化服务发现模块
+│   ├── security         认证模块
+│   ├── cache            缓存模块
+│   ├── monitor          监控模块
+│   └── decentralization_discovery  去中心化服务发现模块
 └── 应用层
-    ├── travelsky_dev_web              WEB 模块
-    ├── travelsky_dev_test             单元测试依赖模块
-    └── travelsky_dev_ai              AI 能力模块（占位/空壳）
+    ├── web              WEB 模块
+    ├── test             单元测试依赖模块
+    └── ai              AI 能力模块（占位/空壳）
 ```
 
 ## 辅助项目
@@ -55,22 +55,22 @@ travelsky_dev_parent3
 
 | 模块 | README |
 |------|--------|
-| utils | [travelsky_dev_utils/README.md](./travelsky_dev_utils/README.md) |
-| threadpool | [travelsky_dev_threadpool/README.md](./travelsky_dev_threadpool/README.md) |
-| common | [travelsky_dev_common/README.md](./travelsky_dev_common/README.md) |
-| core | [travelsky_dev_core/README.md](./travelsky_dev_core/README.md) |
-| repository | [travelsky_dev_repository/README.md](./travelsky_dev_repository/README.md) |
-| jpa_repository | [travelsky_dev_jpa_repository/README.md](./travelsky_dev_jpa_repository/README.md) |
-| mybatis_repository | [travelsky_dev_mybatis_repository/README.md](./travelsky_dev_mybatis_repository/README.md) |
-| dynamic_datasource | [travelsky_dev_dynamic_datasource/README.md](./travelsky_dev_dynamic_datasource/README.md) |
-| data_migration | [travelsky_dev_data_migration/README.md](./travelsky_dev_data_migration/README.md) |
-| security | [travelsky_dev_security/README.md](./travelsky_dev_security/README.md) |
-| cache | [travelsky_dev_cache/README.md](./travelsky_dev_cache/README.md) |
-| monitor | [travelsky_dev_monitor/README.md](./travelsky_dev_monitor/README.md) |
-| decentralization_discovery | [travelsky_dev_decentralization_discovery/README.md](./travelsky_dev_decentralization_discovery/README.md) |
-| web | [travelsky_dev_web/README.md](./travelsky_dev_web/README.md) |
-| test | [travelsky_dev_test/README.md](./travelsky_dev_test/README.md) |
-| ai | [travelsky_dev_ai/README.md](./travelsky_dev_ai/README.md) |
+| utils | [utils/README.md](./utils/README.md) |
+| threadpool | [threadpool/README.md](./threadpool/README.md) |
+| common | [common/README.md](./common/README.md) |
+| core | [core/README.md](./core/README.md) |
+| repository | [repository/README.md](./repository/README.md) |
+| jpa_repository | [jpa_repository/README.md](./jpa_repository/README.md) |
+| mybatis_repository | [mybatis_repository/README.md](./mybatis_repository/README.md) |
+| dynamic_datasource | [dynamic_datasource/README.md](./dynamic_datasource/README.md) |
+| data_migration | [data_migration/README.md](./data_migration/README.md) |
+| security | [security/README.md](./security/README.md) |
+| cache | [cache/README.md](./cache/README.md) |
+| monitor | [monitor/README.md](./monitor/README.md) |
+| decentralization_discovery | [decentralization_discovery/README.md](./decentralization_discovery/README.md) |
+| web | [web/README.md](./web/README.md) |
+| test | [test/README.md](./test/README.md) |
+| ai | [ai/README.md](./ai/README.md) |
 | code-generator | [code-generator/README.md](./code-generator/README.md) |
 | sample | [sample/README.md](./sample/README.md) |
 
@@ -83,19 +83,19 @@ travelsky_dev_parent3
 ```xml
 <dependencies>
     <dependency>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_web</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>web</artifactId>
         <version>${revision}</version>
     </dependency>
     <dependency>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_mybatis_repository</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>mybatis_repository</artifactId>
         <version>${revision}</version>
     </dependency>
 </dependencies>
 ```
 
-> `web` 的 pom 直接 compile 依赖 `travelsky_dev_security`，**仅引入 `web` 即会默认开启安全装配**
+> `web` 的 pom 直接 compile 依赖 `security`，**仅引入 `web` 即会默认开启安全装配**
 > （`security.enabled` 默认 `matchIfMissing = true`）。暂不需要认证时请显式配置 `security.enabled: false`。
 
 ### 2. 创建启动类

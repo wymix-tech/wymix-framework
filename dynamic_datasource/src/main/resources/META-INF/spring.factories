@@ -1,0 +1,2 @@
+# EnvironmentPostProcessor 必须在 spring.factories 注册（先于自动装配阶段执行，Spring Boot 3 官方约定的唯一注册方式），不可迁移到 AutoConfiguration.imports
+org.springframework.boot.env.EnvironmentPostProcessor=org.wymix.framework.dynamic.datasource.support.DynamicEnvPostProcessor
