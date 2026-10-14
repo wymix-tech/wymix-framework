@@ -14,10 +14,15 @@ import java.util.List;
 
 public class PageHelper {
 
+    /**
+     * Spring Data 页为 0-based，框架 {@link Page} 为 1-based（{@code Page#isFirst()} 判定 {@code page == 1}），
+     * 此处必须 +1 才能与 MyBatis 侧 {@code IPage#getCurrent()} 的口径一致，
+     * 否则 {@code page / hasPrev / hasNext} 会整体错位。
+     */
     public static <T> Page<T> convert(org.springframework.data.domain.Page<T> page) {
         Page<T> ret = new Page<>();
         ret.setSize(page.getSize());
-        ret.setPage(page.getNumber());
+        ret.setPage(page.getNumber() + 1);
         ret.setContent(page.getContent());
         ret.setTotal(page.getTotalElements());
         ret.setTotalPage(page.getTotalPages());

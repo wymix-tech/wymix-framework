@@ -52,10 +52,17 @@ public abstract class AbstractBaseServiceImpl<T, ID extends Serializable, REPOSI
         return entity;
     }
 
+    /**
+     * 按主键更新。
+     *
+     * <p><b>必须先把 {@code id} 写回实体</b>：MyBatis-Plus 的 {@code updateById} 只认实体上的主键值，
+     * 若请求体未带 id，会退化成「更新 0 行」并返回成功，造成「调用成功但数据没变」。
+     */
     @Override
     public T update(ID id, T entity) {
         T old = this.getOne(id);
         beforeUpdate(old, entity);
+        applyIdToEntity(entity, id);
         this.getRepository().updateById(entity);
         afterUpdate(entity);
         return entity;
@@ -119,9 +126,29 @@ public abstract class AbstractBaseServiceImpl<T, ID extends Serializable, REPOSI
             throw new BusinessException("Miss Column: ID");
         }
         try {
+            fields[0].setAccessible(true);
             return (ID) fields[0].get(entity);
         } catch (IllegalAccessException e) {
             return null;
+        }
+    }
+
+    /**
+     * 把主键值写入实体的 {@code @TableId} 字段（{@code update(ID, T)} 之前调用）。
+     */
+    private void applyIdToEntity(T entity, ID id) {
+        if (entity == null || id == null) {
+            return;
+        }
+        Field[] fields = ReflectUtils.findFieldWithAnnotation(entity.getClass(), TableId.class);
+        if (ArrayUtils.isEmpty(fields)) {
+            throw new BusinessException("Miss Column: ID");
+        }
+        try {
+            fields[0].setAccessible(true);
+            fields[0].set(entity, id);
+        } catch (IllegalAccessException e) {
+            throw new BusinessException("Miss Column: ID");
         }
     }
 

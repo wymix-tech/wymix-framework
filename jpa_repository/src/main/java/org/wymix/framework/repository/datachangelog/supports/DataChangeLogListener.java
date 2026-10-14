@@ -88,26 +88,41 @@ public class DataChangeLogListener implements PostInsertEventListener, PreUpdate
         }
     }
 
+    /**
+     * 更新前记录变更日志。
+     *
+     * <p><b>返回值语义（务必返回 false）</b>：Hibernate {@code PreUpdateEventListener#onPreUpdate}
+     * 的返回值表示「是否否决（veto）本次更新」，返回 {@code true} 会让 Hibernate <b>跳过 UPDATE 语句的执行</b>，
+     * 表现为「接口返回 200、变更日志也记录了，但数据库没变」。因此所有分支都必须返回 {@code false}。
+     *
+     * @param event Hibernate 更新前事件
+     * @return 固定 false（不否决更新）
+     */
     @Override
     public boolean onPreUpdate(PreUpdateEvent event) {
         if (!isWebRequest()) {
-            return true;
+            return false;
         }
         if (MAP_THREAD_LOCAL.get().containsKey(event.getEntity().getClass())) {
             if (MAP_THREAD_LOCAL.get().get(event.getEntity().getClass()).contains(event.getId())) {
-                return true;
+                return false;
             }
             MAP_THREAD_LOCAL.get().get(event.getEntity().getClass()).add(event.getId());
         } else {
             MAP_THREAD_LOCAL.get().put(event.getEntity().getClass(), Sets.newHashSet(event.getId()));
         }
+        // 临时 Session 仅用于读取更新前的旧值以产出变更日志，用后必须关闭，否则每次 UPDATE 泄漏一个 Session
         Session session = event.getSession().getSessionFactory().openTemporarySession();
-        Object o = session.get(event.getEntity().getClass(), event.getId());
-        dataChangeLogHandler.touchForUpdate(event, o);
+        try {
+            Object o = session.get(event.getEntity().getClass(), event.getId());
+            dataChangeLogHandler.touchForUpdate(event, o);
+        } finally {
+            session.close();
+        }
         if (log.isDebugEnabled()) {
             log.debug("Data Change Log: Update {} {}", event.getPersister().getEntityName(), event.getId());
         }
-        return true;
+        return false;
     }
 
     @Override
