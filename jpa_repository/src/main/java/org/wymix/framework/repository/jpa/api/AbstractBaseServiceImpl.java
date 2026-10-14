@@ -49,10 +49,17 @@ public abstract class AbstractBaseServiceImpl<T, ID, REPOSITORY extends BaseRepo
         return entity;
     }
 
+    /**
+     * 按主键更新。
+     *
+     * <p><b>必须先把 {@code id} 写回实体</b>：JPA 的 {@code save/saveAndFlush} 依据实体主键是否为空判断
+     * 走 INSERT 还是 UPDATE，若实体未带 id 会直接插入一条新记录而不是更新目标行。
+     */
     @Override
     public T update(ID id, T entity) {
         T old = this.getOne(id);
         beforeUpdate(old, entity);
+        applyIdToEntity(entity, id);
         entity = this.getRepository().saveAndFlush(entity);
         afterUpdate(entity);
         return entity;
@@ -132,10 +139,30 @@ public abstract class AbstractBaseServiceImpl<T, ID, REPOSITORY extends BaseRepo
             throw new BusinessException("Miss Column: ID");
         }
         try {
+            fields[0].setAccessible(true);
             return (ID) fields[0].get(entity);
         } catch (IllegalAccessException e) {
             return null;
         }
 
+    }
+
+    /**
+     * 把主键值写入实体的 {@code @Id} 字段（{@code update(ID, T)} 之前调用）。
+     */
+    private void applyIdToEntity(T entity, ID id) {
+        if (entity == null || id == null) {
+            return;
+        }
+        Field[] fields = ReflectUtils.findFieldWithAnnotation(entity.getClass(), Id.class);
+        if (ArrayUtils.isEmpty(fields)) {
+            throw new BusinessException("Miss Column: ID");
+        }
+        try {
+            fields[0].setAccessible(true);
+            fields[0].set(entity, id);
+        } catch (IllegalAccessException e) {
+            throw new BusinessException("Miss Column: ID");
+        }
     }
 }

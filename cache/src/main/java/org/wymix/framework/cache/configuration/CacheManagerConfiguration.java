@@ -162,9 +162,11 @@ public class CacheManagerConfiguration {
     private static com.github.benmanes.caffeine.cache.Weigher<Object, Object> newWeightedWeigher(String weigherClass) {
         String trimmed = weigherClass.trim();
         // 类名来自配置文件，限制包前缀白名单，避免配置被污染时加载并实例化 classpath 上任意类
-        if (!trimmed.startsWith("com.wymix.") && !trimmed.startsWith("com.github.benmanes.")) {
+        // 同时接受当前包名 org.wymix.* 与迁移前的历史包名 com.wymix.*，避免旧配置升级后直接失效
+        if (!trimmed.startsWith("org.wymix.") && !trimmed.startsWith("com.wymix.")
+                && !trimmed.startsWith("com.github.benmanes.")) {
             throw new IllegalStateException(
-                    "weigher 不在允许的包范围内（仅支持 com.wymix.* 或 com.github.benmanes.*）");
+                    "weigher 不在允许的包范围内（仅支持 org.wymix.* / com.wymix.* 或 com.github.benmanes.*）");
         }
         Object instance;
         try {

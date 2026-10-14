@@ -82,6 +82,7 @@ curl 'http://localhost:8080/demo/repository/page?username=admin&page=1&limit=10'
 curl http://localhost:8080/demo/repository/permission
 
 # 数据变更日志 / 数据迁移
+# 注意：/demo/changelog/** 的控制器位于 src/main/mybatis/java，仅 mybatis 模式存在（jpa 模式为 404）
 curl http://localhost:8080/demo/changelog/entities
 curl http://localhost:8080/demo/dataMigration/stats
 
@@ -102,10 +103,19 @@ curl http://localhost:8080/demo/monitor/endpoints
 curl http://localhost:8080/actuator/health
 
 # 受保护端点（不在白名单，需先登录）
-curl -i http://localhost:8080/secure/me
-curl -i -X POST -d 'username=admin&password=Abc@123' -c cookie.txt http://localhost:8080/login
-curl -b cookie.txt http://localhost:8080/secure/me
+curl -i http://localhost:8080/secure/me                    # 未认证 -> 401
+
+# 登录：框架 security 装配使用 SessionCreationPolicy.STATELESS，不创建会话，
+# 因此登录成功后返回的是 JWT 令牌（不是 Cookie），后续请求需带 Authorization 头
+TOKEN=$(curl -s -X POST -d 'username=admin&password=Abc@123' http://localhost:8080/login \
+        | sed -E 's/.*"payload":"([^"]+)".*/\1/')
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/secure/me
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/sampleUser
 ```
+
+> **注意**：`curl -c cookie.txt ... /login` 再 `curl -b cookie.txt /secure/me` 的会话方式**不可用**
+> （无状态策略下不会下发/识别 Session Cookie，会返回 401）。JWT 也可直接由
+> `POST /demo/security/token?username=admin` 签发。
 
 Swagger UI：`http://localhost:8080/doc.html`（由 web 模块 `ApiDocAutoConfiguration` 自动装配）。
 
