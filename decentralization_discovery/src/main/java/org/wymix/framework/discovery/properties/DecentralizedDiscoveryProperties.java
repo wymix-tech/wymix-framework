@@ -46,8 +46,4 @@ public class DecentralizedDiscoveryProperties {
         this.service = service;
     }
 
-    public String type() {
-        return String.format("_%s._tcp.local.", namespace);
-    }
-
 }

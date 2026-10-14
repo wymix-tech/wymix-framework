@@ -28,6 +28,12 @@ public class LeaderHeartbeatEndpoint {
 
     private static final Logger logger = LoggerFactory.getLogger(LeaderHeartbeatEndpoint.class);
 
+    /**
+     * 接收 Leader 心跳广播。
+     *
+     * <p>参数名必须是 {@code nodes}：actuator 按参数名绑定请求体，而调用方
+     * {@code DiscoveryFeignClient#heartbeat} 发送的是 {@link HeartbeatDTO}（字段 {@code nodes}）。
+     */
     @WriteOperation
     public String heartbeat(String nodes) {
         NodeRefresher.refresh(nodes);

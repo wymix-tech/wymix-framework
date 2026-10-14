@@ -291,7 +291,7 @@ curl -G 'http://localhost:8080/sampleUser' \
 | 监控指标 | 引入 `monitor`（自动放行 `/actuator/**` 并注入 Prometheus 默认值，开关 `wymix.monitor.enabled`） |
 | 本地缓存 | 引入 `cache` **且自行引入 `caffeine` 依赖**（模块中该依赖为 `optional`，不传递）+ 按需配置 `caffeine.cache.<name>.*` |
 | 多数据源 | 引入 `dynamic_datasource` + 自行引入 JDBC 驱动与 HikariCP + 配置 `dynamic.datasource.enabled: true` 与 `primary`、`items` |
-| 去中心化发现 | 引入 `decentralization_discovery` + 自行引入 JmDNS（`optional`）+ `decentralization.discovery.enable: true`（当前受 Spring Cloud 版本限制，见 FAQ Q5） |
+| 去中心化发现 | 引入 `decentralization_discovery` + 配置 `decentralization.discovery.enable: true` 与 `service.<svc>` 地址列表（无可选依赖，不做自动发现） |
 | 异步/定时 | 引入 `core` 即自动生效（`async.enabled=false` 可关闭异步/调度装配，`wymix.core.enabled=false` 关闭基础装配） |
 | 数据权限 | MyBatis 侧：`@EnableDataPermission(basePackages=...)` + Service 方法加 `@DataPermission(injectors = {XxxInjector.class})`（JPA 侧不提供） |
 | 变更日志 / 迁移 | 实体加 `@DataChangeLog`（可选 `@DataMigration`）+ `data.changelog.basePackages` + 引入 `data_migration` |
@@ -361,11 +361,13 @@ A：能。`Caffeine` 为 `optional` 依赖且在装配上带 `@ConditionalOnClas
 本模块只提供 Caffeine 本地缓存，**不含分布式/多级缓存装配**（Hazelcast 与组合缓存已在 `b003f92` 中整体移除）；
 需要分布式缓存请业务侧显式装配自己的 `CacheManager` / `CachingConfigurer`。
 
-**Q4：Spring Cloud 版本报警告 / Feign 不生效？**
-A：父 POM 锁定的 `spring-cloud-starter-openfeign` 为 `3.1.3`（Spring Cloud 2021.x），与 Spring Boot 3.5.8 存在版本落差，
-Boot 3 不会加载该版本的 `spring.factories` 自动装配。已知影响：`decentralization_discovery`
-依赖 Spring Cloud OpenFeign 的 `FeignContext`，启用 `decentralization.discovery.enable=true` 会报
-`required a bean of type 'FeignContext' that could not be found`。建议对齐到与 Boot 3.5 匹配的 Spring Cloud 2025.x。
+**Q4：Feign 客户端怎么配？Spring Cloud 版本如何选？**
+A：父 POM 已改为导入 `spring-cloud-dependencies` BOM（当前 **2025.0.3**，对应 Boot 3.5.x），各 spring-cloud starter
+不再单独写版本，升级 Boot 时需按官方版本矩阵同步调整 `spring-cloud.version`（Boot 3.5.x → 2025.0.x）。
+
+原先锁定 `spring-cloud-starter-openfeign:3.1.3`（2021.x）时，其自动配置只注册在 `spring.factories` 中，Boot 3 不再读取该文件，
+导致整个 openfeign 自动装配都不生效（`FeignContext` Bean 缺失）。对齐后 `@FeignClient`
+与 `decentralization_discovery` 均正常工作。
 
 **Q5：JWT 密钥怎么配？**
 A：`security.jwt.randomSecret: true` 每次启动随机生成（开发方便）；生产建议 `randomSecret: false` + 固定 `security.jwt.secret`，

@@ -93,7 +93,7 @@
 | 设施 | security | JWT/表单认证、令牌黑名单、配置解密、BCrypt | `security.enabled`(默认 true) |
 | 设施 | cache | Caffeine 本地缓存装配（`@ConditionalOnClass(Caffeine)`，`caffeine` 为 optional 依赖） | `cache.enabled`(默认 true) |
 | 设施 | monitor | Actuator 默认值注入 + `/actuator/**` 放行 | `wymix.monitor.enabled`(默认 true) |
-| 设施 | decentralization_discovery | JmDNS 去中心化服务发现（JmDNS 为 optional 依赖） | `decentralization.discovery.enable`(**默认 false**) |
+| 设施 | decentralization_discovery | 配置驱动的服务发现（节点由 `service.<svc>` 显式配置，无自动发现、无可选依赖） | `decentralization.discovery.enable`(**默认 false**) |
 | 应用 | web | 统一响应、TraceId、Long 精度、i18n、慢请求、CRUD 基类、Swagger | `swagger.enabled`(默认 true)、`swagger.web.enabled`(默认 false) |
 | 应用 | test | Testcontainers + DBUnit 测试基础设施 | 测试域，无装配开关 |
 | 应用 | ai | AI 能力预留（**空壳模块**，仅坐标 + README） | 无自动配置 |
@@ -126,14 +126,17 @@
   多个无条件连接的条件按 AND 合并；`in`/`between` 的值支持 `[f,in,[a,b]]` 与 `[f,in,a,b]` 两种等价写法。
 - **后果**：前端拼条件、后端解析一致；可对接 AI 把自然语言转 filter。代价是表达式需严格成对括号，调试成本略高（见 `FILTER_USAGE_GUIDE.md`）。
 
-### ADR-003：去中心化服务发现（JmDNS）
+### ADR-003：去中心化服务发现（配置驱动）
 
 - **背景**：中小规模内网系统不希望引入 Eureka/Nacos 等注册中心运维负担。
-- **决策**：以 JmDNS（mDNS）实现 `_<namespace>._tcp.local.` 的服务发现，`decentralization.discovery.enable` opt-in，JmDNS 依赖 `optional`。
-- **后果**：零外部依赖即可服务发现；代价是 mDNS 多播在容器/K8s/跨网段环境通常被禁用（见 `decentralization_discovery` README 警告）。
-- **当前阻塞**：本模块 `NodeService` 依赖 Spring Cloud OpenFeign 的 `FeignContext`，而父 POM 锁定 `spring-cloud-starter-openfeign:3.1.3`
-  （2021.x，仅 Boot 2 时代的 `spring.factories` 装配）。在 Boot 3.5 下开启该模块会报 `FeignContext` Bean 缺失，
-  需先对齐 Spring Cloud 版本（风险 R5）。
+- **决策**：集群成员由 `decentralization.discovery.service.<svc>` 配置显式列出，实例启动后按配置地址向对端登记（`nodeRegister`，对端同时反向登记），`decentralization.discovery.enable` opt-in。**不做网络自动发现**。
+- **修订**：初版以 JmDNS（mDNS）实现 `_<namespace>._tcp.local.` 发现，已移除——mDNS 多播在容器/K8s/跨网段环境通常被禁用，且集群成员本就应由配置决定。移除后模块无任何可选依赖。
+- **后果**：零外部依赖、跨网段与容器环境只要地址可达即可工作；代价是新增/剔除实例需同步改配置（可用 `POST /actuator/nodeRefresh` 重新同步，无需重启）。
+- **阻塞已解除**：原父 POM 锁定 `spring-cloud-starter-openfeign:3.1.3`（2021.x，其自动配置只注册在
+  `spring.factories`，Boot 3 已不再读取该文件），在 Boot 3.5 下整个 openfeign 自动装配都不生效，
+  开启本模块会报 `FeignContext` Bean 缺失。现改为导入 `spring-cloud-dependencies` BOM（Boot 3.5.x →
+  Spring Cloud 2025.0.x），并按 4.x API 适配（`FeignContext` → `FeignClientFactory`、`setDecode404` → `setDismiss404`）。
+  双实例实测：双向注册、Leader 认知一致、Leader 失效后自动重选均正常。
 
 ### ADR-004：Long ↔ String 前后端精度防护
 
@@ -173,14 +176,14 @@
 | 框架 | Spring Boot（父 POM） | `spring-boot-starter-parent:3.5.8` |
 | 框架 | Spring Security | 6.x（随 Boot 3.5.8 管理） |
 | 框架 | Spring Data JPA | 随 Boot 管理 |
-| 框架 | Spring Cloud OpenFeign / LoadBalancer | **3.1.3**（2021.x，与 Boot 3.5 版本落差，见 R5） |
+| 框架 | Spring Cloud OpenFeign / LoadBalancer | **4.3.3**（由 `spring-cloud-dependencies` **2025.0.3** BOM 统一管理，对应 Boot 3.5.x） |
 | 持久化 | MyBatis-Plus | `mybatis-plus-spring-boot3-starter` + `mybatis-plus-jsqlparser`（版本由父 POM import 的 `mybatis-plus-bom:3.5.15` 管理） |
 | 持久化 | Hibernate JPA | 随 Spring Data JPA |
 | 缓存 | Caffeine（`optional`，需业务方显式引入） | 未显式指定，由 `spring-boot-dependencies` 管理 |
 | Web 容器 | Undertow（`web` 模块排除 Tomcat 后引入） | 随 Boot 管理 |
 | 日志 | Log4j2（`core` / `web` / `test` 等模块各自排除 `spring-boot-starter-logging` 后引入 `spring-boot-starter-log4j2`） | 随 Boot 管理 |
 | 监控 | Actuator + Micrometer + Prometheus | 随 Boot 管理 |
-| 发现 | JmDNS（mDNS，`optional`） | 3.5.12 |
+| 发现 | 无（配置驱动，原 JmDNS 依赖已移除） | — |
 | 安全 | JJWT | 0.13.0（`<jjwt.version>`） |
 | 测试 | Testcontainers 1.20.6、DBUnit 2.8.0、POI 4.1.0、JUnit 5.7.2 | `test`（test scope） |
 | 构建 | Maven（`flatten-maven-plugin` + `${revision}` 统一版本） | `<revision>3.0.0-SNAPSHOT</revision>` |
@@ -197,7 +200,7 @@
 | R2 | 安全 / `dynamic_datasource` / `core` / `monitor` 仍用 `spring.factories`，其余用 `AutoConfiguration.imports` | **部分不成立** | 上述 `spring.factories` 中注册的均为 `EnvironmentPostProcessor` / `ApplicationListener`（须先于自动装配与环境准备阶段执行），Boot 3 无替代注册方式，**属设计约束而非技术债**；真正的自动配置类已全部迁入 `AutoConfiguration.imports` |
 | R3 | `CachingConfigurerSupport` 在 Boot 3.x 已废弃 | **已修复** | `CacheManagerConfiguration.CacheCachingConfigurer` 已 `implements CachingConfigurer`（`b003f92` 起） |
 | R4 | `MyBatisConfiguration` / `MonitorConfiguration` 缺 `@ConditionalOnProperty` | **已修复** | 已分别添加 `wymix.mybatis.enabled` / `wymix.monitor.enabled`（`matchIfMissing = true`） |
-| R5 | Spring Cloud 3.1.3 与 Boot 3.5.8 存在版本落差 | **未解决（阻塞性）** | 对齐 Spring Cloud 到 2025.x；在此之前 `decentralization_discovery` 不可用（`FeignContext` 缺失），Feign 相关能力亦受影响 |
+| R5 | Spring Cloud 3.1.3 与 Boot 3.5.8 存在版本落差 | **已解决** | 已导入 `spring-cloud-dependencies` 2025.0.3 BOM（openfeign 4.3.3），并按 4.x API 适配；BOM 与 Boot 版本需按官方矩阵同步升级 |
 | R6 | `code-generator` 硬编码 | **已修复** | 数据库凭证、包名（`GEN_BASE_PACKAGE`）、输出目录（`GEN_OUTPUT_DIR`）、类名前缀开关（`GEN_ROUTE_AS_CLASS_PREFIX`）均改为环境变量 / 系统属性注入，缺失时快速失败；Windows 路径硬编码已移除 |
 | R7 | `@DataChangeLog` 在多个模块重复定义 | **已修复** | 单一来源：`repository` 的 `...datachangelog.annotation.DataChangeLog` |
 | R8 | `@RepeatRequest` 默认不生效 | **已缓解（文档 + 开关）** | `web` 模块默认不注册切面（去重粒度需业务确认），README 已显著标注；新增 `wymix.web.repeat-request.enabled=true` 开关注册内置切面，业务方自声明 Bean 仍优先（`@ConditionalOnMissingBean`） |

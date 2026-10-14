@@ -35,10 +35,20 @@
             <groupId>io.github.openfeign</groupId>
             <artifactId>feign-httpclient</artifactId>
         </dependency>
+        <!-- 仅测试用：验证 Leader 选举的确定性与故障重选 -->
         <dependency>
-            <groupId>org.jmdns</groupId>
-            <artifactId>jmdns</artifactId>
-            <optional>true</optional>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+            <exclusions>
+                <!-- 模块沿用 log4j2（core 传递引入 log4j-slf4j2-impl），
+                     与 starter-test 自带的 log4j-to-slf4j 互斥，测试期会报
+                     "log4j-slf4j2-impl cannot be present with log4j-to-slf4j" -->
+                <exclusion>
+                    <groupId>org.apache.logging.log4j</groupId>
+                    <artifactId>log4j-to-slf4j</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
     <build>
