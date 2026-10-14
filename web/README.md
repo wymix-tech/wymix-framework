@@ -1,5 +1,7 @@
 # web Web 应用模块
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](../docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > Web 层通用能力：统一响应、TraceId 透传、Long→String 防精度丢失、i18n、慢请求监控与 CRUD 基类。
 
 ## 模块说明
@@ -24,7 +26,7 @@
 | `swagger.web.enabled` | 是否将 Swagger 相关路径（`/doc.html`、`/api-docs.json` 等）注册为 `IgnoreUrlContext` 忽略 URL（是否实际放行由安全模块消费逻辑决定）；仅当 `swagger.enabled=true` 且本项为 `true` 时注册 | `false` |
 | `app.slow.request.inSecond` | 慢请求阈值（秒），超过即输出 WARN 日志 | 5 |
 | `spring.validate.messages` | 校验消息资源 basename（数组） | `i18n/validation/ValidationMessages` |
-| `user.timezone` | 应用时区（启动时设置） | `GMT+08` |
+| `wymix.web.jvm-time-zone` | 显式设置进程时区；默认不修改 JVM | 未配置 |
 | `swagger.title` | API 文档标题（默认 `OpenAPI` 与 Auth 分组的 `securityOpenAPI` 共用） | `Api Docs` |
 | `swagger.description` | API 文档描述 | `Api Docs` |
 | `swagger.version` | API 文档版本号 | `1.0.0` |

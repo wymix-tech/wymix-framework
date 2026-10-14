@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public abstract class AbstractBaseServiceImpl<T, ID, REPOSITORY extends BaseRepository<T, ID>> implements BaseService<T, ID> {
 
     protected final REPOSITORY repository;

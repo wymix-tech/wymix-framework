@@ -1,5 +1,7 @@
 # data_migration 数据迁移模块
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](../docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > 监听数据变更事件并检查实体是否标注 `@DataMigration`，作为数据同步/迁移的扩展骨架（内置迁移回放尚未实现）。
 
 ## 模块说明
@@ -16,7 +18,7 @@
 </dependency>
 ```
 
-> 需与 `jpa_repository` / `mybatis_repository` 配合使用（事件来源）。引入本模块会通过 compile 依赖同时带入两套 ORM 模块；本模块装配类会按 classpath 条件自动导入对应的 `DataChangeLogConfiguration`，而非二选一。
+> 需与 `jpa_repository` / `mybatis_repository` 配合使用（事件来源）。本模块只依赖 repository 事件 SPI，不再传递两套 ORM；请另行引入推荐的 mybatis_repository，ORM 自行注册 DataChangeLogConfiguration。
 
 ## 配置项
 
@@ -30,7 +32,7 @@
 | 类 | 说明 |
 |----|------|
 | `DataMigrationConfiguration` | 自动装配入口，同时 `@Import` 变更日志配置 |
-| `DataMigrationEventListener` | 实现 `ApplicationListener` 监听 `DataChangeLogEvent`，对标注 `@DataMigration` 的实体触发迁移（当前迁移回放未实现，仅 debug 日志）。事件 DTO 通过 `getDataChangeLogDTO()` 获取；注意 `DataChangeLogEvent` 存在不携带 DTO 的构造（如 `(Object, Clock)`），该场景下取值为 `null` |
+| `DataMigrationEventListener` | 实现 `ApplicationListener` 监听 `DataChangeLogEvent`，对标注 `@DataMigration` 的实体触发迁移（当前迁移回放未实现，仅 warn 日志）。事件 DTO 通过 `getDataChangeLogDTO()` 获取；注意 `DataChangeLogEvent` 存在不携带 DTO 的构造（如 `(Object, Clock)`），该场景下取值为 `null` |
 
 ## 继承类 / 注解（业务方使用）
 
@@ -67,4 +69,4 @@ public class MyMigrationListener {
 }
 ```
 
-> ⚠️ 当前该模块为骨架实现：事件监听已挂载，但内置的「变更日志 → 迁移脚本」回放尚未实现（仅 debug 日志），迁移动作需业务方通过事件监听自行落地。
+> ⚠️ 当前该模块为骨架实现：事件监听已挂载，但内置的「变更日志 → 迁移脚本」回放尚未实现（仅 warn 日志），迁移动作需业务方通过事件监听自行落地。

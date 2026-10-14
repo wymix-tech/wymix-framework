@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class DataChangeLogListener implements PostInsertEventListener, PreUpdateEventListener, PostDeleteEventListener {
 
     private static final Logger log = LoggerFactory.getLogger(DataChangeLogListener.class);

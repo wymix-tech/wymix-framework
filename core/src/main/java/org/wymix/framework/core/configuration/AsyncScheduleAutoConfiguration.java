@@ -63,6 +63,7 @@ public class AsyncScheduleAutoConfiguration {
     }
 
     @Bean("taskScheduler")
+    @ConditionalOnMissingBean(name = "taskScheduler")
     public ThreadPoolTaskScheduler taskScheduler() {
         ScheduledTaskThreadPoolExecutor scheduler = new ScheduledTaskThreadPoolExecutor();
         scheduler.setName(asyncScheduleProperties.getSchedule().getThreadNamePrefix());

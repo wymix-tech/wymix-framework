@@ -1,1 +1,2 @@
 org.wymix.framework.discovery.configuration.DecentralizedDiscoveryConfiguration
+org.wymix.framework.discovery.configuration.DiscoverySecurityConfiguration

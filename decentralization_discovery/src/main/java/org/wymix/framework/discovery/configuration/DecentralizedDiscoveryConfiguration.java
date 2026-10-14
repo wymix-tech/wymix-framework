@@ -148,6 +148,8 @@ public class DecentralizedDiscoveryConfiguration extends CustomFeignConfiguratio
             public Object getObject() {
                 FeignClientFactory context = configurableApplicationContext.getBean(FeignClientFactory.class);
                 Feign.Builder builder = feign(context);
+                String secret = decentralizedDiscoveryProperties.requireSharedSecret();
+                builder.requestInterceptor(template -> template.header("X-Wymix-Cluster-Token", secret));
                 Client client = getOptional(context, Client.class);
                 if (client != null) {
                     // 目标地址由 DynamicUrlTarget 指定，无需负载均衡，剥离外层拿到原始 client

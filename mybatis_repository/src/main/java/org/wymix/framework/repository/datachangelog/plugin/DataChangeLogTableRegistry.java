@@ -21,7 +21,7 @@ public class DataChangeLogTableRegistry {
     private String[] basePackages;
 
     public static boolean exists(String tableName) {
-        return TABLES.containsKey(tableName);
+        return TABLES.containsKey(tableName.toLowerCase(java.util.Locale.ROOT));
     }
 
     public static boolean exists(Class tableClass) {
@@ -29,7 +29,7 @@ public class DataChangeLogTableRegistry {
     }
 
     public static Class getClass(String tableName) {
-        return TABLES.get(tableName);
+        return TABLES.get(tableName.toLowerCase(java.util.Locale.ROOT));
     }
 
     public void setBasePackages(String[] basePackages) {
@@ -52,7 +52,7 @@ public class DataChangeLogTableRegistry {
                 .filter(clz -> !Modifier.isAbstract(clz.getModifiers()))
                 .forEach(clz -> {
                     TableName tableName = clz.getAnnotation(TableName.class);
-                    TABLES.put(tableName.value(), clz);
+                    TABLES.put(tableName.value().toLowerCase(java.util.Locale.ROOT), clz);
                     CLASSES.put(clz, tableName.value());
                 });
     }

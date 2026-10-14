@@ -26,12 +26,14 @@ public class InvalidJwtTokenLogoutHandler implements LogoutHandler {
 
     @Override
     public void logout(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        String authorization = request.getHeader("Authorization");
-        if (authorization == null) {
+        String token = org.wymix.framework.security.filter.JwtAuthenticationFilter.bearerToken(request.getHeader("Authorization"));
+        if (token == null) {
             return;
         }
-        // 与 JwtAuthenticationFilter 保持一致：去掉 "Bearer " 前缀后再入黑名单，
-        // 否则 key 不匹配，登出后令牌依然可用
-        jwtTokenBlackList.add(authorization.replaceFirst("^Bearer\\s+", ""), jwtTokenHelper.getExpirationTime());
+        try {
+            jwtTokenBlackList.addUntil(token, jwtTokenHelper.extractExpiration(token).getTime());
+        } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
+            // Invalid/expired credentials cannot be used after logout either.
+        }
     }
 }

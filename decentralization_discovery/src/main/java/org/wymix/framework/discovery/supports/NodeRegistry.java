@@ -74,6 +74,7 @@ public final class NodeRegistry {
             if (optional.isPresent()) {
                 NodeInfo nodeInfo = optional.get();
                 nodes.remove(nodeInfo);
+                DynamicInstanceManager.removeServiceInstance(nodeInfo.getServiceName(), nodeInfo);
                 return nodeInfo;
             }
         }
@@ -145,6 +146,7 @@ public final class NodeRegistry {
      * <p>仅用于单元测试重置与运维重置；运行期调用会丢失整个集群视图，需重新走注册流程。
      */
     public synchronized static void clear() {
+        NODE_LIST.keySet().forEach(DynamicInstanceManager::clearServiceInstances);
         NODE_LIST.clear();
         SELF.set(null);
         LEADER.set(null);

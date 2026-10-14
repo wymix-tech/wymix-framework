@@ -127,7 +127,7 @@ public final class FilterParser {
      * 或 {@code [[field,NULL,]]}（尾部空值会被词法层丢弃，只剩 2 个元素）。
      */
     static boolean isCondition(List<?> list) {
-        if (list.isEmpty() || !(list.get(0) instanceof String) || !(list.get(1) instanceof String)) {
+        if (list.size() < 2 || !(list.get(0) instanceof String) || !(list.get(1) instanceof String)) {
             return false;
         }
         if (list.size() >= 3) {

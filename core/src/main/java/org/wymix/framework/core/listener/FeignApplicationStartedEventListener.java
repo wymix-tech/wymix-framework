@@ -24,15 +24,9 @@ import java.util.Properties;
 public class FeignApplicationStartedEventListener implements GenericApplicationListener {
 
     public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 10;
-    private static final String DEFAULT_LOG_HOME = "logs";
-    private static final String DEFAULT_LOG_FILE_NAME = "app";
     private static Class<?>[] EVENT_TYPES = {ApplicationStartingEvent.class, ApplicationEnvironmentPreparedEvent.class,
             ApplicationPreparedEvent.class, ContextClosedEvent.class, ApplicationFailedEvent.class};
     private static Class<?>[] SOURCE_TYPES = {SpringApplication.class, ApplicationContext.class};
-
-    static {
-        System.setProperty("logging.log4j2.config.override", "classpath:log4j2-default.xml");
-    }
 
     @Override
     public void onApplicationEvent(ApplicationEvent event) {

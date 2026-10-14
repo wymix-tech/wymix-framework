@@ -9,6 +9,7 @@ import java.util.concurrent.ThreadFactory;
 
 public class ScheduledTaskThreadPoolExecutor extends ThreadPoolTaskScheduler {
     private String name;
+    private org.wymix.framework.tp.supports.ExecutorWrapper managed;
 
     public void setName(String name) {
         this.name = name;
@@ -16,6 +17,11 @@ public class ScheduledTaskThreadPoolExecutor extends ThreadPoolTaskScheduler {
 
     @Override
     protected ScheduledExecutorService createExecutor(int poolSize, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
-        return (ScheduledExecutorService) ThreadPoolRegistry.registerScheduledThreadPool(name, poolSize, rejectedExecutionHandler);
+        managed = ThreadPoolRegistry.registerScheduledThreadPool(name, poolSize, rejectedExecutionHandler);
+        return (ScheduledExecutorService) managed;
+    }    @Override public void destroy() {
+        try { super.destroy(); }
+        finally { if (managed != null) org.wymix.framework.tp.supports.ThreadPoolHolder.unregister(name, managed); }
     }
+
 }

@@ -28,7 +28,7 @@ public class SecurityConfiguration {
                         .withUsername("admin")
                         .password("Abc@123")
                         .passwordEncoder(s -> passwordEncoder.encode(s))
-                        .authorities("superadmin")
+                        .authorities("superadmin", "ROLE_ACTUATOR_ADMIN")
                         .build()
         );
         return inMemoryUserDetailsManager;

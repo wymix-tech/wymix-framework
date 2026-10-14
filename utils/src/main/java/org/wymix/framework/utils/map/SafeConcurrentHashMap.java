@@ -28,15 +28,6 @@ public class SafeConcurrentHashMap<K, V> extends ConcurrentHashMap<K, V> {
 
     @Override
     public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
-        V value = this.get(key);
-        if (null == value) {
-            value = mappingFunction.apply(key);
-            final V res = this.putIfAbsent(key, value);
-            if (null != res) {
-                return res;
-            }
-        }
-        return value;
+        return super.computeIfAbsent(key, mappingFunction);
     }
-
 }

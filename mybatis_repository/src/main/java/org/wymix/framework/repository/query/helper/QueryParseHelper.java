@@ -52,7 +52,11 @@ public class QueryParseHelper {
         String sort = query.getSorts();
         if (StringUtils.isNotEmpty(sort)) {
             List<SortVO> sortVOs = JsonUtils.jsonToEntity(List.class, SortVO.class, sort);
+            if (sortVOs == null) throw new IllegalArgumentException("Invalid sorts JSON");
             for (SortVO sortVO : sortVOs) {
+                if (sortVO == null || sortVO.getDirection() == null || sortVO.getColumns() == null || sortVO.getColumns().length == 0) {
+                    throw new IllegalArgumentException("Sort direction and columns are required");
+                }
                 if (sortVO.getDirection() == SortVO.Type.ASC) {
                     wrapper.orderByAsc(Arrays.stream(sortVO.getColumns()).map(e->toColumnName(e,clazz)).toList());
                 } else {
@@ -70,7 +74,7 @@ public class QueryParseHelper {
                 translate(ast, wrapper, clazz);
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to parse input: " + condition, e);
+            throw new IllegalArgumentException("Invalid query filter", e);
         }
     }
 

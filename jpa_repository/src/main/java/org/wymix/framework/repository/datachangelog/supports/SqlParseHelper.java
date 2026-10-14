@@ -12,6 +12,7 @@ import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.update.Update;
 
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class SqlParseHelper {
 
     public static SqlContext parse(String sql) throws Exception {

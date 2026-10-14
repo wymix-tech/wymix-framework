@@ -189,6 +189,11 @@ public class TaskThreadPoolExecutor extends ExecutorConfigurationSupport
      * Do not override this method for replacing the executor, rather just for
      * decorating its {@code ExecutorService} handle or storing custom state.
      */
+    @Override public void destroy() {
+        try { super.destroy(); }
+        finally { if (threadPoolExecutor != null) org.wymix.framework.tp.supports.ThreadPoolHolder.unregister(getThreadNamePrefix(), threadPoolExecutor); }
+    }
+
     @Override
     protected ExecutorService initializeExecutor(
             ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {

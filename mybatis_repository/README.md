@@ -1,5 +1,7 @@
 # mybatis_repository MyBatis 数据访问模块
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](../docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > 基于 MyBatis-Plus 的持久化实现：分页插件、数据权限 AOP 与统一查询 DSL（`DevQueryVO`）。
 
 ## 模块说明

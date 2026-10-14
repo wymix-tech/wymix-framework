@@ -37,6 +37,7 @@ import java.util.Locale;
  * {@link DataPermissionContextHolder} 中声明的注入器，把 {@code WHERE_ADDITIONAL} 型
  * {@code injectSql()} 翻译为 {@link Predicate} 追加到查询条件上，与 MyBatis 侧行为对齐。
  */
+@Deprecated(since = "3.0", forRemoval = false)
 public class SpecificationHelper {
 
     private static final Logger log = LoggerFactory.getLogger(SpecificationHelper.class);
@@ -307,9 +308,9 @@ public class SpecificationHelper {
                 case CONTAINS:
                     return cb.like(path.as(String.class), "%" + values.get(0).toString() + "%");
                 case LIKE_LEFT:
-                    return cb.like(path.as(String.class), values.get(0).toString() + "%");
-                case LIKE_RIGHT:
                     return cb.like(path.as(String.class), "%" + values.get(0).toString());
+                case LIKE_RIGHT:
+                    return cb.like(path.as(String.class), values.get(0).toString() + "%");
                 case GT:
                     return cb.greaterThan(path.as(Comparable.class), (Comparable) convertValue(path.getJavaType(), values.get(0)));
                 case LT:

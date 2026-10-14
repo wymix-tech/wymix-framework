@@ -113,19 +113,19 @@ class CacheManagerConfigurationTest {
         }
 
         @Test
-        void weigherOutsideAllowedPackagesShouldFail() {
-            // weigher 类名来自配置，限制包前缀白名单，避免加载 classpath 上任意类
+        void nonWeigherMustFailBeforeInstantiation() {
+            // Reject an unrelated type before invoking its constructor.
             CaffeineCacheProperties.CaffeineConfig config = config(-1, 100, -1);
             config.setWeigher("java.lang.String");
             IllegalStateException ex = assertThrows(IllegalStateException.class,
                     () -> CacheManagerConfiguration.buildCaffeine(config));
-            assertTrue(ex.getMessage().contains("包范围"));
+            assertTrue(ex.getMessage().contains("Weigher"));
         }
 
         @Test
         void weigherWithWrongTypeShouldFailWithReadableError() {
             CaffeineCacheProperties.CaffeineConfig config = config(-1, 100, -1);
-            // 白名单包内但未实现 Weigher 的类，验证类型校验仍然生效
+            // A type that does not implement Weigher must fail validation.
             config.setWeigher(SampleHolder.class.getName());
             IllegalStateException ex = assertThrows(IllegalStateException.class,
                     () -> CacheManagerConfiguration.buildCaffeine(config));
@@ -136,6 +136,12 @@ class CacheManagerConfigurationTest {
     /**
      * 测试用权重函数：每个条目权重恒为 1。
      */
+    @org.junit.jupiter.api.Test void acceptsTypedWeigherFromBusinessPackage() {
+        var config = new org.wymix.framework.cache.properties.CaffeineCacheProperties.CaffeineConfig();
+        config.setMaximumSize(0); config.setMaximumWeight(10); config.setWeigher(example.BusinessWeigher.class.getName());
+        org.junit.jupiter.api.Assertions.assertNotNull(CacheManagerConfiguration.buildCaffeine(config).build());
+    }
+
     static class TestWeigher implements com.github.benmanes.caffeine.cache.Weigher<Object, Object> {
         @Override
         public int weigh(Object key, Object value) {

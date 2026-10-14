@@ -11,14 +11,12 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -29,6 +27,13 @@ import java.util.Arrays;
 import java.util.List;
 
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private org.springframework.security.web.AuthenticationEntryPoint authenticationEntryPoint =
+            new org.wymix.framework.security.entrypoint.Http401UnauthorizedEntryPoint();
+
+    public void setAuthenticationEntryPoint(org.springframework.security.web.AuthenticationEntryPoint entryPoint) {
+        this.authenticationEntryPoint = java.util.Objects.requireNonNull(entryPoint);
+    }
 
     private final JwtTokenHelper jwtTokenHelper;
 
@@ -91,37 +96,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
 
-        final String authorizationHeader = request.getHeader("Authorization");
-
-        String username = null;
-        String jwt = null;
-
-        if (StringUtils.isNotBlank(authorizationHeader) && !authorizationHeader.startsWith("Basic ")) {
-            jwt = authorizationHeader;
-            jwt = jwt.replaceFirst("Bearer ", "");
-            username = jwtTokenHelper.extractUsername(jwt);
-        }
-
-        if (username != null && jwtTokenHelper.validateToken(jwt) && !jwtTokenBlackList.contains(jwt)) {
-            Authentication authentication = jwtTokenHelper.extractAuthentication(jwt);
-            UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
-                    authentication.getPrincipal(), null, authentication.getAuthorities());
-            WebAuthenticationDetails details = new WebAuthenticationDetailsSource().buildDetails(request);
-            usernamePasswordAuthenticationToken.setDetails(details);
-            SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
-            Principal<UsernamePasswordAuthenticationToken> principal = new Principal<>();
-            principal.setPrincipal(username);
-            principal.setIpAddress(details.getRemoteAddress());
-            principal.setAuthentication(usernamePasswordAuthenticationToken);
-            UserContextHolder.setContext(principal);
-        }
         try {
+            String jwt = bearerToken(request.getHeader("Authorization"));
+            if (jwt != null) {
+                try {
+                    if (jwtTokenBlackList.contains(jwt)) {
+                        throw new IllegalArgumentException("Revoked JWT");
+                    }
+                    Authentication authentication = jwtTokenHelper.extractAuthentication(jwt);
+                    WebAuthenticationDetails details = new WebAuthenticationDetailsSource().buildDetails(request);
+                    ((UsernamePasswordAuthenticationToken) authentication).setDetails(details);
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                    Principal<Authentication> principal = new Principal<>();
+                    principal.setPrincipal(authentication.getName());
+                    principal.setIpAddress(details.getRemoteAddress());
+                    principal.setAuthentication(authentication);
+                    UserContextHolder.setContext(principal);
+                } catch (io.jsonwebtoken.JwtException | IllegalArgumentException ex) {
+                    SecurityContextHolder.clearContext();
+                    authenticationEntryPoint.commence(request, response,
+                            new org.springframework.security.authentication.BadCredentialsException("Invalid bearer token", ex));
+                    return;
+                }
+            }
             chain.doFilter(request, response);
-        }finally {
+        } finally {
             UserContextHolder.clearContext();
             SecurityContextHolder.clearContext();
         }
+    }
 
-
+    /** Only Bearer credentials are accepted; arbitrary Authorization values are not JWTs. */
+    public static String bearerToken(String authorization) {
+        if (authorization == null || !authorization.regionMatches(true, 0, "Bearer ", 0, 7)) {
+            return null;
+        }
+        return authorization.substring(7).trim();
     }
 }

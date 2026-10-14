@@ -34,7 +34,11 @@ public class ThreadPoolConfiguration {
     }
 
 
-    class ExecutorRegistrar implements BeanDefinitionRegistryPostProcessor {
+    class ExecutorRegistrar implements BeanDefinitionRegistryPostProcessor, org.springframework.beans.factory.DisposableBean {
+        private final java.util.Map<String, ExecutorWrapper> managed = new java.util.HashMap<>();
+        @Override public void destroy() {
+            managed.forEach((name, executor) -> { executor.shutdown(); org.wymix.framework.tp.supports.ThreadPoolHolder.unregister(name, executor); });
+        }
 
         @Override
         public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
@@ -51,8 +55,9 @@ public class ThreadPoolConfiguration {
             if (pool != null && !pool.isEmpty()) {
                 for (Map.Entry<String, ThreadPoolProperties.CoreParams> entry : pool.entrySet()) {
                     try {
-                        executorWrapper = ThreadPoolRegistry.registerThreadPool(entry.getKey(), entry.getValue().getCorePoolSize(), entry.getValue().getMaxPoolSize(), entry.getValue().getKeepAliveSeconds(), TimeUnit.SECONDS, new LinkedBlockingQueue<>(entry.getValue().getQueueCapacity()), (RejectedExecutionHandler) Class.forName(entry.getValue().getRejectedPolicyClassName()).newInstance());
+                        executorWrapper = ThreadPoolRegistry.registerThreadPool(entry.getKey(), entry.getValue().getCorePoolSize(), entry.getValue().getMaxPoolSize(), entry.getValue().getKeepAliveSeconds(), TimeUnit.SECONDS, new LinkedBlockingQueue<>(entry.getValue().getQueueCapacity()), (RejectedExecutionHandler) Class.forName(entry.getValue().getRejectedPolicyClassName()).getDeclaredConstructor().newInstance());
                         beanFactory.registerSingleton(entry.getKey(), executorWrapper);
+                    managed.put(entry.getKey(), executorWrapper);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }
@@ -63,8 +68,9 @@ public class ThreadPoolConfiguration {
             if (scheduled != null && !scheduled.isEmpty()) {
                 for (Map.Entry<String, ThreadPoolProperties.CoreParams> entry : scheduled.entrySet()) {
                     try {
-                        executorWrapper = ThreadPoolRegistry.registerScheduledThreadPool(entry.getKey(), entry.getValue().getCorePoolSize(), (RejectedExecutionHandler) Class.forName(entry.getValue().getRejectedPolicyClassName()).newInstance());
+                        executorWrapper = ThreadPoolRegistry.registerScheduledThreadPool(entry.getKey(), entry.getValue().getCorePoolSize(), (RejectedExecutionHandler) Class.forName(entry.getValue().getRejectedPolicyClassName()).getDeclaredConstructor().newInstance());
                         beanFactory.registerSingleton(entry.getKey(), executorWrapper);
+                    managed.put(entry.getKey(), executorWrapper);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
                     }

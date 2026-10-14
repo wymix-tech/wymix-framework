@@ -17,7 +17,13 @@ import org.springframework.context.annotation.Import;
 @Import(AuditListener.class)
 @Configuration
 @DependsOn("entityManagerFactory")
+@Deprecated(since = "3.0", forRemoval = false)
 public class JpaConfiguration {
+    @jakarta.annotation.PostConstruct
+    public void deprecatedModuleNotice() {
+        org.slf4j.LoggerFactory.getLogger(JpaConfiguration.class).warn("jpa_repository is deprecated and maintained for compatibility only. New projects should use mybatis_repository; manual/batch DML audit is unsupported.");
+    }
+
 
 
     @Bean

@@ -1,7 +1,6 @@
 package org.wymix.framework.web.configuration;
 
 import org.wymix.framework.common.context.IgnoreUrlContext;
-import org.wymix.framework.security.properties.CustomSecurityProperties;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
@@ -42,6 +41,8 @@ public class ApiDocAutoConfiguration {
         System.setProperty("springdoc.api-docs.path", "/api-docs.json");
     }
 
+    @Autowired private org.springframework.core.env.Environment environment;
+
     @Value("${swagger.title:Api Docs}")
     private String apiDocTitle;
 
@@ -65,11 +66,14 @@ public class ApiDocAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public OpenAPI openAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title(apiDocTitle)
-                        .description(apiDocDescription)
-                        .version(apiDocVersion));
+        OpenAPI api = new OpenAPI().info(new Info().title(apiDocTitle).description(apiDocDescription).version(apiDocVersion));
+        if (org.springframework.util.ClassUtils.isPresent("org.wymix.framework.security.properties.CustomSecurityProperties",getClass().getClassLoader())
+                && environment.getProperty("security.enabled",Boolean.class,true)) {
+            api.addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
+                    .components(new Components().addSecuritySchemes("bearerAuth",new SecurityScheme().name("bearerAuth")
+                            .type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT")));
+        }
+        return api;
     }
 
     @Bean
@@ -83,41 +87,24 @@ public class ApiDocAutoConfiguration {
     }
 
     @Configuration
-    @ConditionalOnClass(CustomSecurityProperties.class)
+    @ConditionalOnClass(name = "org.wymix.framework.security.properties.CustomSecurityProperties")
+    @ConditionalOnProperty(prefix = "security", name = "enabled", havingValue = "true", matchIfMissing = true)
     public static class AuthGroupOpenApiConfiguration {
 
         @Bean
-        public OpenAPI securityOpenAPI(@Value("${swagger.title:Api Docs}") String apiDocTitle,
-                                       @Value("${swagger.description:Api Docs}") String apiDocDescription,
-                                       @Value("${swagger.version:1.0.0}") String apiDocVersion) {
-            return new OpenAPI()
-                    .info(new Info()
-                            .title(apiDocTitle)
-                            .description(apiDocDescription)
-                            .version(apiDocVersion))
-                    .addSecurityItem(new SecurityRequirement().addList("bearerAuth"))
-                    .components(new Components()
-                            .addSecuritySchemes("bearerAuth",
-                                    new SecurityScheme()
-                                            .name("bearerAuth")
-                                            .type(SecurityScheme.Type.HTTP)
-                                            .scheme("bearer")
-                                            .bearerFormat("JWT")));
-        }
-
-        @Bean
         @ConditionalOnMissingBean(name = "authGroupOpenApi")
-        public GroupedOpenApi authGroupOpenApi(@Autowired(required = false) CustomSecurityProperties customSecurityProperties,
+        @ConditionalOnProperty(prefix = "security", name = "form-login-enable", havingValue = "true", matchIfMissing = true)
+        public GroupedOpenApi authGroupOpenApi(@Value("${security.login-processing-url:/login}") String loginProcessingUrl,
                                                @Value("${springdoc.packages-to-scan:}") String[] packageToScan) {
             return GroupedOpenApi.builder()
                     .group("Auth")
-                    .addOpenApiCustomizer(openApiCustomizer(customSecurityProperties))
+                    .addOpenApiCustomizer(openApiCustomizer(loginProcessingUrl))
                     .packagesToExclude(packageToScan)
                     .displayName("Auth")
                     .build();
         }
 
-        public OpenApiCustomizer openApiCustomizer(CustomSecurityProperties customSecurityProperties) {
+        public OpenApiCustomizer openApiCustomizer(String loginProcessingUrl) {
             return openApi -> {
                 ApiResponse successResponse = new ApiResponse().description("登录成功");
                 ApiResponse unauthorizedResponse = new ApiResponse().description("用户名或密码错误");
@@ -132,7 +119,7 @@ public class ApiDocAutoConfiguration {
                                 .addApiResponse("401", unauthorizedResponse));
 
                 // 手动添加到 /login 路径（POST）
-                String loginProcessingUrl = customSecurityProperties != null ? customSecurityProperties.getLoginProcessingUrl() : "/login";
+                if (openApi.getPaths() == null) openApi.setPaths(new io.swagger.v3.oas.models.Paths());
                 openApi.getPaths().addPathItem(loginProcessingUrl,
                         new io.swagger.v3.oas.models.Paths().get(loginProcessingUrl) != null
                                 ? openApi.getPaths().get(loginProcessingUrl).post(loginOperation)

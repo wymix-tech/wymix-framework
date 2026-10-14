@@ -8,5 +8,5 @@ security:
   ignoreUrls: /demo/**
   jwt:
     # 32 位长度
-    secret: adfsdfasdfasdfasdfasdfasdfasd234
+    secret: ${JWT_SECRET}
     expiredTime: 86400

@@ -12,6 +12,7 @@ import org.springframework.data.domain.Sort;
 import java.util.ArrayList;
 import java.util.List;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class PageHelper {
 
     /**

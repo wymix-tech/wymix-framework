@@ -1,5 +1,7 @@
 # monitor 监控模块
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](../docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > 基于 Actuator + Micrometer 的应用可观测性：指标暴露与启动事件采集。
 
 ## 模块说明
@@ -24,8 +26,8 @@
 
 | 默认注入项 | 值 |
 |-----------|-----|
-| `management.endpoints.web.exposure.include` | `*` |
-| `management.endpoint.health.showDetails` | `always` |
+| `management.endpoints.web.exposure.include` | `health,info,prometheus` |
+| `management.endpoint.health.showDetails` | `when_authorized` |
 | `management.endpoint.prometheus.enabled` | `true` |
 | `management.metrics.export.prometheus.enabled` | `true` |
 | `management.metrics.tags.application` | `${spring.application.name:app}` |
@@ -34,13 +36,13 @@
 
 | 类 | 说明 |
 |----|------|
-| `MonitorConfiguration` | 自动装配：注册 `monitorIgnoreUrlContext` Bean（`IgnoreUrlContext`），自动放行 `/actuator/**`（配合 security 模块免认证）；受 `wymix.monitor.enabled`（默认 `true`）控制 |
+| `MonitorConfiguration` | 自动装配：不注册匿名管理路径；访问控制由安全模块或应用配置；受 `wymix.monitor.enabled`（默认 `true`）控制 |
 
 ## 继承类 / 扩展点
 
 | 扩展点 | 说明 |
 |--------|------|
-| `IgnoreUrlContext` Bean | 追加更多免认证路径（`MonitorConfiguration` 装配且开关开启时生效） |
+| 应用安全规则 | 框架 security 仅匿名放行 health；其他已暴露端点需 ROLE_ACTUATOR_ADMIN |
 
 ## 使用示例
 

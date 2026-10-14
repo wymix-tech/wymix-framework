@@ -19,10 +19,9 @@
     <dependencies>
         <dependency>
             <groupId>org.wymix.framework</groupId>
-            <artifactId>core</artifactId>
+            <artifactId>core_api</artifactId>
         </dependency>
-        <!-- AOP：复用 core 已有的 spring-boot-starter-aop（其已传递引入 aspectjweaver），
-             不单独声明 aspectjweaver，避免依赖父 POM 版本管理带来的静默漂移 -->
+        <!-- 数据权限切面显式依赖 AOP，不再依赖 core 的运行时 starter。 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-aop</artifactId>

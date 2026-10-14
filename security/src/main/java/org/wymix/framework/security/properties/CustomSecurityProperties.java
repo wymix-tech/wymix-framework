@@ -15,7 +15,7 @@ public class CustomSecurityProperties {
 
     private String logoutUrl = "/logout";
 
-    private JwtProperties jwt;
+    private JwtProperties jwt = new JwtProperties();
 
     public JwtProperties getJwt() {
         return jwt;
@@ -68,7 +68,7 @@ public class CustomSecurityProperties {
     public static class JwtProperties {
         private boolean randomSecret = false;
         private String secret;
-        private long expiredTime;
+        private long expiredTime = 3600;
 
         public String getSecret() {
             return secret;

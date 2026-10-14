@@ -14,9 +14,9 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
     protected final LongAdder successCount = new LongAdder();
     protected final LongAdder cost = new LongAdder();
     protected final LongAdder rejectedCount = new LongAdder();
+    protected final LongAdder failedCount = new LongAdder();
+    protected final LongAdder cancelledCount = new LongAdder();
     private final BlockingQueue<Runnable> queue;
-    private final ThreadFactory threadFactory;
-    private final RejectedExecutionHandler rejectedExecutionHandler;
     protected int corePoolSize;
     protected int maxPoolSize;
     protected long keepAliveTime;
@@ -31,8 +31,6 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
         this.keepAliveTime = keepAliveTime;
         this.timeUnit = timeUnit;
         this.queue = queue;
-        this.threadFactory = threadFactory;
-        this.rejectedExecutionHandler = rejectedExecutionHandler;
     }
 
     @Override
@@ -46,7 +44,7 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
      * @return
      */
     public long remaining() {
-        return count.sum() - finished.sum();
+        return Math.max(0, count.sum() - finished.sum());
     }
 
     /**
@@ -64,7 +62,7 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
      * @return
      */
     public long running() {
-        return count.sum() - queue.size() - finished.sum();
+        return Math.max(0, count.sum() - queue.size() - finished.sum());
     }
 
     /**
@@ -112,10 +110,10 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
      * @return
      */
     public double successRate() {
-        if (count.sum() == 0) {
+        if (finished.sum() == 0) {
             return 0D;
         }
-        return successCount.sum() * 1.0D / finished.sum();
+        return Math.min(1D, successCount.sum() * 1.0D / finished.sum());
     }
 
     /**
@@ -127,7 +125,7 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
         if (finished.sum() == 0) {
             return 0D;
         }
-        return (finished.sum() - successCount.sum()) * 1.0D / finished.sum();
+        return Math.min(1D, failedCount.sum() * 1.0D / finished.sum());
     }
 
     @Override
@@ -158,8 +156,12 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
         if (total() == 0) {
             return 1D;
         }
-        return finished.sum() * 1.0D / total();
+        return Math.min(1D, finished.sum() * 1.0D / total());
     }
+
+    public long rejected() { return rejectedCount.sum(); }
+    public long cancelled() { return cancelledCount.sum(); }
+    public long failed() { return failedCount.sum(); }
 
     public void setRunnableDecorator(RunnableDecorator runnableDecorator) {
         this.runnableDecorator = runnableDecorator;

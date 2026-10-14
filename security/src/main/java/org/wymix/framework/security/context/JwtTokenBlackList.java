@@ -6,10 +6,19 @@ import java.util.concurrent.ConcurrentMap;
 
 public class JwtTokenBlackList {
 
-    private static final ConcurrentMap<String, Long> TOKEN_BLACK_LIST = new SafeConcurrentHashMap<>();
+    private final ConcurrentMap<String, Long> TOKEN_BLACK_LIST = new SafeConcurrentHashMap<>();
 
+    /** Compatibility API: expireTime is a duration in milliseconds. */
     public void add(String token, long expireTime) {
         TOKEN_BLACK_LIST.put(token, System.currentTimeMillis() + expireTime);
+    }
+
+    /** Expiration is an absolute epoch millisecond value, derived from the signed JWT exp claim. */
+    public void addUntil(String token, long expiresAtMillis) {
+        long remaining = expiresAtMillis - System.currentTimeMillis();
+        if (remaining > 0) {
+            add(token, remaining);
+        }
     }
 
     public boolean contains(String token) {

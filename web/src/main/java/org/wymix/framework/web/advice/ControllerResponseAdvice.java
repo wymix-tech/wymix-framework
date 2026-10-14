@@ -42,7 +42,6 @@ public class ControllerResponseAdvice implements ResponseBodyAdvice<Object> {
 
     private static final Logger log = LoggerFactory.getLogger(ControllerResponseAdvice.class);
 
-    private ObjectMapper objectMapper = new ObjectMapper();
 
     /**
      * actuator 端点的基础路径，用于判断哪些请求不该被统一包装（默认 /actuator，可被
@@ -102,6 +101,11 @@ public class ControllerResponseAdvice implements ResponseBodyAdvice<Object> {
     @ExceptionHandler({BusinessException.class, LoginException.class, MethodArgumentNotValidException.class, ConstraintViolationException.class})
     public ResponseEntity<ResultVO> handleBusinessException(Exception ex) {
         return createResponseEntity(ex);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ResultVO> handleInvalidQuery(IllegalArgumentException ex) {
+        return new ResponseEntity<>(ResultVO.of(SystemConstant.ERROR_CODE_DATA_VALIDATION, "Invalid request parameters"), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

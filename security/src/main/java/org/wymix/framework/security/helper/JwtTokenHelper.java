@@ -23,11 +23,17 @@ import java.util.stream.Collectors;
 
 public class JwtTokenHelper {
 
-    private String secretKey;
+    private final String secretKey;
 
-    private Long expirationTime;
+    private final Long expirationTime;
 
     public JwtTokenHelper(String secretKey, Long expirationTime) {
+        if (secretKey == null || secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException("security.jwt.secret must contain at least 32 UTF-8 bytes (or explicitly enable security.jwt.random-secret)");
+        }
+        if (expirationTime == null || expirationTime <= 0 || expirationTime > Long.MAX_VALUE / 1000) {
+            throw new IllegalArgumentException("security.jwt.expired-time must be a positive number of seconds");
+        }
         this.secretKey = secretKey;
         this.expirationTime = expirationTime;
     }
@@ -44,6 +50,7 @@ public class JwtTokenHelper {
                 .toList();
         map.put("roles", compress(JsonUtils.entityToJson(roles)));
         return Jwts.builder()
+                .id(java.util.UUID.randomUUID().toString())
                 .setSubject(authentication.getName())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + expirationTime * 1000))
@@ -53,12 +60,17 @@ public class JwtTokenHelper {
     }
 
     private Key key(String secretKey) {
-        return Keys.hmacShaKeyFor(secretKey.getBytes());
+        return Keys.hmacShaKeyFor(secretKey.getBytes(java.nio.charset.StandardCharsets.UTF_8));
     }
 
     public Authentication extractAuthentication(String token) {
         Claims claims = extractAllClaims(token);
-        List<String> roles = JsonUtils.jsonToEntity(ArrayList.class, String.class, decompress(claims.get("roles", String.class)));
+        String rolesClaim = claims.get("roles", String.class);
+        if (rolesClaim == null || claims.getExpiration() == null) throw new IllegalArgumentException("JWT requires exp and roles claims");
+        List<String> roles = JsonUtils.jsonToEntity(ArrayList.class, String.class, decompress(rolesClaim));
+        if (roles == null || claims.getSubject() == null || claims.getSubject().isBlank()) {
+            throw new IllegalArgumentException("Invalid JWT subject or roles");
+        }
         List<SimpleGrantedAuthority> authorities = roles.stream()
                 .map(SimpleGrantedAuthority::new)
                 .toList();
@@ -105,7 +117,7 @@ public class JwtTokenHelper {
         try {
             return CompressUtil.decompress(compressed);
         } catch (IOException e) {
-            throw new IllegalStateException("Failed to decompress jwt roles claim", e);
+            throw new IllegalArgumentException("Invalid JWT roles claim", e);
         }
     }
 

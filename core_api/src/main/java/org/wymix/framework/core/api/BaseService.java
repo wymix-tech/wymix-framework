@@ -1,6 +1,5 @@
 package org.wymix.framework.core.api;
 
-
 import org.wymix.framework.common.query.DevQueryVO;
 import org.wymix.framework.common.query.Page;
 

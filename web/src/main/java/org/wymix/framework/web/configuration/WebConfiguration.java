@@ -7,7 +7,7 @@ import org.wymix.framework.utils.json.NumberSerializer;
 import org.wymix.framework.web.advice.ControllerResponseAdvice;
 import org.wymix.framework.web.aop.RepeatRequestAspect;
 import org.wymix.framework.web.aop.SlowRequestAspect;
-import org.apache.logging.log4j.ThreadContext;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -60,7 +60,7 @@ public class WebConfiguration implements WebMvcConfigurer {
     @ConditionalOnMissingBean
     public TaskDecorator taskDecorator() {
         return (runnable -> {
-            String customTraceId = ThreadContext.get("customTraceId");
+            String customTraceId = MDC.get("customTraceId");
             if (StringUtils.isBlank(customTraceId)) {
                 customTraceId = GlobalIdGenerator.generateNextIdStr();
             }
@@ -71,7 +71,10 @@ public class WebConfiguration implements WebMvcConfigurer {
 
     @PostConstruct
     public void timeZone() {
-        TimeZone.setDefault(TimeZone.getTimeZone(environment.getProperty("user.timezone", "GMT+08")));
+        String zone = environment.getProperty("wymix.web.jvm-time-zone");
+        if (StringUtils.isNotBlank(zone)) {
+            TimeZone.setDefault(TimeZone.getTimeZone(java.time.ZoneId.of(zone)));
+        }
     }
 
     @Bean
@@ -141,11 +144,11 @@ public class WebConfiguration implements WebMvcConfigurer {
         bean.setFilter(new OncePerRequestFilter() {
             @Override
             protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-                ThreadContext.put("customTraceId", GlobalIdGenerator.generateNextIdStr());
+                MDC.put("customTraceId", GlobalIdGenerator.generateNextIdStr());
                 try {
                     filterChain.doFilter(request, response);
                 } finally {
-                    ThreadContext.remove("customTraceId");
+                    MDC.remove("customTraceId");
                 }
             }
         });
@@ -168,11 +171,11 @@ public class WebConfiguration implements WebMvcConfigurer {
         public void run() {
             try {
                 RequestContextHolder.setRequestAttributes(requestAttributes);
-                ThreadContext.put("customTraceId", customTraceId);
+                MDC.put("customTraceId", customTraceId);
                 target.run();
             } finally {
                 RequestContextHolder.resetRequestAttributes();
-                ThreadContext.remove("customTraceId");
+                MDC.remove("customTraceId");
             }
         }
     }

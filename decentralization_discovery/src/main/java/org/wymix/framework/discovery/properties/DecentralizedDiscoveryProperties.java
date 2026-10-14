@@ -27,6 +27,15 @@ import java.util.Map;
 public class DecentralizedDiscoveryProperties {
 
     private String namespace;
+    private String sharedSecret;
+    public String getSharedSecret() { return sharedSecret; }
+    public void setSharedSecret(String sharedSecret) { this.sharedSecret = sharedSecret; }
+    public String requireSharedSecret() {
+        if (sharedSecret == null || sharedSecret.getBytes(java.nio.charset.StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalArgumentException("decentralization.discovery.shared-secret must contain at least 32 UTF-8 bytes");
+        }
+        return sharedSecret;
+    }
 
     private Map<String, List<String>> service = new HashMap<>();
 

@@ -98,4 +98,10 @@ class NodeRegistryTest {
         nodeInfo.setContextPath("");
         return nodeInfo;
     }
+    @org.junit.jupiter.api.Test void removesLoadBalancerInstancesWhenNodeLeaves() {
+        NodeInfo node = new NodeInfo(); node.setServiceName("lifecycle"); node.setHost("127.0.0.3"); node.setPort(9090);
+        NodeRegistry.signUp(node); NodeRegistry.signOut(node.instanceName());
+        org.junit.jupiter.api.Assertions.assertTrue(org.wymix.framework.core.feign.supports.DynamicServiceInstanceSupplier.getInstances("lifecycle").isEmpty());
+    }
+
 }

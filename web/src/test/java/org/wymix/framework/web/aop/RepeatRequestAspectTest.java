@@ -38,6 +38,9 @@ class RepeatRequestAspectTest {
     static class DemoController {
 
         @RepeatRequest(expiredTimeInMills = 3000)
+        public String submitPojo(Payload payload) { return "ok"; }
+
+        @RepeatRequest(expiredTimeInMills = 3000)
         public String submit(String orderNo) {
             return "ok:" + orderNo;
         }
@@ -118,4 +121,38 @@ class RepeatRequestAspectTest {
 
         return aspect.invoke(point);
     }
+    static class Payload {
+        private final String value;
+        Payload(String value) { this.value=value; }
+        public String getValue() { return value; }
+    }
+    @Test void equivalentDtoInstancesShareTheSameKey() throws Throwable {
+        assertEquals("ok",invokePojo(new Payload("same")));
+        assertThrows(BusinessException.class,()->invokePojo(new Payload("same")));
+    }
+    private Object invokePojo(Payload payload) throws Throwable {
+        var target = new DemoController(); var method = DemoController.class.getMethod("submitPojo",Payload.class);
+        var signature = mock(MethodSignature.class); when(signature.getMethod()).thenReturn(method);
+        var point = mock(ProceedingJoinPoint.class); when(point.getSignature()).thenReturn(signature); when(point.getTarget()).thenReturn(target);
+        when(point.getArgs()).thenReturn(new Object[]{payload}); when(point.proceed()).thenAnswer(call -> method.invoke(target,payload));
+        return aspect.invoke(point);
+    }
+    @Test void concurrentRequestsInOneSessionHaveOneWinner() throws Exception {
+        var session = new MockHttpSession(); var gate = new java.util.concurrent.CyclicBarrier(4);
+        var accepted = new java.util.concurrent.atomic.AtomicInteger(); var executor = java.util.concurrent.Executors.newFixedThreadPool(4);
+        try {
+            var jobs = new java.util.ArrayList<java.util.concurrent.Future<?>>();
+            for (int i=0;i<4;i++) jobs.add(executor.submit(()->{
+                var request = new MockHttpServletRequest(); request.setSession(session);
+                org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+                try { gate.await(3,java.util.concurrent.TimeUnit.SECONDS); invokePojo(new Payload("same")); accepted.incrementAndGet(); }
+                catch (BusinessException expected) { }
+                catch (Throwable ex) { throw new RuntimeException(ex); }
+                finally { org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes(); }
+            }));
+            for (var job : jobs) job.get(5,java.util.concurrent.TimeUnit.SECONDS);
+            assertEquals(1,accepted.get());
+        } finally { executor.shutdownNow(); }
+    }
+
 }

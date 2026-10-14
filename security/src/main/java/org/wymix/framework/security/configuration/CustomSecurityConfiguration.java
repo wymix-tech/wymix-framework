@@ -71,10 +71,6 @@ import java.util.stream.Collectors;
 @EnableConfigurationProperties(CustomSecurityProperties.class)
 public class CustomSecurityConfiguration {
 
-    static {
-        System.setProperty("security", "true");
-    }
-
     @Autowired(required = false)
     private List<IgnoreUrlContext> ignoreUrlContexts;
 
@@ -82,7 +78,11 @@ public class CustomSecurityConfiguration {
     private List<SecurityCustomizer> securityCustomizers;
 
     @Bean
+    @ConditionalOnMissingBean
     public JwtTokenHelper jwtTokenHelper(@Autowired CustomSecurityProperties customSecurityProperties) {
+        if (customSecurityProperties.getJwt() == null) {
+            throw new IllegalArgumentException("security.jwt configuration is required");
+        }
         boolean randomSecret = customSecurityProperties.getJwt().isRandomSecret();
         if (randomSecret) {
             customSecurityProperties.getJwt().setSecret(StringUtils.generateRandomString(32));
@@ -91,10 +91,14 @@ public class CustomSecurityConfiguration {
     }
 
     @Bean
+    @ConditionalOnMissingBean
     public JwtAuthenticationFilter jwtAuthenticationFilter(@Autowired JwtTokenHelper jwtTokenHelper,
                                                            @Autowired JwtTokenBlackList jwtTokenBlackList,
-                                                           @Autowired CustomSecurityProperties customSecurityProperties) {
-        return new JwtAuthenticationFilter(jwtTokenHelper, jwtTokenBlackList, ignoreUrlContexts, customSecurityProperties);
+                                                           @Autowired CustomSecurityProperties customSecurityProperties,
+                                                           AuthenticationEntryPoint authenticationEntryPoint) {
+        JwtAuthenticationFilter filter = new JwtAuthenticationFilter(jwtTokenHelper, jwtTokenBlackList, ignoreUrlContexts, customSecurityProperties);
+        filter.setAuthenticationEntryPoint(authenticationEntryPoint);
+        return filter;
     }
 
     @Bean
@@ -122,7 +126,7 @@ public class CustomSecurityConfiguration {
     }
 
     @Bean
-    @ConditionalOnMissingBean(value = {LogoutHandler.class}, name = {"invalidJwtTokenLogoutHandler"})
+    @ConditionalOnMissingBean(name = "invalidJwtTokenLogoutHandler")
     public LogoutHandler invalidJwtTokenLogoutHandler(@Autowired JwtTokenHelper jwtTokenHelper,
                                                       @Autowired JwtTokenBlackList jwtTokenBlackList) {
         return new InvalidJwtTokenLogoutHandler(jwtTokenHelper, jwtTokenBlackList);
@@ -147,14 +151,13 @@ public class CustomSecurityConfiguration {
         BCryptPasswordEncoder cryptPasswordEncoder = new BCryptPasswordEncoder();
         Map<String, PasswordEncoder> encoders = new HashMap<>();
         encoders.put("bcrypt", cryptPasswordEncoder);
-//        encoders.put("pbkdf2", new Pbkdf2PasswordEncoder());
-//        encoders.put("scrypt", new SCryptPasswordEncoder());
         DelegatingPasswordEncoder passwordEncoder = new DelegatingPasswordEncoder(encodingId, encoders);
         passwordEncoder.setDefaultPasswordEncoderForMatches(cryptPasswordEncoder);
         return passwordEncoder;
     }
 
     @Bean
+    @ConditionalOnMissingBean(value = SecurityFilterChain.class, ignoredType = "org.wymix.framework.discovery.configuration.ClusterSecurityFilterChain")
     SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity,
                                             @Autowired CustomSecurityProperties customSecurityProperties,
                                             @Autowired JwtAuthenticationFilter jwtAuthenticationFilter,
@@ -164,15 +167,6 @@ public class CustomSecurityConfiguration {
                                             @Autowired AuthenticationEntryPoint authenticationEntryPoint,
                                             @Autowired @Qualifier("invalidJwtTokenLogoutHandler") LogoutHandler invalidJwtTokenLogoutHandler,
                                             @Autowired LogoutSuccessHandler logoutSuccessHandler) throws Exception {
-        if (!customSecurityProperties.isFormLoginEnable()) {
-            httpSecurity.authorizeHttpRequests(e -> {
-                e.requestMatchers("/**").permitAll().anyRequest().authenticated();
-            });
-            httpSecurity.formLogin(AbstractHttpConfigurer::disable);
-            httpSecurity.httpBasic(AbstractHttpConfigurer::disable);
-            httpSecurity.csrf(AbstractHttpConfigurer::disable);
-            return httpSecurity.build();
-        }
         List<String> ignoreUrls = new ArrayList<>();
         if (!CollectionUtils.isEmpty(ignoreUrlContexts)) {
             for (IgnoreUrlContext ignoreUrlContext : ignoreUrlContexts) {
@@ -184,20 +178,23 @@ public class CustomSecurityConfiguration {
         }
         httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(r -> {
+                    if (org.springframework.util.ClassUtils.isPresent("org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest", getClass().getClassLoader())) {
+                        ActuatorRules.configure(r);
+                    }
                     r.requestMatchers(ignoreUrls.toArray(String[]::new)).permitAll()
                             .anyRequest().authenticated();
                 });
-        httpSecurity.formLogin(formLoginConfigurer -> {
-            if (customSecurityProperties.isFormLoginEnable()) {
-                formLoginConfigurer
-                        .loginProcessingUrl(customSecurityProperties.getLoginProcessingUrl()).permitAll()
-                        .successHandler(authenticationSuccessHandler)
-                        .failureHandler(authenticationFailureHandler);
+        if (customSecurityProperties.isFormLoginEnable()) {
+            httpSecurity.formLogin(form -> {
+                form.loginProcessingUrl(customSecurityProperties.getLoginProcessingUrl()).permitAll()
+                        .successHandler(authenticationSuccessHandler).failureHandler(authenticationFailureHandler);
                 if (StringUtils.isNotBlank(customSecurityProperties.getLoginPage())) {
-                    formLoginConfigurer.loginPage(customSecurityProperties.getLoginPage()).permitAll();
+                    form.loginPage(customSecurityProperties.getLoginPage()).permitAll();
                 }
-            }
-        });
+            });
+        } else {
+            httpSecurity.formLogin(AbstractHttpConfigurer::disable);
+        }
 
 
         httpSecurity.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -226,6 +223,21 @@ public class CustomSecurityConfiguration {
         }
 
         return httpSecurity.build();
+    }
+
+    /** Prevent Servlet auto-registration: this filter belongs only to the security chain. */
+    @Bean
+    public org.springframework.boot.web.servlet.FilterRegistrationBean<JwtAuthenticationFilter> jwtFilterRegistration(JwtAuthenticationFilter filter) {
+        var registration = new org.springframework.boot.web.servlet.FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
+    }
+
+    private static final class ActuatorRules {
+        static void configure(org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry rules) {
+            rules.requestMatchers(org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest.to("health")).permitAll();
+            rules.requestMatchers(org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest.toAnyEndpoint()).hasRole("ACTUATOR_ADMIN");
+        }
     }
 
 }

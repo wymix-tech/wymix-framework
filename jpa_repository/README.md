@@ -1,5 +1,8 @@
 # jpa_repository JPA 数据访问模块
 
+> **3.0 兼容策略（2026-10-14）**：新项目推荐 `mybatis_repository`。`jpa_repository` 已弃用（`@Deprecated(forRemoval=false)`），保留常规 CRUD、实体审计与现有有限数据权限能力，仅做兼容维护。手工/批量 DML 审计不受支持，不再自动注册旧切面。迁移说明见 [JPA_MIGRATION.md](JPA_MIGRATION.md)。
+
+
 > 基于 Spring Data JPA 的持久化实现：审计字段自动填充、数据变更日志与统一查询 DSL。
 
 ## 模块说明
