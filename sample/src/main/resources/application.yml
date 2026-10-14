@@ -24,7 +24,7 @@ app:
       inSecond: 3
 
 # 模块开关汇总（均为默认开启，置 false 可关闭对应自动装配）
-travelsky:
+wymix:
   core:
     enabled: true
   monitor:
@@ -55,7 +55,7 @@ swagger:
   web:
     enabled: true
   title: sample 示例接口
-  description: travelsky_dev 框架能力端到端示例
+  description: wymix_dev 框架能力端到端示例
   version: 1.0.0
 # 显式指定 springdoc 路径（不能只依赖框架 static 块里的 System.setProperty，
 # 该方式可能在 springdoc 绑定配置之后才执行，导致自定义路径不生效）

@@ -1,2 +1,0 @@
-com.travelsky.base.repository.configuration.JpaConfiguration
-com.travelsky.base.repository.jpa.datachangelog.configuration.DataChangeLogConfiguration

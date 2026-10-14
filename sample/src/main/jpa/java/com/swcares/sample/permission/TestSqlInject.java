@@ -1,7 +1,7 @@
 package com.swcares.sample.permission;
 
-import com.travelsky.base.repository.datapermission.enums.InjectType;
-import com.travelsky.base.repository.datapermission.inject.PermissionSqlInjector;
+import org.wymix.framework.repository.datapermission.enums.InjectType;
+import org.wymix.framework.repository.datapermission.inject.PermissionSqlInjector;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

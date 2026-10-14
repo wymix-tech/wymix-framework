@@ -3,8 +3,8 @@ package com.swcares.sample.web;
 import com.swcares.sample.entity.SampleUserEntity;
 import com.swcares.sample.service.SampleUserService;
 import com.swcares.sample.vo.SampleUserVO;
-import com.travelsky.base.web.api.BaseController;
-import com.travelsky.base.web.api.impl.AbstractBaseController;
+import org.wymix.framework.web.api.BaseController;
+import org.wymix.framework.web.api.impl.AbstractBaseController;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 

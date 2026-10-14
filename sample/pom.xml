@@ -5,8 +5,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_parent3</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>dev_parent</artifactId>
         <version>3.0.0-SNAPSHOT</version>
     </parent>
 
@@ -17,7 +17,7 @@
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <travelsky.dev.version>3.0.0-SNAPSHOT</travelsky.dev.version>
+        <wymix.dev.version>3.0.0-SNAPSHOT</wymix.dev.version>
         <!-- 由 mybatis / jpa profile 覆盖为对应的 ORM 示例代码目录 -->
         <orm.source.dir>src/main/mybatis/java</orm.source.dir>
     </properties>
@@ -26,28 +26,28 @@
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓最简启动依赖(必选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- web：统一响应包装、CRUD 基类、国际化、慢请求/防重切面；其下已传递 core / security -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_web</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>web</artifactId>
         </dependency>
         <!-- core：应用上下文持有、异步调度、消息门面、Feign 全局负载均衡（web 已传递，此处显式声明以示用法） -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_core</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>core</artifactId>
         </dependency>
         <!-- common：ResultVO / DevQueryVO / Page / UserContextHolder / BusinessException -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_common</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>common</artifactId>
         </dependency>
         <!-- utils：JsonUtils / GlobalIdGenerator / StringUtils / DateUtils / BeanUtils -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_utils</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>utils</artifactId>
         </dependency>
         <!-- repository：数据变更日志(DataChangeLog)与数据迁移(@DataMigration)的公共模型 -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_repository</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>repository</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
@@ -58,32 +58,32 @@
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加监控依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- monitor：放行 /actuator/** 白名单，配合 MonitorBootLoader 打印启动信息 -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_monitor</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>monitor</artifactId>
         </dependency>
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加监控依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
 
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加认证依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- security：JWT + 表单登录 + 配置加密(ENC()) -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_security</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>security</artifactId>
         </dependency>
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加认证依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
 
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加线程池管理依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- threadpool：按 thread-pool.* 自动注册命名线程池，支持动态调参与监控端点 -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_threadpool</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>threadpool</artifactId>
         </dependency>
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加线程池管理依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
 
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加缓存依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- cache：@EnableCaching + 自定义 KeyGenerator；具体 CacheManager 由 classpath 上的实现决定 -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_cache</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>cache</artifactId>
         </dependency>
         <!-- cache 模块把 Caffeine 声明为 optional，此处显式引入 -->
         <dependency>
@@ -95,28 +95,28 @@
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加动态数据源依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- dynamic_datasource：@DynamicDatasource 注解切库，需 dynamic.datasource.enabled=true -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_dynamic_datasource</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>dynamic_datasource</artifactId>
         </dependency>
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加动态数据源依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
 
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓添加去中心化服务发现依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- decentralization_discovery：无注册中心的集群广播/选主，需 decentralization.discovery.enable=true -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_decentralization_discovery</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>decentralization_discovery</artifactId>
         </dependency>
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑添加去中心化服务发现依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
 
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓AI 预留模块(暂无内容)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
-        <!-- travelsky_dev_ai 目前为空壳占位模块，仅保留坐标以便后续扩展，无自动装配内容 -->
+        <!-- ai 目前为空壳占位模块，仅保留坐标以便后续扩展，无自动装配内容 -->
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑AI 预留模块(暂无内容)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
 
         <!--↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓单元测试依赖(可选)↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓-->
         <!-- test：Testcontainers 容器基类 + @DataSet 数据编排（示例见 src/test/java） -->
         <dependency>
-            <groupId>com.travelsky.base</groupId>
-            <artifactId>travelsky_dev_test</artifactId>
+            <groupId>org.wymix.framework</groupId>
+            <artifactId>test</artifactId>
             <scope>test</scope>
         </dependency>
         <!--↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑单元测试依赖(可选)↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑-->
@@ -170,17 +170,17 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>com.travelsky.base</groupId>
-                    <artifactId>travelsky_dev_mybatis_repository</artifactId>
+                    <groupId>org.wymix.framework</groupId>
+                    <artifactId>mybatis_repository</artifactId>
                 </dependency>
                 <dependency>
-                    <groupId>com.travelsky.base</groupId>
-                    <artifactId>travelsky_dev_data_migration</artifactId>
+                    <groupId>org.wymix.framework</groupId>
+                    <artifactId>data_migration</artifactId>
                     <exclusions>
                         <!-- data_migration 同时依赖两套 ORM，与 mybatis 场景冲突，需排除 JPA 实现 -->
                         <exclusion>
-                            <groupId>com.travelsky.base</groupId>
-                            <artifactId>travelsky_dev_jpa_repository</artifactId>
+                            <groupId>org.wymix.framework</groupId>
+                            <artifactId>jpa_repository</artifactId>
                         </exclusion>
                     </exclusions>
                 </dependency>
@@ -203,17 +203,17 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>com.travelsky.base</groupId>
-                    <artifactId>travelsky_dev_jpa_repository</artifactId>
+                    <groupId>org.wymix.framework</groupId>
+                    <artifactId>jpa_repository</artifactId>
                 </dependency>
                 <dependency>
-                    <groupId>com.travelsky.base</groupId>
-                    <artifactId>travelsky_dev_data_migration</artifactId>
+                    <groupId>org.wymix.framework</groupId>
+                    <artifactId>data_migration</artifactId>
                     <exclusions>
                         <!-- 与 jpa 场景冲突，需排除 MyBatis 实现 -->
                         <exclusion>
-                            <groupId>com.travelsky.base</groupId>
-                            <artifactId>travelsky_dev_mybatis_repository</artifactId>
+                            <groupId>org.wymix.framework</groupId>
+                            <artifactId>mybatis_repository</artifactId>
                         </exclusion>
                     </exclusions>
                 </dependency>

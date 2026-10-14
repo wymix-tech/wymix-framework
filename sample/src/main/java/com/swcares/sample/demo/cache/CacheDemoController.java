@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * travelsky_dev_cache 示例入口。
+ * cache 示例入口。
  */
 @RestController
 @RequestMapping("demo/cache")

@@ -1,10 +1,10 @@
 package com.swcares.sample.demo.repository;
 
 import com.swcares.sample.entity.SampleUserEntity;
-import com.travelsky.base.repository.datachangelog.annotation.DataChangeLog;
-import com.travelsky.base.repository.datachangelog.enums.StatementType;
-import com.travelsky.base.repository.datachangelog.plugin.DataChangeLogTableRegistry;
-import com.travelsky.base.repository.datamigration.annotations.DataMigration;
+import org.wymix.framework.repository.datachangelog.annotation.DataChangeLog;
+import org.wymix.framework.repository.datachangelog.enums.StatementType;
+import org.wymix.framework.repository.datachangelog.plugin.DataChangeLogTableRegistry;
+import org.wymix.framework.repository.datamigration.annotations.DataMigration;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * travelsky_dev_repository 示例：数据变更日志（DataChangeLog）。
+ * repository 示例：数据变更日志（DataChangeLog）。
  *
  * <p>接入方式：在实体上标注 {@link DataChangeLog}（可选 {@code record} 指定记录哪些语句类型），
  * 并确保 {@code data.changelog.basePackages} 覆盖该实体所在包

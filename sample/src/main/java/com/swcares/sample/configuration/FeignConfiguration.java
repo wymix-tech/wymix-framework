@@ -1,6 +1,6 @@
 package com.swcares.sample.configuration;
 
-import com.travelsky.base.core.configuration.CustomFeignConfiguration;
+import org.wymix.framework.core.configuration.CustomFeignConfiguration;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.context.annotation.Configuration;
 

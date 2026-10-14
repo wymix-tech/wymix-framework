@@ -1,8 +1,8 @@
 package com.swcares.sample.demo.web;
 
-import com.travelsky.base.web.aop.RepeatRequest;
-import com.travelsky.base.web.context.RequestContextHolder;
-import com.travelsky.base.web.i18n.MessageResourceHelper;
+import org.wymix.framework.web.aop.RepeatRequest;
+import org.wymix.framework.web.context.RequestContextHolder;
+import org.wymix.framework.web.i18n.MessageResourceHelper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,7 +22,7 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * travelsky_dev_web 示例：统一响应包装、i18n、链路 TraceId、参数校验、慢请求、防重提交。
+ * web 示例：统一响应包装、i18n、链路 TraceId、参数校验、慢请求、防重提交。
  *
  * <p>web 模块的 {@code ControllerResponseAdvice} 会把 Controller 返回值统一包装为
  * {@code ResultVO}，因此这里直接返回业务对象即可。
@@ -36,7 +36,7 @@ public class WebDemoController {
     @Operation(summary = "返回业务对象，由 ControllerResponseAdvice 自动包装为 ResultVO")
     public Map<String, Object> payload() {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("module", "travelsky_dev_web");
+        payload.put("module", "web");
         payload.put("advice", "ControllerResponseAdvice");
         return payload;
     }

@@ -1,6 +1,6 @@
 package com.swcares.sample.vo;
 
-import com.travelsky.base.common.vo.AbstractAuditVO;
+import org.wymix.framework.common.vo.AbstractAuditVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

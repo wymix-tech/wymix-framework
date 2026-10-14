@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.travelsky.base.repository.datachangelog.annotation.DataChangeLog;
-import com.travelsky.base.repository.datachangelog.enums.StatementType;
-import com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity;
-import com.travelsky.base.repository.datamigration.annotations.DataMigration;
+import org.wymix.framework.repository.datachangelog.annotation.DataChangeLog;
+import org.wymix.framework.repository.datachangelog.enums.StatementType;
+import org.wymix.framework.repository.mybatis.audit.domain.AbstractAuditEntity;
+import org.wymix.framework.repository.datamigration.annotations.DataMigration;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -19,7 +19,7 @@ import java.io.Serializable;
 // repository 模块：标注后该实体的数据变更会记录变更日志（默认仅打印，可在 DataChangeLogEventListener 中覆写）
 // record 指定记录哪些语句类型，缺省为 INSERT / MODIFY / REMOVE
 @DataChangeLog(record = {StatementType.INSERT, StatementType.MODIFY, StatementType.REMOVE})
-// data_migration 模块：标注后该实体的数据变更会触发迁移回调（开关 travelsky.data-migration.enabled）
+// data_migration 模块：标注后该实体的数据变更会触发迁移回调（开关 wymix.data-migration.enabled）
 @DataMigration
 public class SampleUserEntity extends AbstractAuditEntity implements Serializable {
 

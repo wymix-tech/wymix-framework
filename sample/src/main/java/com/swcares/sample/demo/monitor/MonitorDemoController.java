@@ -1,6 +1,6 @@
 package com.swcares.sample.demo.monitor;
 
-import com.travelsky.base.core.context.ApplicationContextHolder;
+import org.wymix.framework.core.context.ApplicationContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,12 +15,12 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * travelsky_dev_monitor 示例。
+ * monitor 示例。
  *
  * <p>monitor 模块提供两件事：
  * <ol>
  *     <li>{@code MonitorConfiguration} 注册 {@code IgnoreUrlContext} 放行 {@code /actuator/**}
- *     （开关 {@code travelsky.monitor.enabled}）；</li>
+ *     （开关 {@code wymix.monitor.enabled}）；</li>
  *     <li>{@code MonitorApplicationStartedEventListener} 在环境准备阶段注入 Actuator/Prometheus
  *     默认值，由 {@code META-INF/spring.factories} 自动注册，原生启动方式即可生效。</li>
  * </ol>
@@ -46,7 +46,7 @@ public class MonitorDemoController {
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("appName", appName);
         result.put("exposureInclude", environment.getProperty("management.endpoints.web.exposure.include", ""));
-        result.put("monitorEnabled", environment.getProperty("travelsky.monitor.enabled", "true"));
+        result.put("monitorEnabled", environment.getProperty("wymix.monitor.enabled", "true"));
         result.put("paths", resolveEndpointPaths());
         return result;
     }

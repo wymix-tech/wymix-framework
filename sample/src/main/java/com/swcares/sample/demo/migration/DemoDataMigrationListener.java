@@ -1,8 +1,8 @@
 package com.swcares.sample.demo.migration;
 
-import com.travelsky.base.repository.datachangelog.dto.DataChangeLogDTO;
-import com.travelsky.base.repository.datachangelog.event.DataChangeLogEvent;
-import com.travelsky.base.repository.datamigration.annotations.DataMigration;
+import org.wymix.framework.repository.datachangelog.dto.DataChangeLogDTO;
+import org.wymix.framework.repository.datachangelog.event.DataChangeLogEvent;
+import org.wymix.framework.repository.datamigration.annotations.DataMigration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * travelsky_dev_data_migration 示例：自定义迁移回调。
+ * data_migration 示例：自定义迁移回调。
  *
  * <p>data_migration 模块自带的 {@code DataMigrationEventListener} 仅判断实体是否标注
  * {@link DataMigration}，回放逻辑未实现（实验性）。业务方可像本类一样直接实现

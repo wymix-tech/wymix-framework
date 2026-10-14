@@ -3,15 +3,15 @@ package com.swcares.sample.demo.common;
 import com.swcares.sample.entity.SampleUserEntity;
 import com.swcares.sample.service.SampleUserService;
 import com.swcares.sample.vo.SampleUserVO;
-import com.travelsky.base.common.consts.SystemConstant;
-import com.travelsky.base.common.context.Principal;
-import com.travelsky.base.common.context.UserContextHolder;
-import com.travelsky.base.common.exception.BusinessException;
-import com.travelsky.base.common.exception.LoginException;
-import com.travelsky.base.common.query.DevQueryVO;
-import com.travelsky.base.common.query.OperateSymbol;
-import com.travelsky.base.common.query.Page;
-import com.travelsky.base.common.result.ResultVO;
+import org.wymix.framework.common.consts.SystemConstant;
+import org.wymix.framework.common.context.Principal;
+import org.wymix.framework.common.context.UserContextHolder;
+import org.wymix.framework.common.exception.BusinessException;
+import org.wymix.framework.common.exception.LoginException;
+import org.wymix.framework.common.query.DevQueryVO;
+import org.wymix.framework.common.query.OperateSymbol;
+import org.wymix.framework.common.query.Page;
+import org.wymix.framework.common.result.ResultVO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.lang3.tuple.Triple;
@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * travelsky_dev_common 示例：统一响应 {@link ResultVO}、查询 DSL {@link DevQueryVO}、
+ * common 示例：统一响应 {@link ResultVO}、查询 DSL {@link DevQueryVO}、
  * 分页 {@link Page}、登录上下文 {@link UserContextHolder}、异常体系与错误码常量。
  */
 @RestController

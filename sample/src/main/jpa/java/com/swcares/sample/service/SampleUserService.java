@@ -2,9 +2,9 @@ package com.swcares.sample.service;
 
 import com.swcares.sample.dao.SampleUserDao;
 import com.swcares.sample.entity.SampleUserEntity;
-import com.travelsky.base.core.api.BaseService;
-import com.travelsky.base.repository.datapermission.annotations.DataPermission;
-import com.travelsky.base.repository.jpa.api.AbstractBaseServiceImpl;
+import org.wymix.framework.core.api.BaseService;
+import org.wymix.framework.repository.datapermission.annotations.DataPermission;
+import org.wymix.framework.repository.jpa.api.AbstractBaseServiceImpl;
 import com.swcares.sample.permission.TestSqlInject;
 import org.springframework.stereotype.Service;
 

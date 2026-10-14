@@ -2,9 +2,9 @@ package com.swcares.sample.demo.repository;
 
 import com.swcares.sample.entity.SampleUserEntity;
 import com.swcares.sample.service.SampleUserService;
-import com.travelsky.base.common.query.DevQueryVO;
-import com.travelsky.base.common.query.OperateSymbol;
-import com.travelsky.base.common.query.Page;
+import org.wymix.framework.common.query.DevQueryVO;
+import org.wymix.framework.common.query.OperateSymbol;
+import org.wymix.framework.common.query.Page;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.apache.commons.lang3.tuple.Triple;
@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * travelsky_dev_mybatis_repository 示例：{@code BaseService} 全量 API + 查询 DSL。
+ * mybatis_repository 示例：{@code BaseService} 全量 API + 查询 DSL。
  *
  * <p>{@code SampleUserService} 继承 {@code AbstractBaseServiceImpl} 即获得下列全部能力，
  * 本控制器逐个暴露为端点，便于对照验证：

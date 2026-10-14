@@ -1,7 +1,7 @@
 package com.swcares.sample.secure;
 
-import com.travelsky.base.common.context.Principal;
-import com.travelsky.base.common.context.UserContextHolder;
+import org.wymix.framework.common.context.Principal;
+import org.wymix.framework.common.context.UserContextHolder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.core.Authentication;
@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * travelsky_dev_security 示例：<b>受保护</b>端点。
+ * security 示例：<b>受保护</b>端点。
  *
  * <p>与 {@code /demo/**}（已在 {@code security.ignoreUrls} 放行）不同，{@code /secure/**}
  * 不在白名单内，必须携带有效凭证才能访问：

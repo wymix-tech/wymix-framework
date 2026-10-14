@@ -1,7 +1,7 @@
 package com.swcares.sample.demo.discovery;
 
-import com.travelsky.base.discovery.properties.DecentralizedDiscoveryProperties;
-import com.travelsky.base.discovery.supports.NodeService;
+import org.wymix.framework.discovery.properties.DecentralizedDiscoveryProperties;
+import org.wymix.framework.discovery.supports.NodeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -13,7 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * travelsky_dev_decentralization_discovery 示例：无注册中心的去中心化服务发现。
+ * decentralization_discovery 示例：无注册中心的去中心化服务发现。
  *
  * <p>该能力默认关闭，需 {@code decentralization.discovery.enable=true} 并配置
  * {@code namespace} 与 {@code service}（见 {@code application-discovery.yml}）；

@@ -1,7 +1,7 @@
 package com.swcares.sample.dao;
 
 import com.swcares.sample.entity.SampleUserEntity;
-import com.travelsky.base.repository.jpa.api.BaseRepository;
+import org.wymix.framework.repository.jpa.api.BaseRepository;
 import org.springframework.stereotype.Repository;
 
 /**

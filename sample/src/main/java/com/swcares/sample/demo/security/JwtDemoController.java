@@ -1,7 +1,7 @@
 package com.swcares.sample.demo.security;
 
-import com.travelsky.base.security.helper.JwtTokenHelper;
-import com.travelsky.base.security.properties.CustomSecurityProperties;
+import org.wymix.framework.security.helper.JwtTokenHelper;
+import org.wymix.framework.security.properties.CustomSecurityProperties;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,7 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * travelsky_dev_security 示例：JWT 签发与校验。
+ * security 示例：JWT 签发与校验。
  *
  * <p>密钥与有效期取自 {@code security.jwt.*}（见 {@code application-security.yml}），
  * 框架登录成功后由 {@code LoginSuccessHandler} 使用同一工具类签发令牌，

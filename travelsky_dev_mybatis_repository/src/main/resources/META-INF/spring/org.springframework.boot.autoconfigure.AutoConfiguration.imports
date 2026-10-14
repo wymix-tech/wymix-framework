@@ -1,2 +1,0 @@
-com.travelsky.base.repository.configuration.MyBatisConfiguration
-com.travelsky.base.repository.mybatis.datachangelog.configuration.DataChangeLogConfiguration

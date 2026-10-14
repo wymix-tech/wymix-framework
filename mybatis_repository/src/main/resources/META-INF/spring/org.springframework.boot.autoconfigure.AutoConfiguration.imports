@@ -1,0 +1,2 @@
+org.wymix.framework.repository.configuration.MyBatisConfiguration
+org.wymix.framework.repository.mybatis.datachangelog.configuration.DataChangeLogConfiguration
