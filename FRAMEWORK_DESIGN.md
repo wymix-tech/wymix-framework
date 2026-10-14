@@ -55,3 +55,5 @@ sample 和 code-generator 是辅助项目，不在根聚合构建。CI 编译 sa
 ## 尚未保证的能力
 
 WebFlux/Native Image、分布式黑名单、严格单 Leader 共识、跨库事务、分布式幂等和迁移回放均不因引入框架而获得。发现选举没有 term/投票/租约，适用于受控小集群，不提供分区下唯一主保证。ApplicationContextHolder 等兼容静态入口仍有多容器限制。Undertow 仍为 web 的默认容器，选择其他容器须显式调整依赖。
+
+线程池默认装配与监控契约已进一步收敛为 Boot 原生实现，见 [线程池 3.5 迁移说明](docs/THREADPOOL_BOOT35.md)。

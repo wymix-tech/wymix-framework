@@ -6,7 +6,7 @@
 
 ## 模块说明
 
-`core` 是框架的核心模块，承载不依附于具体持久化/安全方案的通用能力。引入依赖即自动生效（可用 `wymix.core.enabled=false` 关闭基础装配、`async.enabled=false` 关闭异步装配）。
+`core` 是框架的核心模块，承载不依附于具体持久化/安全方案的通用能力。引入依赖即自动生效（可用 `wymix.core.enabled=false` 关闭基础装配、`async.enabled=false` 关闭框架异步注解与兼容定制）。
 
 ## 依赖引入
 
@@ -20,20 +20,29 @@
 
 ## 配置项
 
-### 异步 / 调度线程池（前缀 `async`）
+### 异步 / 调度线程池
 
-| 配置项 | 说明 | 默认值 |
-|--------|------|--------|
-| `async.enabled` | 是否启用异步/调度自动装配 | `true` |
-| `async.corePoolSize` | 异步线程池核心线程数 | 4 |
-| `async.maxPoolSize` | 异步线程池最大线程数 | 8 |
-| `async.queueCapacity` | 队列容量 | 300 |
-| `async.threadNamePrefix` | 线程名前缀 | `application-` |
-| `async.keepAliveSeconds` | 空闲存活秒数 | 60 |
-| `async.waitForTasksToCompleteOnShutdown` | 关闭时等待任务完成 | `true` |
-| `async.awaitTerminationSeconds` | 关闭等待超时秒 | 60 |
-| `async.schedule.poolSize` | 定时线程池核心线程数 | 4 |
-| `async.schedule.threadNamePrefix` | 定时线程名前缀 | `application-schedule-` |
+默认执行器和调度器由 **Spring Boot 3.5 原生自动配置**创建。框架通过官方 Customizer 定制，不再复制旧版线程池实现。`async.enabled`（默认 true）控制框架启用 `@Async` / `@Scheduled` 注解和兼容定制；关闭该开关不会删除 Boot 自己的执行器，也不禁止业务自行启用注解。
+
+新项目使用 `spring.task.execution.*` / `spring.task.scheduling.*`。没有显式配置时采用 Boot 默认值（平台异步池 core=8、默认无界队列；调度池 size=1）。显式旧配置仍兼容，**同一项以 Spring 标准配置优先**：
+
+| 旧配置（仅显式值生效） | 推荐配置 |
+|---|---|
+| `async.corePoolSize` | `spring.task.execution.pool.core-size` |
+| `async.maxPoolSize` | `spring.task.execution.pool.max-size` |
+| `async.queueCapacity` | `spring.task.execution.pool.queue-capacity` |
+| `async.keepAliveSeconds` | `spring.task.execution.pool.keep-alive`（如 `60s`） |
+| `async.threadNamePrefix` | `spring.task.execution.thread-name-prefix` |
+| `async.waitForTasksToCompleteOnShutdown` | `spring.task.execution.shutdown.await-termination` |
+| `async.awaitTerminationSeconds` | `spring.task.execution.shutdown.await-termination-period`（如 `60s`） |
+| `async.schedule.poolSize` | `spring.task.scheduling.pool.size` |
+| `async.schedule.threadNamePrefix` | `spring.task.scheduling.thread-name-prefix` |
+
+Bean 名称、用户 `AsyncConfigurer`、`force` 模式与 Java 21 虚拟线程选择遵守 Boot 规则。MVC/WebFlux 需要名为 `applicationTaskExecutor` 的 `AsyncTaskExecutor`；普通 `taskExecutor` 只影响常规异步选择，不能视为所有 Web 执行器的替代。
+
+Java 21+ 配置 `spring.threads.virtual.enabled=true` 后，Boot 使用 `SimpleAsyncTaskExecutor` / `SimpleAsyncTaskScheduler`。池大小旧配置仅适用于平台池，不会强行覆盖虚拟线程选择。多个 `TaskDecorator` 按 Spring 顺序组合，适用于平台与 SimpleAsync 实现。
+
+详细行为、监控可用性与迁移示例见 [线程池 3.5 迁移说明](../docs/THREADPOOL_BOOT35.md)。
 
 ### 基础装配与其他
 
@@ -51,7 +60,7 @@
 | 类 | 说明 |
 |----|------|
 | `CoreConfiguration` | 基础装配：`ApplicationContextHolder`、`MessageService`、条件装配 `EmailSenderService` |
-| `AsyncScheduleAutoConfiguration` | 异步/调度统一装配：注册 `applicationTaskExecutor` / `taskExecutor` / `taskScheduler` |
+| `AsyncScheduleAutoConfiguration` | 启用异步/调度注解，通过官方 Customizer 定制 Boot 原生执行器和调度器 |
 
 装配类通过 `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports` 注册；另有 `LogApplicationStartedEventListener`（日志默认值）与 `FeignApplicationStartedEventListener`（Feign 动态实例映射）两个启动监听器通过 `META-INF/spring.factories` 注册，监听 `ApplicationEnvironmentPreparedEvent`，发生在 `ApplicationContext` 创建之前，因此只能走 `spring.factories`，不能声明为 `@Bean`。
 
@@ -66,8 +75,8 @@
 
 | 扩展点 | 说明 |
 |--------|------|
-| `TaskDecorator` Bean | 声明即覆盖默认装饰器（如 `web` 模块用它透传请求上下文与 TraceId） |
-| 名为 `taskExecutor` 的 `Executor` Bean | 完全接管异步线程池 |
+| `TaskDecorator` Bean | 多个装饰器按顺序组合；`web` 的默认装饰器在用户声明时退让 |
+| 名为 `taskExecutor` 的 `Executor` Bean | 按 Boot 规则影响常规 `@Async`；`force` 下由 Boot 默认池执行，用户 `AsyncConfigurer` 仍优先 |
 | `Decoder` Bean | Feign 解码器，`CustomFeignConfiguration` 中通过 `@ConditionalOnMissingBean` 支持覆盖默认实现 |
 | `ApplicationContextHolder` | 静态获取 Spring 容器 Bean |
 | `MessageSenderService` 实现类 | 收集容器内所有实现，统一由 `Message` 消息模型分发；`Message.SendType` 枚举取值为 `O` / `E` / `P`（内置 `EmailSenderService` 对应 `O`，`E`、`P` 对应渠道模块内未定义，见存疑项），`type()` 返回值需包含在 `Message.of(...)` 传入的 SendType 数组中才会被分发 |

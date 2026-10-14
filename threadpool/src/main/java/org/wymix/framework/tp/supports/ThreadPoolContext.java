@@ -1,12 +1,14 @@
 package org.wymix.framework.tp.supports;
 
-
 import java.io.Serializable;
 import java.util.concurrent.TimeUnit;
 
 public class ThreadPoolContext implements Serializable {
 
     private String threadName;
+
+    private int poolSize;
+    private boolean outcomeMetricsAvailable;
 
     private int corePoolSize;
 
@@ -36,14 +38,24 @@ public class ThreadPoolContext implements Serializable {
 
     private double avgCost;
 
-    public ThreadPoolContext() {
+    public ThreadPoolContext() {}
 
-    }
-
-    public ThreadPoolContext(String threadName, int corePoolSize, int maxPoolSize, long keepAliveTime,
-                             TimeUnit timeUnit, long standby, long running, long remaining, long total,
-                             boolean finished, double successRate, double executionRate, double processedRate,
-                             long cost, double avgCost) {
+    public ThreadPoolContext(
+            String threadName,
+            int corePoolSize,
+            int maxPoolSize,
+            long keepAliveTime,
+            TimeUnit timeUnit,
+            long standby,
+            long running,
+            long remaining,
+            long total,
+            boolean finished,
+            double successRate,
+            double executionRate,
+            double processedRate,
+            long cost,
+            double avgCost) {
         this.threadName = threadName;
         this.corePoolSize = corePoolSize;
         this.maxPoolSize = maxPoolSize;
@@ -63,6 +75,8 @@ public class ThreadPoolContext implements Serializable {
 
     public void refresh() {
         ExecutorWrapper executorWrapper = ThreadPoolHolder.get(this.threadName);
+        this.poolSize = executorWrapper.getPoolSize();
+        this.outcomeMetricsAvailable = executorWrapper.outcomeMetricsAvailable();
         this.corePoolSize = executorWrapper.getCorePoolSize();
         this.maxPoolSize = executorWrapper.getMaxPoolSize();
         this.keepAliveTime = executorWrapper.getKeepAliveTime();
@@ -85,6 +99,22 @@ public class ThreadPoolContext implements Serializable {
 
     public void setThreadName(String threadName) {
         this.threadName = threadName;
+    }
+
+    public int getPoolSize() {
+        return poolSize;
+    }
+
+    public void setPoolSize(int poolSize) {
+        this.poolSize = poolSize;
+    }
+
+    public boolean isOutcomeMetricsAvailable() {
+        return outcomeMetricsAvailable;
+    }
+
+    public void setOutcomeMetricsAvailable(boolean available) {
+        this.outcomeMetricsAvailable = available;
     }
 
     public int getCorePoolSize() {
