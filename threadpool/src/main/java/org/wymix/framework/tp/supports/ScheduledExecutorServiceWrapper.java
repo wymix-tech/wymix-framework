@@ -50,14 +50,20 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
                     protected <V> java.util.concurrent.RunnableScheduledFuture<V> decorateTask(
                             Runnable runnable,
                             java.util.concurrent.RunnableScheduledFuture<V> task) {
-                        return new TrackedScheduledFuture<>(task);
+                        Runnable original = com.alibaba.ttl.TtlRunnable.unwrap(runnable);
+                        if (original
+                                instanceof
+                                java.util.concurrent.CompletableFuture.AsynchronousCompletionTask)
+                            outcomeMetricsAvailable = false;
+                        return new TrackedScheduledFuture<>(
+                                task, original instanceof Future<?> future ? future : null);
                     }
 
                     @Override
                     protected <V> java.util.concurrent.RunnableScheduledFuture<V> decorateTask(
                             Callable<V> callable,
                             java.util.concurrent.RunnableScheduledFuture<V> task) {
-                        return new TrackedScheduledFuture<>(task);
+                        return new TrackedScheduledFuture<>(task, null);
                     }
                 };
         this.scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
@@ -68,11 +74,16 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
     private final class TrackedScheduledFuture<V>
             implements java.util.concurrent.RunnableScheduledFuture<V> {
         private final java.util.concurrent.RunnableScheduledFuture<V> task;
+        private final Future<?> original;
         private final java.util.concurrent.atomic.AtomicBoolean terminal =
                 new java.util.concurrent.atomic.AtomicBoolean();
+        private final java.util.concurrent.atomic.AtomicBoolean cancellationRecorded =
+                new java.util.concurrent.atomic.AtomicBoolean();
 
-        TrackedScheduledFuture(java.util.concurrent.RunnableScheduledFuture<V> task) {
+        TrackedScheduledFuture(
+                java.util.concurrent.RunnableScheduledFuture<V> task, Future<?> original) {
             this.task = task;
+            this.original = original;
             if (!task.isPeriodic()) count.increment();
         }
 
@@ -85,9 +96,10 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
             if (!task.isPeriodic() && !terminal.compareAndSet(false, true)) return;
             try {
                 if (task.isDone()) task.get();
+                if (original != null && original.isDone()) original.get();
                 successCount.increment();
             } catch (java.util.concurrent.CancellationException ex) {
-                cancelledCount.increment();
+                recordCancellation();
             } catch (ExecutionException ex) {
                 failedCount.increment();
             } catch (InterruptedException ex) {
@@ -103,11 +115,16 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
         public boolean cancel(boolean interrupt) {
             boolean changed = task.cancel(interrupt);
             if (changed) {
-                cancelledCount.increment();
+                if (original != null) original.cancel(interrupt);
+                recordCancellation();
                 if (!task.isPeriodic() && terminal.compareAndSet(false, true)) finished.increment();
                 scheduledThreadPoolExecutor.remove(this);
             }
             return changed;
+        }
+
+        private void recordCancellation() {
+            if (cancellationRecorded.compareAndSet(false, true)) cancelledCount.increment();
         }
 
         @Override
@@ -151,6 +168,11 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
                             ? tracked.task
                             : other);
         }
+    }
+
+    @Override
+    public int getPoolSize() {
+        return scheduledThreadPoolExecutor.getPoolSize();
     }
 
     @Override

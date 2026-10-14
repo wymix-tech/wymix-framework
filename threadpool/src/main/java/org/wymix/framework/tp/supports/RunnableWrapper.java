@@ -1,13 +1,17 @@
 package org.wymix.framework.tp.supports;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 
+/** A submitted task is wrapped once, even when a rejection policy resubmits it. */
 public class RunnableWrapper implements Runnable {
     private final Runnable runnable;
     private final Future<?> result;
     private final LongAdder finished, cost, successCount, failedCount, cancelledCount;
+    private final AtomicBoolean terminal = new AtomicBoolean();
     private volatile boolean started;
+    private volatile boolean accepted;
 
     public RunnableWrapper(
             Runnable runnable, LongAdder finished, LongAdder cost, LongAdder successCount) {
@@ -42,12 +46,30 @@ public class RunnableWrapper implements Runnable {
         return started;
     }
 
-    void discard() {
+    boolean accepted() {
+        return accepted;
+    }
+
+    void accept() {
+        accepted = true;
+    }
+
+    boolean discard() {
+        if (started || !terminal.compareAndSet(false, true)) return false;
         if (result != null) result.cancel(false);
+        return true;
+    }
+
+    void cancelQueued() {
+        if (discard()) {
+            cancelledCount.increment();
+            finished.increment();
+        }
     }
 
     @Override
     public void run() {
+        if (terminal.get()) return;
         started = true;
         long start = System.nanoTime();
         try {
@@ -67,13 +89,19 @@ public class RunnableWrapper implements Runnable {
                     return;
                 }
             }
-            successCount.increment();
+            // CompletableFuture's internal callback swallows business errors.
+            if (!(com.alibaba.ttl.TtlRunnable.unwrap(runnable)
+                    instanceof CompletableFuture.AsynchronousCompletionTask)) {
+                successCount.increment();
+            }
         } catch (RuntimeException | Error ex) {
             failedCount.increment();
             throw ex;
         } finally {
-            cost.add(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
-            finished.increment();
+            if (terminal.compareAndSet(false, true)) {
+                cost.add(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+                finished.increment();
+            }
         }
     }
 }

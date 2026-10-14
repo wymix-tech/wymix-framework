@@ -54,3 +54,7 @@ Java 17 + Maven 3.9.11 主聚合工程构建成功，Maven 各模块汇总 **155
 MyBatis 和 JPA 两套 sample profile 均编译打包成功（跳过示例数据库容器测试）。Java 21 的验证由新增 CI matrix 执行，本地未声称已经验证。
 
 额外修复 MyBatis 数据权限命名参数的 JDBC 顺序绑定、空值类型和主键回填元数据；不再修改调用方参数对象。新增 H2 用例验证权限过滤和审计使用同一执行范围，并在入队前拒绝无事务的已审计 batch。
+
+## 线程池专项修复（后续）
+
+默认执行器/调度器改由 Boot 3.5 原生装配，保留官方配置、用户扩展、force、生命周期与装饰器。命名业务池通过 BeanDefinition 注册并与默认池候选隔离；修复 DiscardOldest 的新任务误取消和重复包装，提供 submitCompletable 的异常/取消传播。原生池结果统计明确以 outcomeMetricsAvailable=false 标识不可观测，不再误报成功率。迁移与兼容变化见 [THREADPOOL_BOOT35.md](THREADPOOL_BOOT35.md)。本节后续构建结果单独报告，上述 155 项属于上一轮修复。

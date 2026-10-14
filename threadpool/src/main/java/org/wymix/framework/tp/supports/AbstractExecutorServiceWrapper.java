@@ -24,8 +24,34 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
     protected ExecutorService executorService;
 
     protected RunnableDecorator runnableDecorator;
+    private String registrationName;
+    protected volatile boolean outcomeMetricsAvailable = true;
 
-    public AbstractExecutorServiceWrapper(int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit timeUnit, BlockingQueue<Runnable> queue, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
+    public void setRegistrationName(String name) {
+        registrationName = name;
+    }
+
+    public void destroy() {
+        try {
+            shutdownNow();
+        } finally {
+            if (registrationName != null) ThreadPoolHolder.unregister(registrationName, this);
+        }
+    }
+
+    @Override
+    public boolean outcomeMetricsAvailable() {
+        return outcomeMetricsAvailable;
+    }
+
+    public AbstractExecutorServiceWrapper(
+            int corePoolSize,
+            int maxPoolSize,
+            long keepAliveTime,
+            TimeUnit timeUnit,
+            BlockingQueue<Runnable> queue,
+            ThreadFactory threadFactory,
+            RejectedExecutionHandler rejectedExecutionHandler) {
         this.corePoolSize = corePoolSize;
         this.maxPoolSize = maxPoolSize;
         this.keepAliveTime = keepAliveTime;
@@ -110,7 +136,7 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
      * @return
      */
     public double successRate() {
-        if (finished.sum() == 0) {
+        if (!outcomeMetricsAvailable || finished.sum() == 0) {
             return 0D;
         }
         return Math.min(1D, successCount.sum() * 1.0D / finished.sum());
@@ -122,7 +148,7 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
      * @return
      */
     public double executionRate() {
-        if (finished.sum() == 0) {
+        if (!outcomeMetricsAvailable || finished.sum() == 0) {
             return 0D;
         }
         return Math.min(1D, failedCount.sum() * 1.0D / finished.sum());
@@ -159,20 +185,23 @@ public abstract class AbstractExecutorServiceWrapper implements ExecutorWrapper 
         return Math.min(1D, finished.sum() * 1.0D / total());
     }
 
-    public long rejected() { return rejectedCount.sum(); }
-    public long cancelled() { return cancelledCount.sum(); }
-    public long failed() { return failedCount.sum(); }
+    public long rejected() {
+        return rejectedCount.sum();
+    }
+
+    public long cancelled() {
+        return cancelledCount.sum();
+    }
+
+    public long failed() {
+        return failedCount.sum();
+    }
 
     public void setRunnableDecorator(RunnableDecorator runnableDecorator) {
         this.runnableDecorator = runnableDecorator;
     }
 
-    public void allowCoreThreadTimeOut(boolean allowCoreThreadTimeOut) {
+    public void allowCoreThreadTimeOut(boolean allowCoreThreadTimeOut) {}
 
-    }
-
-    public void prestartAllCoreThreads(boolean prestartAllCoreThreads) {
-
-    }
+    public void prestartAllCoreThreads(boolean prestartAllCoreThreads) {}
 }
-

@@ -45,14 +45,16 @@ public class ThreadPoolProperties {
 
     public static class CoreParams {
         private int corePoolSize = 4;
-        private int maxPoolSize = 2 * corePoolSize;
+        private Integer maxPoolSize;
         private int queueCapacity = 100;
         private long keepAliveSeconds = 60;
         private RejectedPolicy rejectedPolicy = RejectedPolicy.ABORT_POLICY;
         private String rejectedPolicyClassName;
 
         public String getRejectedPolicyClassName() {
-            return rejectedPolicy == RejectedPolicy.CUSTOM_POLICY ? rejectedPolicyClassName : rejectedPolicy.getClazzName();
+            return rejectedPolicy == RejectedPolicy.CUSTOM_POLICY
+                    ? rejectedPolicyClassName
+                    : rejectedPolicy.getClazzName();
         }
 
         public void setRejectedPolicyClassName(String rejectedPolicyClassName) {
@@ -68,7 +70,7 @@ public class ThreadPoolProperties {
         }
 
         public int getMaxPoolSize() {
-            return Math.max(this.corePoolSize, this.maxPoolSize);
+            return maxPoolSize == null ? Math.multiplyExact(corePoolSize, 2) : maxPoolSize;
         }
 
         public void setMaxPoolSize(int maxPoolSize) {

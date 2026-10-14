@@ -1,87 +1,148 @@
 package org.wymix.framework.tp.configuration;
 
-import org.wymix.framework.tp.properties.ThreadPoolProperties;
-import org.wymix.framework.tp.supports.ExecutorWrapper;
-import org.wymix.framework.tp.supports.ThreadPoolRegistry;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.ConfigurationPropertySource;
-import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.support.RootBeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.env.ConfigurableEnvironment;
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
+import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.context.EnvironmentAware;
+import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
+import org.wymix.framework.tp.properties.ThreadPoolProperties;
+import org.wymix.framework.tp.supports.*;
 
 import java.util.Map;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionHandler;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import java.util.Set;
+import java.util.concurrent.*;
 
-@AutoConfiguration
-@ConditionalOnProperty(prefix = "wymix.threadpool", name = "enabled", havingValue = "true", matchIfMissing = true)
-@Configuration
+@AutoConfiguration(
+        before = {TaskExecutionAutoConfiguration.class, TaskSchedulingAutoConfiguration.class})
+@ConditionalOnProperty(
+        prefix = "wymix.threadpool",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class ThreadPoolConfiguration {
-
-    private ThreadPoolProperties threadPoolProperties;
-
     @Bean
-    ExecutorRegistrar executorRegistrar() {
+    static ExecutorRegistrar executorRegistrar() {
         return new ExecutorRegistrar();
     }
 
-
-    class ExecutorRegistrar implements BeanDefinitionRegistryPostProcessor, org.springframework.beans.factory.DisposableBean {
-        private final java.util.Map<String, ExecutorWrapper> managed = new java.util.HashMap<>();
-        @Override public void destroy() {
-            managed.forEach((name, executor) -> { executor.shutdown(); org.wymix.framework.tp.supports.ThreadPoolHolder.unregister(name, executor); });
-        }
-
-        @Override
-        public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-            ConfigurableEnvironment environment = beanFactory.getBean(ConfigurableEnvironment.class);
-            Binder binder = new Binder(environment.getPropertySources().stream().map(ConfigurationPropertySource::from).filter(e -> e != null).toList());
-
-            threadPoolProperties = binder.bindOrCreate("thread-pool", ThreadPoolProperties.class);
-            beanFactory.registerSingleton(ThreadPoolProperties.class.getName(), threadPoolProperties);
-            beanFactory.autowireBean(threadPoolProperties);
-            beanFactory.initializeBean(threadPoolProperties, ThreadPoolProperties.class.getName());
-
-            Map<String, ThreadPoolProperties.CoreParams> pool = threadPoolProperties.getPool();
-            ExecutorWrapper executorWrapper;
-            if (pool != null && !pool.isEmpty()) {
-                for (Map.Entry<String, ThreadPoolProperties.CoreParams> entry : pool.entrySet()) {
-                    try {
-                        executorWrapper = ThreadPoolRegistry.registerThreadPool(entry.getKey(), entry.getValue().getCorePoolSize(), entry.getValue().getMaxPoolSize(), entry.getValue().getKeepAliveSeconds(), TimeUnit.SECONDS, new LinkedBlockingQueue<>(entry.getValue().getQueueCapacity()), (RejectedExecutionHandler) Class.forName(entry.getValue().getRejectedPolicyClassName()).getDeclaredConstructor().newInstance());
-                        beanFactory.registerSingleton(entry.getKey(), executorWrapper);
-                    managed.put(entry.getKey(), executorWrapper);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-
-            }
-            Map<String, ThreadPoolProperties.CoreParams> scheduled = threadPoolProperties.getScheduled();
-            if (scheduled != null && !scheduled.isEmpty()) {
-                for (Map.Entry<String, ThreadPoolProperties.CoreParams> entry : scheduled.entrySet()) {
-                    try {
-                        executorWrapper = ThreadPoolRegistry.registerScheduledThreadPool(entry.getKey(), entry.getValue().getCorePoolSize(), (RejectedExecutionHandler) Class.forName(entry.getValue().getRejectedPolicyClassName()).getDeclaredConstructor().newInstance());
-                        beanFactory.registerSingleton(entry.getKey(), executorWrapper);
-                    managed.put(entry.getKey(), executorWrapper);
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException {
-        }
+    @Bean
+    static NativeThreadPoolMonitor nativeThreadPoolMonitor() {
+        return new NativeThreadPoolMonitor();
     }
 
+    static final class ExecutorRegistrar
+            implements BeanDefinitionRegistryPostProcessor, EnvironmentAware {
+        private static final Set<String> RESERVED =
+                Set.of(
+                        "applicationTaskExecutor",
+                        "taskExecutor",
+                        "taskScheduler",
+                        "bootstrapExecutor");
+        private Environment environment;
 
+        @Override
+        public void setEnvironment(Environment environment) {
+            this.environment = environment;
+        }
+
+        @Override
+        public void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) {
+            ThreadPoolProperties properties =
+                    Binder.get(environment).bindOrCreate("thread-pool", ThreadPoolProperties.class);
+            String propertyBean = ThreadPoolProperties.class.getName();
+            if (!registry.containsBeanDefinition(propertyBean)) {
+                registry.registerBeanDefinition(
+                        propertyBean,
+                        new RootBeanDefinition(ThreadPoolProperties.class, () -> properties));
+            }
+            register(registry, properties.getPool(), false);
+            register(registry, properties.getScheduled(), true);
+        }
+
+        private void register(
+                BeanDefinitionRegistry registry,
+                Map<String, ThreadPoolProperties.CoreParams> pools,
+                boolean scheduled) {
+            if (pools == null) return;
+            pools.forEach(
+                    (name, params) -> {
+                        if (RESERVED.contains(name)
+                                || registry.containsBeanDefinition(name)
+                                || registry.isAlias(name)) {
+                            throw new IllegalArgumentException(
+                                    "Thread pool name is reserved or already registered: " + name);
+                        }
+                        if (params.getCorePoolSize() <= 0
+                                || (!scheduled
+                                        && (params.getMaxPoolSize() < params.getCorePoolSize()
+                                                || params.getQueueCapacity() < 0
+                                                || params.getKeepAliveSeconds() < 0))) {
+                            throw new IllegalArgumentException(
+                                    "Invalid configuration for thread pool: " + name);
+                        }
+                        RejectedExecutionHandler handler = rejectionHandler(name, params);
+                        RootBeanDefinition definition =
+                                scheduled
+                                        ? new RootBeanDefinition(
+                                                ScheduledExecutorServiceWrapper.class,
+                                                () ->
+                                                        (ScheduledExecutorServiceWrapper)
+                                                                ThreadPoolRegistry
+                                                                        .registerScheduledThreadPool(
+                                                                                name,
+                                                                                params
+                                                                                        .getCorePoolSize(),
+                                                                                handler))
+                                        : new RootBeanDefinition(
+                                                ExecutorServiceWrapper.class,
+                                                () ->
+                                                        (ExecutorServiceWrapper)
+                                                                ThreadPoolRegistry
+                                                                        .registerThreadPool(
+                                                                                name,
+                                                                                params
+                                                                                        .getCorePoolSize(),
+                                                                                params
+                                                                                        .getMaxPoolSize(),
+                                                                                params
+                                                                                        .getKeepAliveSeconds(),
+                                                                                TimeUnit.SECONDS,
+                                                                                params
+                                                                                                        .getQueueCapacity()
+                                                                                                == 0
+                                                                                        ? new SynchronousQueue<>()
+                                                                                        : new LinkedBlockingQueue<>(
+                                                                                                params
+                                                                                                        .getQueueCapacity()),
+                                                                                handler));
+                        // Business pools never suppress Boot's applicationTaskExecutor.
+                        definition.setDefaultCandidate(false);
+                        definition.setDestroyMethodName("destroy");
+                        registry.registerBeanDefinition(name, definition);
+                    });
+        }
+
+        private RejectedExecutionHandler rejectionHandler(
+                String name, ThreadPoolProperties.CoreParams params) {
+            try {
+                return Class.forName(params.getRejectedPolicyClassName())
+                        .asSubclass(RejectedExecutionHandler.class)
+                        .getDeclaredConstructor()
+                        .newInstance();
+            } catch (ReflectiveOperationException | RuntimeException ex) {
+                throw new IllegalArgumentException(
+                        "Invalid rejection handler for thread pool: " + name, ex);
+            }
+        }
+
+        @Override
+        public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) {}
+    }
 }

@@ -1,74 +1,148 @@
 package org.wymix.framework.core.configuration;
 
-import org.wymix.framework.core.supports.ScheduledTaskThreadPoolExecutor;
-import org.wymix.framework.core.supports.TaskThreadPoolExecutor;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration;
+import org.springframework.boot.autoconfigure.task.TaskSchedulingAutoConfiguration;
+import org.springframework.boot.context.properties.bind.Binder;
+import org.springframework.boot.task.SimpleAsyncTaskExecutorCustomizer;
+import org.springframework.boot.task.SimpleAsyncTaskSchedulerCustomizer;
+import org.springframework.boot.task.ThreadPoolTaskExecutorCustomizer;
+import org.springframework.boot.task.ThreadPoolTaskSchedulerCustomizer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.env.Environment;
 import org.springframework.core.task.TaskDecorator;
+import org.springframework.core.task.support.CompositeTaskDecorator;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.EnableScheduling;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
-import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 
 /**
- * 异步/调度统一自动装配。
- * 引入 core 即生效，可通过 async.enabled=false 关闭。
- *
- * <p>业务定制：
- * <ul>
- *     <li>声明 {@link TaskDecorator} Bean 即可覆盖默认装饰器（如 web 模块透传请求上下文与链路 ID）；</li>
- *     <li>声明名为 {@code taskExecutor} 的 {@link Executor} Bean 即可完全接管异步线程池。</li>
- * </ul>
- *
- * <p>注意：这里刻意<b>不</b>实现 {@code AsyncConfigurer}。Spring Boot 会为容器中的 Executor Bean
- * 自动注册 {@code applicationTaskExecutorAsyncConfigurer}，同时存在两个 AsyncConfigurer 会导致
- * “Only one AsyncConfigurer may exist”。改为直接提供 Executor Bean 由 Boot 接管。
+ * Enables async/scheduled annotations and customizes Boot's native executors. Explicit
+ * spring.task.* settings take precedence over legacy async.* settings. Boot owns executor
+ * selection, force mode, virtual threads and user overrides.
  */
-@AutoConfiguration
+@AutoConfiguration(
+        before = {TaskExecutionAutoConfiguration.class, TaskSchedulingAutoConfiguration.class})
 @EnableAsync(proxyTargetClass = true)
 @EnableScheduling
-@EnableConfigurationProperties(AsyncScheduleProperties.class)
-@ConditionalOnProperty(prefix = "async", name = "enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(
+        prefix = "async",
+        name = "enabled",
+        havingValue = "true",
+        matchIfMissing = true)
 public class AsyncScheduleAutoConfiguration {
 
-    static {
-        System.setProperty("spring.aop.proxy-target-class", "true");
+    @Bean
+    ThreadPoolTaskExecutorCustomizer legacyAsyncCustomizer(
+            Environment environment, ObjectProvider<TaskDecorator> decorators) {
+        return executor -> {
+            Binder binder = Binder.get(environment);
+            legacy(
+                    binder,
+                    "spring.task.execution.pool.core-size",
+                    "async.core-pool-size",
+                    Integer.class,
+                    executor::setCorePoolSize);
+            legacy(
+                    binder,
+                    "spring.task.execution.pool.max-size",
+                    "async.max-pool-size",
+                    Integer.class,
+                    executor::setMaxPoolSize);
+            legacy(
+                    binder,
+                    "spring.task.execution.pool.queue-capacity",
+                    "async.queue-capacity",
+                    Integer.class,
+                    executor::setQueueCapacity);
+            legacy(
+                    binder,
+                    "spring.task.execution.pool.keep-alive",
+                    "async.keep-alive-seconds",
+                    Integer.class,
+                    executor::setKeepAliveSeconds);
+            legacy(
+                    binder,
+                    "spring.task.execution.thread-name-prefix",
+                    "async.thread-name-prefix",
+                    String.class,
+                    executor::setThreadNamePrefix);
+            legacy(
+                    binder,
+                    "spring.task.execution.shutdown.await-termination",
+                    "async.wait-for-tasks-to-complete-on-shutdown",
+                    Boolean.class,
+                    executor::setWaitForTasksToCompleteOnShutdown);
+            legacy(
+                    binder,
+                    "spring.task.execution.shutdown.await-termination-period",
+                    "async.await-termination-seconds",
+                    Integer.class,
+                    executor::setAwaitTerminationSeconds);
+            var ordered = decorators.orderedStream().toList();
+            if (!ordered.isEmpty()) executor.setTaskDecorator(new CompositeTaskDecorator(ordered));
+        };
     }
 
-    @Autowired
-    AsyncScheduleProperties asyncScheduleProperties;
-
-    @Autowired(required = false)
-    ObjectProvider<TaskDecorator> taskDecoratorProvider;
-
-    @Bean(name = {"applicationTaskExecutor", "taskExecutor"})
-    @ConditionalOnMissingBean(name = {"applicationTaskExecutor", "taskExecutor"})
-    public Executor taskExecutor() {
-        TaskThreadPoolExecutor executor = new TaskThreadPoolExecutor();
-        executor.setCorePoolSize(asyncScheduleProperties.getCorePoolSize());
-        executor.setMaxPoolSize(asyncScheduleProperties.getMaxPoolSize());
-        executor.setQueueCapacity(asyncScheduleProperties.getQueueCapacity());
-        executor.setKeepAliveSeconds(asyncScheduleProperties.getKeepAliveSeconds());
-        executor.setThreadNamePrefix(asyncScheduleProperties.getThreadNamePrefix());
-        executor.setWaitForTasksToCompleteOnShutdown(asyncScheduleProperties.isWaitForTasksToCompleteOnShutdown());
-        executor.setAwaitTerminationSeconds(asyncScheduleProperties.getAwaitTerminationSeconds());
-        executor.setTaskDecorator(taskDecoratorProvider.getIfAvailable(() -> runnable -> runnable));
-        return executor;
+    @Bean
+    ThreadPoolTaskSchedulerCustomizer legacyScheduleCustomizer(
+            Environment environment, ObjectProvider<TaskDecorator> decorators) {
+        return scheduler -> {
+            Binder binder = Binder.get(environment);
+            legacy(
+                    binder,
+                    "spring.task.scheduling.pool.size",
+                    "async.schedule.pool-size",
+                    Integer.class,
+                    scheduler::setPoolSize);
+            legacy(
+                    binder,
+                    "spring.task.scheduling.thread-name-prefix",
+                    "async.schedule.thread-name-prefix",
+                    String.class,
+                    scheduler::setThreadNamePrefix);
+            var ordered = decorators.orderedStream().toList();
+            if (!ordered.isEmpty()) scheduler.setTaskDecorator(new CompositeTaskDecorator(ordered));
+        };
     }
 
-    @Bean("taskScheduler")
-    @ConditionalOnMissingBean(name = "taskScheduler")
-    public ThreadPoolTaskScheduler taskScheduler() {
-        ScheduledTaskThreadPoolExecutor scheduler = new ScheduledTaskThreadPoolExecutor();
-        scheduler.setName(asyncScheduleProperties.getSchedule().getThreadNamePrefix());
-        scheduler.setThreadNamePrefix(asyncScheduleProperties.getSchedule().getThreadNamePrefix());
-        scheduler.setPoolSize(asyncScheduleProperties.getSchedule().getPoolSize());
-        return scheduler;
+    @Bean
+    SimpleAsyncTaskExecutorCustomizer legacySimpleAsyncCustomizer(
+            Environment environment, ObjectProvider<TaskDecorator> decorators) {
+        return executor -> {
+            legacy(
+                    Binder.get(environment),
+                    "spring.task.execution.thread-name-prefix",
+                    "async.thread-name-prefix",
+                    String.class,
+                    executor::setThreadNamePrefix);
+            var ordered = decorators.orderedStream().toList();
+            if (!ordered.isEmpty()) executor.setTaskDecorator(new CompositeTaskDecorator(ordered));
+        };
+    }
+
+    @Bean
+    SimpleAsyncTaskSchedulerCustomizer legacySimpleScheduleCustomizer(
+            Environment environment, ObjectProvider<TaskDecorator> decorators) {
+        return scheduler -> {
+            legacy(
+                    Binder.get(environment),
+                    "spring.task.scheduling.thread-name-prefix",
+                    "async.schedule.thread-name-prefix",
+                    String.class,
+                    scheduler::setThreadNamePrefix);
+            var ordered = decorators.orderedStream().toList();
+            if (!ordered.isEmpty()) scheduler.setTaskDecorator(new CompositeTaskDecorator(ordered));
+        };
+    }
+
+    private static <T> void legacy(
+            Binder binder, String canonical, String oldName, Class<T> type, Consumer<T> apply) {
+        // Presence is checked as a String so canonical Duration and boolean formats are supported.
+        if (!binder.bind(canonical, String.class).isBound())
+            binder.bind(oldName, type).ifBound(apply);
     }
 }
