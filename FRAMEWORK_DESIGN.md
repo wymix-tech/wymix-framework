@@ -1,6 +1,6 @@
 # Wymix Framework 设计与兼容边界
 
-基线：Java 17、Spring Boot 3.5.8、Spring Cloud 2025.0.3、MyBatis-Plus 3.5.15。当前 Maven revision 为 3.0.0-SNAPSHOT。
+基线：Java 17、Spring Boot 3.5.16、Spring Cloud 2025.0.3、MyBatis-Plus 3.5.15。当前 Maven revision 为 3.0.0-SNAPSHOT。
 
 ## 设计方向
 

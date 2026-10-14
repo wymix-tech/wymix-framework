@@ -58,3 +58,7 @@ MyBatis 和 JPA 两套 sample profile 均编译打包成功（跳过示例数据
 ## 线程池专项修复（后续）
 
 默认执行器/调度器改由 Boot 3.5 原生装配，保留官方配置、用户扩展、force、生命周期与装饰器。命名业务池通过 BeanDefinition 注册并与默认池候选隔离；修复 DiscardOldest 的新任务误取消和重复包装，提供 submitCompletable 的异常/取消传播。原生池结果统计明确以 outcomeMetricsAvailable=false 标识不可观测，不再误报成功率。迁移与兼容变化见 [THREADPOOL_BOOT35.md](THREADPOOL_BOOT35.md)。本节后续构建结果单独报告，上述 155 项属于上一轮修复。
+
+## Spring Boot 3.5.16 升级
+
+父 POM 从 3.5.8 升级至 3.5.16，聚合模块和 sample 继承同一依赖管理。Spring Framework 由 Boot BOM 管理为 6.2.19；Java 基线保持 17，Spring Cloud 保持匹配 3.5.x 版本线的 2025.0.3。README 与框架设计基线同步更新，历史评审记录保留原版本。
