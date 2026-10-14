@@ -18,10 +18,12 @@ import org.wymix.framework.utils.json.JsonUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigureOrder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.core.Ordered;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -53,8 +55,17 @@ import java.util.stream.Collectors;
  * <b>不能</b>通过调用 {@code @Bean} 方法获取依赖（每次调用都会 new 出新实例，导致
  * 黑名单等有状态 Bean 出现多份）。所有依赖统一改为方法参数注入。
  * 同理，处理器类一律用构造器注入依赖，不能用 {@code @Autowired} 字段 + {@code new} 创建。
+ *
+ * <p><b>装配顺序（不要删除）</b>：Boot 的 {@code AutoConfigurationSorter} 先按类名字母序排，
+ * {@code org.springframework.boot.*} 会整体排在 {@code org.wymix.*} 之前；若本类排在
+ * {@code SpringBootWebSecurityConfiguration} / {@code ManagementWebSecurityAutoConfiguration} 之后，
+ * 二者的 {@code @ConditionalOnDefaultWebSecurity}（无 {@code SecurityFilterChain} Bean 才生效）会先判定通过，
+ * 于是 Boot 默认链与这里的 {@code securityFilterChain} 同时存在且都匹配任意请求，
+ * 启动时抛 {@code UnreachableFilterChainException}。
+ * 声明 {@code @AutoConfigureOrder(HIGHEST_PRECEDENCE)} 可让本类先于二者注册，使其条件正确失效。
  */
 @AutoConfiguration
+@AutoConfigureOrder(Ordered.HIGHEST_PRECEDENCE)
 @ConditionalOnProperty(prefix = "security", name = "enabled", havingValue = "true", matchIfMissing = true)
 @EnableWebSecurity
 @EnableConfigurationProperties(CustomSecurityProperties.class)
