@@ -144,4 +144,25 @@ class QueryParseHelperTest {
         // 默认系统属性 COLUMN_NAME_RULE=CAMEL_TO_UNDERLINE -> true
         assertTrue(QueryParseHelper.isCamelToUnderline());
     }
+    @Test void rejectsSqlFragmentsUnknownAndUnmappedFields() {
+        for (String field : List.of("age) or 1=1 --", "missing")) {
+            DevQueryVO query = new DevQueryVO(); query.setFilter("[[" + field + ",=,1]]");
+            assertThrows(IllegalArgumentException.class, () -> QueryParseHelper.parseToQueryWrapper(new QueryWrapper<User>(), query, User.class));
+        }
+        DevQueryVO query = new DevQueryVO(); query.setSorts("[{\"columns\":[\"age desc --\"],\"direction\":\"ASC\"}]");
+        assertThrows(IllegalArgumentException.class, () -> QueryParseHelper.parseToQueryWrapper(new QueryWrapper<User>(), query, User.class));
+        query.setFilter("[[age,=,invalid]]"); query.setSorts(null);
+        assertThrows(IllegalArgumentException.class, () -> QueryParseHelper.parseToQueryWrapper(new QueryWrapper<User>(), query, User.class));
+    }
+    static class MappedUser {
+        @com.baomidou.mybatisplus.annotation.TableField("actual_name") String userName;
+        @com.baomidou.mybatisplus.annotation.TableField(exist=false) String virtual;
+    }
+    @Test void honorsMappedColumnsAndRejectsVirtualProperties() {
+        DevQueryVO query = new DevQueryVO(); query.setFilter("[[userName,=,x]]");
+        assertTrue(QueryParseHelper.parseToQueryWrapper(new QueryWrapper<MappedUser>(), query, MappedUser.class).getSqlSegment().contains("actual_name"));
+        query.setFilter("[[virtual,=,x]]");
+        assertThrows(IllegalArgumentException.class, () -> QueryParseHelper.parseToQueryWrapper(new QueryWrapper<MappedUser>(), query, MappedUser.class));
+    }
+
 }

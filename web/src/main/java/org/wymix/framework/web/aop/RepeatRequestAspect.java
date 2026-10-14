@@ -26,7 +26,11 @@ public class RepeatRequestAspect {
 
     private static final Logger log = LoggerFactory.getLogger(RepeatRequestAspect.class);
 
-    private static final ConcurrentMap<String, Long> MAP = new ConcurrentHashMap<>();
+    private static final com.fasterxml.jackson.databind.ObjectMapper KEY_MAPPER = com.fasterxml.jackson.databind.json.JsonMapper.builder()
+            .addModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+            .enable(com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY)
+            .enable(com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS).build();
+    private static final String SESSION_KEYS = RepeatRequestAspect.class.getName() + ".keys";
 
     /**
      * 使用纯类型匹配的 {@code @annotation(全限定名)} 切点，注解实例通过反射获取。
@@ -57,34 +61,26 @@ public class RepeatRequestAspect {
 
         HttpSession session = request.getSession();
 
-        String className = point.getSignature().getDeclaringTypeName();
-        String methodName = point.getSignature().getName();
         MethodSignature signature = (MethodSignature) point.getSignature();
-        String[] parameterNames = signature.getParameterNames();
-        Object[] args = point.getArgs();
-        StringBuilder sb = new StringBuilder();
-        int index = 0;
-        for (String parameterName : parameterNames) {
-            sb.append(parameterName).append(":").append(Optional.ofNullable(args[index++]).orElse("null").toString()).append(";");
-        }
-        // 必须用 sb.toString().hashCode()：StringBuilder 未重写 hashCode()，
-        // 直接取 sb.hashCode() 得到的是身份哈希，每次请求都不同，去重键永远无法命中
-        String name = className + methodName + sb.toString().hashCode();
-        Long lastTime = (Long) session.getAttribute(name);
+        Object[] meaningfulArgs = java.util.Arrays.stream(point.getArgs())
+                .filter(arg -> !(arg instanceof jakarta.servlet.ServletRequest)
+                        && !(arg instanceof jakarta.servlet.ServletResponse)
+                        && !(arg instanceof org.springframework.validation.BindingResult)).toArray();
+        byte[] json = KEY_MAPPER.writeValueAsBytes(meaningfulArgs);
+        String digest = java.util.HexFormat.of().formatHex(java.security.MessageDigest.getInstance("SHA-256").digest(json));
+        String name = signature.getMethod().toGenericString() + ":" + digest;
         long now = System.currentTimeMillis();
-        if (lastTime == null) {
-            session.setAttribute(name, now);
-            return point.proceed();
+        synchronized (org.springframework.web.util.WebUtils.getSessionMutex(session)) {
+            @SuppressWarnings("unchecked")
+            java.util.Map<String, Long> keys = (java.util.Map<String, Long>) session.getAttribute(SESSION_KEYS);
+            if (keys == null) { keys = new java.util.LinkedHashMap<>(); session.setAttribute(SESSION_KEYS, keys); }
+            keys.entrySet().removeIf(entry -> entry.getValue() <= now);
+            if (keys.containsKey(name)) {
+                throw new BusinessException(SystemConstant.ERROR_CODE_DATA_VALIDATION, "repeat.request", repeatRequest.expiredTimeInMills());
+            }
+            if (keys.size() >= 1000) keys.remove(keys.keySet().iterator().next());
+            keys.put(name, now + repeatRequest.expiredTimeInMills());
         }
-        // 距上次提交的间隔小于去重窗口 -> 判定为重复提交
-        long elapsed = now - lastTime;
-        if (elapsed < repeatRequest.expiredTimeInMills()) {
-            // 重复提交属于客户端问题，用 400（数据校验类错误码）而非默认的 500
-            throw new BusinessException(SystemConstant.ERROR_CODE_DATA_VALIDATION,
-                    "repeat.request", repeatRequest.expiredTimeInMills());
-        }
-        // 超出窗口，放行并刷新时间戳
-        session.setAttribute(name, now);
         return point.proceed();
     }
 }

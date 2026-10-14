@@ -22,31 +22,15 @@ public class DecryptEnvironmentPostProcessor implements EnvironmentPostProcessor
             ConfigurableEnvironment environment,
             SpringApplication application) {
 
-        Map<String, Object> decryptedProperties = new HashMap<>();
-
         for (PropertySource<?> source : environment.getPropertySources()) {
-            if (source instanceof EnumerablePropertySource) {
-                EnumerablePropertySource<?> enumerable = (EnumerablePropertySource<?>) source;
-
+            if (source instanceof EnumerablePropertySource<?> enumerable) {
+                Map<String, Object> values = new HashMap<>();
                 for (String key : enumerable.getPropertyNames()) {
                     Object value = enumerable.getProperty(key);
-                    if (value instanceof String) {
-                        String strValue = (String) value;
-                        if (isEncrypted(strValue)) {
-                            // 解密
-                            String decrypted = decrypt(strValue);
-                            decryptedProperties.put(key, decrypted);
-                        }
-                    }
+                    values.put(key, value instanceof String text && isEncrypted(text) ? decrypt(text) : value);
                 }
+                environment.getPropertySources().replace(source.getName(), new MapPropertySource(source.getName(), values));
             }
-        }
-
-        // 将解密后的属性添加到环境中
-        if (!decryptedProperties.isEmpty()) {
-            environment.getPropertySources().addFirst(
-                    new MapPropertySource("decryptedProperties", decryptedProperties)
-            );
         }
     }
 
@@ -61,8 +45,7 @@ public class DecryptEnvironmentPostProcessor implements EnvironmentPostProcessor
                 encryptedValue.length() - ENCRYPTED_SUFFIX.length()
         );
 
-        // 实现你的解密逻辑
-        // 例如使用Jasypt、AES等
+        // Compatibility encoding only: Base64 is not encryption.
         return new String(Base64.getDecoder().decode(ciphertext), StandardCharsets.UTF_8);
     }
 

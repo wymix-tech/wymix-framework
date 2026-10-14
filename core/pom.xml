@@ -91,6 +91,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
         </dependency>
+        <dependency><groupId>org.wymix.framework</groupId><artifactId>core_api</artifactId></dependency>
     </dependencies>
 
     <build>

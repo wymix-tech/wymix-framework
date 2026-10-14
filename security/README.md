@@ -1,10 +1,12 @@
 # security 安全模块
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](../docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > 认证与访问控制：JWT 无状态认证、令牌黑名单、配置项 `ENC()` 解密与 BCrypt 加密。
 
 ## 模块说明
 
-`security` 提供基于 Spring Security 的企业认证能力。是否装配由 `security.enabled` 控制（默认开启）；表单登录模式需提供 `UserDetailsService` Bean 作为用户来源，无需继承任何配置类；支持表单登录与 JWT 两种模式；配置中的密码若以 `ENC(...)` 包裹则自动解密（`DecryptEnvironmentPostProcessor`）；登录凭证使用 BCrypt 加密；JWT 提供令牌黑名单机制实现登出后主动失效（黑名单为单机内存态 `JwtTokenBlackList`，不含分布式共享存储，登出记入的失效时长为配置的完整令牌有效期）。
+`security` 提供基于 Spring Security 的企业认证能力。是否装配由 `security.enabled` 控制（默认开启）；表单登录模式需提供 `UserDetailsService` Bean 作为用户来源，无需继承任何配置类；支持表单登录与 JWT 两种模式；配置中的值若以 `ENC(...)` 包裹则自动 Base64 解码（不提供保密性）（`DecryptEnvironmentPostProcessor`）；登录凭证使用 BCrypt 密码哈希；JWT 提供令牌黑名单机制实现登出后主动失效（黑名单为单机内存态 `JwtTokenBlackList`，不含分布式共享存储，登出记入的失效时长为该签名令牌 exp 的剩余寿命）。
 
 ## 依赖引入
 
@@ -32,7 +34,7 @@
 | `security.ignoreUrls` | 放行 URL（逗号分隔） | — |
 | `security.jwt.randomSecret` | 启动时随机生成密钥 | `false` |
 | `security.jwt.secret` | JWT 固定密钥（生产建议配置） | — |
-| `security.jwt.expiredTime` | 令牌过期时间（秒） | 0 |
+| `security.jwt.expiredTime` | 令牌过期时间（秒） | 3600 |
 
 ## 集成类（自动装配）
 
@@ -43,7 +45,7 @@
 | `JwtAuthenticationFilter` | JWT 认证过滤器 |
 | `LoginSuccessHandler` / `LoginFailureHandler` | 登录成功/失败处理器 |
 | `Http401UnauthorizedEntryPoint` / `BaseAccessDeniedHandler` | 401 入口点与 403 处理器 |
-| `InvalidJwtTokenLogoutHandler` | 登出时把 JWT 加入黑名单（内存态，失效时长取完整令牌有效期） |
+| `InvalidJwtTokenLogoutHandler` | 登出时把 JWT 加入黑名单（内存态，失效时长取签名 exp 的剩余寿命） |
 
 ## 继承类（业务方核心用法）
 
@@ -85,14 +87,14 @@ public class SecurityConfiguration {
 # application-security.yml
 security:
   formLoginEnable: true
-  ignoreUrls: /actuator/**,/swagger-ui/**,/doc.html
+  ignoreUrls: /swagger-ui/**,/doc.html
   jwt:
     randomSecret: false
     secret: ${JWT_SECRET}
     expiredTime: 7200
 spring:
   datasource:
-    password: ENC(密文)     # 自动解密
+    password: ${DB_PASSWORD}  # 生产通过 Secret 管理
 ```
 
 > 自动配置同时注册于 `META-INF/spring.factories`（仅 `EnvironmentPostProcessor`）与 `AutoConfiguration.imports`。

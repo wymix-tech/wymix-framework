@@ -8,10 +8,14 @@ public class ThreadPoolHolder {
     private static final ConcurrentHashMap<String, ExecutorWrapper> THREAD_POOL_MAP = new ConcurrentHashMap<>();
 
     public static void put(String threadPoolName, ExecutorWrapper executorWrapper) {
-        if (THREAD_POOL_MAP.containsKey(threadPoolName)) {
-            throw new RuntimeException("ThreadPool[" + threadPoolName + "] was exists!");
+        if (THREAD_POOL_MAP.putIfAbsent(threadPoolName, executorWrapper) != null) {
+            executorWrapper.shutdownNow();
+            throw new IllegalArgumentException("ThreadPool[" + threadPoolName + "] already exists");
         }
-        THREAD_POOL_MAP.put(threadPoolName, executorWrapper);
+    }
+
+    public static void unregister(String name, ExecutorWrapper expected) {
+        THREAD_POOL_MAP.remove(name, expected);
     }
 
     public static ExecutorWrapper get(String threadPoolName) {

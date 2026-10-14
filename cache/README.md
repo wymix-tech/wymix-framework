@@ -40,7 +40,7 @@
 | `caffeine.defaultMaximumSize` | **未在 `caffeine.cache` 中声明规格的缓存名**的默认最大条目数（-1 表示不限制），避免无界本地缓存 | 10000 |
 | `caffeine.cache.<name>.maximumSize` | 最大条目数（-1 表示不限制） | -1 |
 | `caffeine.cache.<name>.maximumWeight` | 最大权重（-1 表示不限制；**与 `maximumSize` 互斥，同时配置启动报错**；> 0 时必须同时配置 `weigher`） | -1 |
-| `caffeine.cache.<name>.weigher` | 权重函数全限定类名（实现 Caffeine `Weigher`，需 public 无参构造；仅允许 `com.wymix.*` 或 `com.github.benmanes.*` 包内类，其余包启动报可读错误），`maximumWeight > 0` 时必填 | — |
+| `caffeine.cache.<name>.weigher` | 权重函数全限定类名（实现 Caffeine `Weigher`，需 public 无参构造；允许业务包，类型须实现 Weigher，校验通过后才实例化），`maximumWeight > 0` 时必填 | — |
 | `caffeine.cache.<name>.initialCapacity` | 初始容量 | 16 |
 | `caffeine.cache.<name>.allowNullValues` | 是否允许 null（`false` 时 `put(k, null)` 抛 `IllegalArgumentException`） | `true` |
 | `caffeine.cache.<name>.expireInSec` | 过期秒数 | 600 |
@@ -55,8 +55,7 @@
   因此本模块不支持 `refreshAfterWriterInSec`。
 - `maximumSize` 与 `maximumWeight` 互斥，两者同时 `> 0` 时启动即抛可读的 `IllegalStateException`，
   不会落到 Caffeine 内部异常；`maximumWeight` 单独使用时必须提供 `weigher`。
-- `weigher` 类名来自配置文件，仅允许 `com.wymix.*` / `com.github.benmanes.*` 前缀，
-  避免配置被污染时加载并实例化 classpath 上的任意类。
+- `weigher` 来自可信配置；允许业务包实现，先校验 Weigher 类型再调用构造器，拒绝任意非权重函数类型。
 - 未在 `caffeine.cache` 中声明规格的缓存名，默认规格的容量取自 `caffeine.defaultMaximumSize`
   （默认 `10000`）。这样业务只写 `@Cacheable(cacheNames = "xxx")` 而未声明规格时，
   也不会开出无界本地缓存（TTL 窗口内 key 基数大时会无上限增长，是 OOM 风险点）。

@@ -1,73 +1,109 @@
 package org.wymix.framework.repository.query.helper;
 
+import com.baomidou.mybatisplus.annotation.TableField;
+import com.baomidou.mybatisplus.annotation.TableId;
+
+import org.springframework.util.ReflectionUtils;
 import org.wymix.framework.repository.query.annotations.TableAlias;
 import org.wymix.framework.utils.DateUtils;
-import org.wymix.framework.utils.StringUtils;
-import org.springframework.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.Date;
 
-public class FieldHelper {
+/** Resolves public query properties to trusted, mapped entity fields. */
+public final class FieldHelper {
+    private FieldHelper() {}
 
-    public static Object translate(@SuppressWarnings("rawtypes") Class entityClass, String fieldName, String value) {
-        Field field = ReflectionUtils.findField(entityClass, fieldName);
-        if (field == null) {
-            return value;
+    private static Field field(Class<?> entityClass, String name) {
+        if (name == null || !name.matches("[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?")) {
+            throw new IllegalArgumentException("Invalid query field: " + name);
         }
-        if (value == null) {
-            return null;
+        String property = name.substring(name.lastIndexOf('.') + 1);
+        Field f = ReflectionUtils.findField(entityClass, property);
+        if (f == null
+                || Modifier.isStatic(f.getModifiers())
+                || Modifier.isTransient(f.getModifiers())
+                || f.isSynthetic()
+                || (f.isAnnotationPresent(TableField.class)
+                        && !f.getAnnotation(TableField.class).exist())) {
+            throw new IllegalArgumentException("Unknown or unmapped query field: " + name);
         }
-        // 字段属性
-        @SuppressWarnings("rawtypes")
-        Class clazz = field.getType();
-        if (field.getType().isEnum()) {
-            try {
-                return Enum.valueOf(clazz, value);
-            } catch (Exception ex) {
-            }
+        if (name.contains(".")
+                && (!f.isAnnotationPresent(TableAlias.class)
+                        || !name.substring(0, name.indexOf('.'))
+                                .equals(f.getAnnotation(TableAlias.class).value()))) {
+            throw new IllegalArgumentException("Undeclared query alias: " + name);
         }
-        if (clazz.equals(Date.class)) {
-            return DateUtils.parse(value, DateUtils.YYYYMMDDHHMMSS_LINE);
-        }
-        if (clazz.equals(Long.class)) {
-            try {
-                return Long.valueOf(value);
-            } catch (Exception ex) {
-                return null;
-            }
-        }
-        if (clazz.equals(Integer.class)) {
-            try {
-                return Integer.valueOf(value);
-            } catch (Exception ex) {
-                return null;
-            }
-        }
-        if (clazz.equals(BigDecimal.class)) {
-            try {
-                return new BigDecimal(value);
-            } catch (Exception ex) {
-                return null;
-            }
-        }
-        return value;
+        return f;
     }
 
-    public static String addConditionAlias(@SuppressWarnings("rawtypes") Class entityClass, String fieldName, String columnName) {
-        String fieldNameAlias = columnName;
-        Field f = ReflectionUtils.findField(entityClass, fieldName);
-        if (f != null && f.isAnnotationPresent(TableAlias.class)) {
-            TableAlias a = f.getAnnotation(TableAlias.class);
-            String tableAlias = a.value();
-            String columnAlias = StringUtils.isEmpty(a.columnAlias()) ? columnName : a.columnAlias();
-            if (StringUtils.isNotEmpty(tableAlias)) {
-                fieldNameAlias = tableAlias + "." + columnAlias;
-            } else {
-                fieldNameAlias = columnAlias;
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    public static Object translate(Class<?> entityClass, String fieldName, String value) {
+        Class<?> type = field(entityClass, fieldName).getType();
+        if (value == null) return null;
+        try {
+            if (type.isEnum()) return Enum.valueOf((Class) type, value);
+            if (type == Long.class || type == long.class) return Long.valueOf(value);
+            if (type == Integer.class || type == int.class) return Integer.valueOf(value);
+            if (type == Short.class || type == short.class) return Short.valueOf(value);
+            if (type == Double.class || type == double.class) return Double.valueOf(value);
+            if (type == Float.class || type == float.class) return Float.valueOf(value);
+            if (type == BigDecimal.class) return new BigDecimal(value);
+            if (type == Boolean.class || type == boolean.class) {
+                if (!value.equalsIgnoreCase("true") && !value.equalsIgnoreCase("false"))
+                    throw new IllegalArgumentException();
+                return Boolean.valueOf(value);
             }
+            if (type == LocalDate.class) return LocalDate.parse(value);
+            if (type == LocalTime.class) return LocalTime.parse(value);
+            if (type == LocalDateTime.class) return LocalDateTime.parse(value.replace(' ', 'T'));
+            if (type == Instant.class) return Instant.parse(value);
+            if (type == Date.class) {
+                Date date = DateUtils.parse(value, DateUtils.YYYYMMDDHHMMSS_LINE);
+                if (date == null) throw new IllegalArgumentException();
+                return date;
+            }
+            return value;
+        } catch (RuntimeException ex) {
+            throw new IllegalArgumentException(
+                    "Invalid value for query field "
+                            + fieldName
+                            + " ("
+                            + type.getSimpleName()
+                            + ")",
+                    ex);
         }
-        return fieldNameAlias;
+    }
+
+    public static String addConditionAlias(
+            Class<?> entityClass, String fieldName, String defaultColumn) {
+        Field f = field(entityClass, fieldName);
+        String column = defaultColumn.substring(defaultColumn.lastIndexOf('.') + 1);
+        if (f.isAnnotationPresent(TableId.class)
+                && !f.getAnnotation(TableId.class).value().isBlank()) {
+            column = f.getAnnotation(TableId.class).value();
+        } else if (f.isAnnotationPresent(TableField.class)
+                && !f.getAnnotation(TableField.class).value().isBlank()) {
+            column = f.getAnnotation(TableField.class).value();
+        }
+        String alias = "";
+        if (f.isAnnotationPresent(TableAlias.class)) {
+            TableAlias a = f.getAnnotation(TableAlias.class);
+            alias = a.value();
+            if (!a.columnAlias().isBlank()) column = a.columnAlias();
+        }
+        // Annotations are trusted configuration, but may only declare identifiers, not expressions.
+        if (!column.matches("[A-Za-z_][A-Za-z0-9_]*")
+                || (!alias.isBlank() && !alias.matches("[A-Za-z_][A-Za-z0-9_]*"))) {
+            throw new IllegalArgumentException(
+                    "Query mapping must contain SQL identifiers only: " + fieldName);
+        }
+        return alias.isBlank() ? column : alias + "." + column;
     }
 }

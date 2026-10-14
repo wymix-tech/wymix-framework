@@ -7,6 +7,7 @@ import org.springframework.data.domain.AuditorAware;
 
 import java.time.LocalDateTime;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class AuditHandler {
 
     @Autowired

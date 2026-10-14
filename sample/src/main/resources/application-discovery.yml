@@ -4,6 +4,7 @@
 decentralization:
   discovery:
     enable: true
+    shared-secret: ${DISCOVERY_SHARED_SECRET}
     # 节点命名空间（写入 NodeInfo.namespace，用于区分环境/集群）
     namespace: sample
     # 服务名 -> 节点地址列表（集群成员的唯一来源，形如 host:port，不要写 http:// 前缀）

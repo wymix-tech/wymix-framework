@@ -34,8 +34,8 @@ public class MonitorApplicationStartedEventListener implements GenericApplicatio
                 return;
             }
             Properties source = new Properties();
-            source.put("management.endpoints.web.exposure.include", "*");
-            source.put("management.endpoint.health.showDetails", "always");
+            source.put("management.endpoints.web.exposure.include", "health,info,prometheus");
+            source.put("management.endpoint.health.showDetails", "when_authorized");
             source.put("management.endpoint.prometheus.enabled", "true");
             source.put("management.metrics.export.prometheus.enabled", "true");
             source.put("management.metrics.tags.application", environment.getProperty("spring.application.name", "app"));

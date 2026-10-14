@@ -21,6 +21,12 @@ public interface EventHandler<T> {
 
     String topic();
 
+    /** Server-side message type registry; never resolve a class supplied by a remote peer. */
+    default Class<?> payloadType() {
+        return org.springframework.core.ResolvableType.forClass(org.springframework.aop.support.AopUtils.getTargetClass(this))
+                .as(EventHandler.class).getGeneric(0).resolve(Object.class);
+    }
+
     void handle(T payload);
 
 }

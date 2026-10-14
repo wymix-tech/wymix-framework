@@ -26,11 +26,14 @@ import jakarta.servlet.http.HttpServletResponse;
 
 @DependsOn("entityManagerFactory")
 @ConditionalOnProperty(prefix = "data-changelog", name = "enabled", havingValue = "true", matchIfMissing = true)
+@Deprecated(since = "3.0", forRemoval = false)
 public class DataChangeLogConfiguration implements WebMvcConfigurer {
-
-    static {
-        System.setProperty("spring.jpa.properties.hibernate.ejb.interceptor", ManualDmlDataChangeInterceptor.class.getName());
+    @Bean
+    @ConditionalOnProperty(prefix = "wymix.jpa.manual-dml-audit", name = "enabled", havingValue = "true")
+    public Object unsupportedManualDmlAudit() {
+        throw new IllegalStateException("JPA manual/batch DML audit is unsupported. Migrate to mybatis_repository.");
     }
+
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -60,16 +63,6 @@ public class DataChangeLogConfiguration implements WebMvcConfigurer {
     @DependsOn("dataChangeLogHandler")
     public DataChangeLogListener dataChangeLogListener() {
         return new DataChangeLogListener();
-    }
-
-    @Bean
-    public ManualDmlAspect manualDmlAspect() {
-        return new ManualDmlAspect();
-    }
-
-    @Bean
-    public BatchDeleteAspect batchDeleteAspect() {
-        return new BatchDeleteAspect();
     }
 
     @Bean

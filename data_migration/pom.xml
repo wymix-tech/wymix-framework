@@ -19,13 +19,7 @@
     <dependencies>
         <dependency>
             <groupId>org.wymix.framework</groupId>
-            <artifactId>jpa_repository</artifactId>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.wymix.framework</groupId>
-            <artifactId>mybatis_repository</artifactId>
-            <scope>compile</scope>
+            <artifactId>repository</artifactId>
         </dependency>
     </dependencies>
 

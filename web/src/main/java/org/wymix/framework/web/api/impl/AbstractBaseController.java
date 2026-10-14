@@ -17,17 +17,9 @@ public abstract class AbstractBaseController<T, V, ID, SERVICE extends BaseServi
 
 
     private final SERVICE service;
-    private Class<?> entityClass;
-    private Class<?> voClass;
 
     public AbstractBaseController(SERVICE service) {
         this.service = service;
-        initializer();
-    }
-
-    private void initializer() {
-        entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 0);
-        voClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 1);
     }
 
     protected SERVICE getService() {
@@ -79,7 +71,7 @@ public abstract class AbstractBaseController<T, V, ID, SERVICE extends BaseServi
         if (t == null) {
             return null;
         }
-        V v = (V) ReflectUtils.newInstance(this.getClass(), 1);
+        V v = (V) ReflectUtils.newInstance(this.getClass(), AbstractBaseController.class, 1);
         BeanUtils.copyProperties(t, v);
         return v;
     }
@@ -88,7 +80,7 @@ public abstract class AbstractBaseController<T, V, ID, SERVICE extends BaseServi
         if (v == null) {
             return null;
         }
-        T t = (T) ReflectUtils.newInstance(this.getClass(), 0);
+        T t = (T) ReflectUtils.newInstance(this.getClass(), AbstractBaseController.class, 0);
         BeanUtils.copyProperties(v, t);
         return t;
     }

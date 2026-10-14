@@ -77,11 +77,16 @@ public class DynamicDataSourceAnnotationInterceptor implements MethodInterceptor
         if (!DynamicDataSourceContextHolder.containsDataSource(datasource)) {
             throw new BusinessException("datasource.not.exist");
         }
+        String previous = DynamicDataSourceContextHolder.getDataSource();
         DynamicDataSourceContextHolder.setDataSource(datasource);
         try {
             return invocation.proceed();
         } finally {
-            DynamicDataSourceContextHolder.clear();
+            if (previous == null) {
+                DynamicDataSourceContextHolder.clear();
+            } else {
+                DynamicDataSourceContextHolder.setDataSource(previous);
+            }
         }
     }
 

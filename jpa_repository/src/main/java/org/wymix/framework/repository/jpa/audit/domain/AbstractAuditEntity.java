@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 
 @MappedSuperclass
 @EntityListeners(AuditListener.class)
+@Deprecated(since = "3.0", forRemoval = false)
 public class AbstractAuditEntity implements Serializable {
 
     @Column(name = "CREATED_BY")

@@ -7,6 +7,7 @@ import org.springframework.util.Assert;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class AuditListener implements ConfigurableObject {
 
 

@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class ManualDmlContext {
 
     private static final ThreadLocal<Pair<Map<String, Object>, Map<String, Object>>> MANUAL_DML = ThreadLocal.withInitial(() -> null);

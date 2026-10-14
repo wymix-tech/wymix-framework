@@ -201,4 +201,32 @@ class DynamicDataSourceAnnotationInterceptorTest {
         mapperInterfaceField.setAccessible(true);
         field.set(null, mapperInterfaceField);
     }
+    static class NestedRoute {
+        @org.wymix.framework.dynamic.datasource.annotations.DynamicDatasource("inner") public void inner() { }
+    }
+    @org.junit.jupiter.api.Test void restoresOuterRouteAfterSuccessAndFailure() throws Throwable {
+        var holder = new NestedRoute();
+        var method = NestedRoute.class.getMethod("inner");
+        org.wymix.framework.dynamic.datasource.support.DynamicDataSourceContextHolder.addDataSource("inner");
+        var interceptor = new DynamicDataSourceAnnotationInterceptor();
+        for (boolean failure : new boolean[]{false,true}) {
+            org.wymix.framework.dynamic.datasource.support.DynamicDataSourceContextHolder.setDataSource("outer");
+            org.aopalliance.intercept.MethodInvocation invocation = new org.aopalliance.intercept.MethodInvocation() {
+                public java.lang.reflect.Method getMethod() { return method; }
+                public Object[] getArguments() { return new Object[0]; }
+                public Object getThis() { return holder; }
+                public java.lang.reflect.AccessibleObject getStaticPart() { return method; }
+                public Object proceed() {
+                    org.junit.jupiter.api.Assertions.assertEquals("inner", org.wymix.framework.dynamic.datasource.support.DynamicDataSourceContextHolder.getDataSource());
+                    if (failure) throw new IllegalStateException("failure");
+                    return null;
+                }
+            };
+            if (failure) org.junit.jupiter.api.Assertions.assertThrows(IllegalStateException.class, () -> interceptor.invoke(invocation));
+            else interceptor.invoke(invocation);
+            org.junit.jupiter.api.Assertions.assertEquals("outer", org.wymix.framework.dynamic.datasource.support.DynamicDataSourceContextHolder.getDataSource());
+        }
+        org.wymix.framework.dynamic.datasource.support.DynamicDataSourceContextHolder.clear();
+    }
+
 }

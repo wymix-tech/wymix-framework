@@ -22,6 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.LocalDateTime;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class DataChangeLogHandler {
 
     private static final Logger log = LoggerFactory.getLogger(DataChangeLogHandler.class);

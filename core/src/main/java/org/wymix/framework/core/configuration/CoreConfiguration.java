@@ -17,11 +17,6 @@ import org.springframework.context.annotation.Configuration;
 public class CoreConfiguration {
 
     @Bean
-    public ApplicationContextHolder applicationContextHolder() {
-        return new ApplicationContextHolder();
-    }
-
-    @Bean
     @ConditionalOnBean(MessageSenderService.class)
     public MessageService messageService() {
         return new MessageService() {

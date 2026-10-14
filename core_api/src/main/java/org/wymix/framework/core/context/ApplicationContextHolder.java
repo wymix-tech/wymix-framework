@@ -6,9 +6,11 @@ import org.springframework.context.ApplicationContextAware;
 
 import java.util.Map;
 
-public class ApplicationContextHolder implements ApplicationContextAware {
+public class ApplicationContextHolder
+        implements ApplicationContextAware, org.springframework.beans.factory.DisposableBean {
 
-    private static ApplicationContext applicationContext;
+    private static volatile ApplicationContext applicationContext;
+    private ApplicationContext ownedContext;
 
     public static final ApplicationContext getApplicationContext() {
         return ApplicationContextHolder.applicationContext;
@@ -16,8 +18,14 @@ public class ApplicationContextHolder implements ApplicationContextAware {
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        this.ownedContext = applicationContext;
         ApplicationContextHolder.applicationContext = applicationContext;
+    }
 
+    @Override
+    public void destroy() {
+        if (ApplicationContextHolder.applicationContext == ownedContext)
+            ApplicationContextHolder.applicationContext = null;
     }
 
     public static final <T> T getBean(Class<T> requiredType) {

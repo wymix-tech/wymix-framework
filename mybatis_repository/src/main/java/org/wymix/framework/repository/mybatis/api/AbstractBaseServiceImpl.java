@@ -25,7 +25,7 @@ public abstract class AbstractBaseServiceImpl<T, ID extends Serializable, REPOSI
 
     public AbstractBaseServiceImpl(REPOSITORY repository) {
         this.repository = repository;
-        this.entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), 0);
+        this.entityClass = ReflectUtils.getSuperClassGenericType(this.getClass(), AbstractBaseServiceImpl.class, 0);
     }
 
     protected REPOSITORY getRepository() {

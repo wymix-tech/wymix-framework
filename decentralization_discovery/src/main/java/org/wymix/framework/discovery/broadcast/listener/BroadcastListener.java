@@ -54,7 +54,7 @@ public class BroadcastListener implements ApplicationListener<BroadcastEvent<Obj
     public void onApplicationEvent(BroadcastEvent<Object> event) {
         String topic = event.topic();
         Object payload = event.payload();
-        handlers.get(topic).forEach(h -> h.handle(payload));
+        handlers.getOrDefault(topic, java.util.List.of()).forEach(h -> h.handle(payload));
     }
 
     @Override

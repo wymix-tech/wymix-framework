@@ -176,13 +176,6 @@
                 <dependency>
                     <groupId>org.wymix.framework</groupId>
                     <artifactId>data_migration</artifactId>
-                    <exclusions>
-                        <!-- data_migration 同时依赖两套 ORM，与 mybatis 场景冲突，需排除 JPA 实现 -->
-                        <exclusion>
-                            <groupId>org.wymix.framework</groupId>
-                            <artifactId>jpa_repository</artifactId>
-                        </exclusion>
-                    </exclusions>
                 </dependency>
                 <dependency>
                     <groupId>com.mysql</groupId>
@@ -209,13 +202,6 @@
                 <dependency>
                     <groupId>org.wymix.framework</groupId>
                     <artifactId>data_migration</artifactId>
-                    <exclusions>
-                        <!-- 与 jpa 场景冲突，需排除 MyBatis 实现 -->
-                        <exclusion>
-                            <groupId>org.wymix.framework</groupId>
-                            <artifactId>mybatis_repository</artifactId>
-                        </exclusion>
-                    </exclusions>
                 </dependency>
                 <dependency>
                     <groupId>com.mysql</groupId>

@@ -35,6 +35,19 @@ public class BroadcastEndpoint {
 
     @Autowired
     private ApplicationEventPublisher applicationEventPublisher;
+    @Autowired(required = false)
+    private java.util.List<org.wymix.framework.discovery.broadcast.handler.EventHandler<?>> handlers = java.util.List.of();
+    private final java.util.Map<String, Class<?>> messageTypes = new java.util.HashMap<>();
+
+    @jakarta.annotation.PostConstruct
+    public void registerMessageTypes() {
+        for (var handler : handlers) {
+            Class<?> type = handler.payloadType();
+            if (type == Object.class) throw new IllegalArgumentException("Broadcast handlers must declare a concrete payload type");
+            Class<?> previous = messageTypes.putIfAbsent(handler.topic(), type);
+            if (previous != null && previous != type) throw new IllegalArgumentException("Conflicting broadcast payload types for " + handler.topic());
+        }
+    }
 
     /**
      * 接收集群广播。
@@ -46,11 +59,16 @@ public class BroadcastEndpoint {
     @WriteOperation
     public void broadcast(@Selector String topic, @Selector String className, String nodes) {
         try {
-            Object o = JsonUtils.jsonToEntity(Class.forName(className), nodes);
+            Class<?> type = messageTypes.get(topic);
+            if (type == null || !type.getName().equals(className)) {
+                throw new IllegalArgumentException("Unsupported broadcast topic/type");
+            }
+            Object o = JsonUtils.jsonToEntity(type, nodes);
+            if (o == null) throw new IllegalArgumentException("Invalid broadcast payload");
             applicationEventPublisher.publishEvent(new BroadcastEvent<>(topic, o, this));
-        } catch (ClassNotFoundException e) {
+        } catch (IllegalArgumentException e) {
             // 原实现静默吞掉，广播失败在日志里毫无痕迹，补 warn
-            logger.warn("broadcast target class [{}] not found, topic={}", className, topic);
+            throw e;
         }
     }
 

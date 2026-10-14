@@ -12,4 +12,19 @@ import java.util.List;
  * @param values   操作数值列表（IN 多值 / BETWEEN 双值，其余单值）
  */
 public record ConditionNode(String field, OperateSymbol operator, List<Object> values) implements FilterNode {
+    public ConditionNode {
+        if (field == null || field.isBlank() || operator == null || values == null) {
+            throw new IllegalArgumentException("Filter field and operator are required");
+        }
+        int expected = switch (operator) {
+            case NULL, NOT_NULL -> 0;
+            case BETWEEN -> 2;
+            case IN, NOT_IN -> -1;
+            default -> 1;
+        };
+        if ((expected >= 0 && values.size() != expected) || (expected < 0 && values.isEmpty())) {
+            throw new IllegalArgumentException("Incorrect operand count for " + operator);
+        }
+        values = List.copyOf(values);
+    }
 }

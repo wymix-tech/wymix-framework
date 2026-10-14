@@ -1,5 +1,7 @@
 # Wymix Dev Framework 快速上手指南
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > 15 分钟跑通一个基于本框架的 CRUD 服务
 
 > **事实基准**：本文出现冲突时，以各模块 `README.md` 与模块源码为准。当前版本：`revision=3.0.0-SNAPSHOT`，
@@ -60,8 +62,7 @@
 </dependencies>
 ```
 
-> 引入 `web` 会自动传递 `security` 与 `core`（`web` 的 pom 直接 compile 依赖 `security`，后者再带入其余基础模块）；
-> 因此**仅引入 `web` 即会激活安全装配**（默认 `matchIfMissing = true`），若暂不需要认证，请显式配置 `security.enabled: false`。
+> `web` 只传递 core_api；需要认证显式引入 security，需要 Feign/调度显式引入 core。
 > 引入持久化模块会自动传递 `repository` / `common` / `utils`。无需手动引基础层。
 
 ---
@@ -164,7 +165,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/demo?useSSL=false&serverTimezone=UTC
     username: root
-    password: ENC(密文)        # 引入 security 模块后由 DecryptEnvironmentPostProcessor 自动解密
+    password: ${DB_PASSWORD}  # 生产使用 Secret 管理；ENC() 仅兼容 Base64 编码
   # JPA 路线才需要下列配置
   jpa:
     hibernate:
@@ -185,7 +186,7 @@ security:
   formLoginEnable: true
   loginPage: /login
   loginProcessingUrl: /login
-  ignoreUrls: /actuator/**,/swagger-ui/**,/doc.html
+  ignoreUrls: /swagger-ui/**,/doc.html
   jwt:
     randomSecret: false
     secret: ${JWT_SECRET}  # 建议 32 位长度以上
@@ -288,7 +289,7 @@ curl -G 'http://localhost:8080/sampleUser' \
 | 想要的能力 | 操作 |
 |-----------|------|
 | Swagger 文档 | 引入 `web` 即自动装配（`swagger.enabled: false` 关闭）；放行 UI 路径加 `swagger.web.enabled: true`，UI 默认路径 `/doc.html` |
-| 监控指标 | 引入 `monitor`（自动放行 `/actuator/**` 并注入 Prometheus 默认值，开关 `wymix.monitor.enabled`） |
+| 监控指标 | 引入 `monitor`（注入安全的端点默认暴露列表，不自动放行管理路径；开关 `wymix.monitor.enabled`） |
 | 本地缓存 | 引入 `cache` **且自行引入 `caffeine` 依赖**（模块中该依赖为 `optional`，不传递）+ 按需配置 `caffeine.cache.<name>.*` |
 | 多数据源 | 引入 `dynamic_datasource` + 自行引入 JDBC 驱动与 HikariCP + 配置 `dynamic.datasource.enabled: true` 与 `primary`、`items` |
 | 去中心化发现 | 引入 `decentralization_discovery` + 配置 `decentralization.discovery.enable: true` 与 `service.<svc>` 地址列表（无可选依赖，不做自动发现） |
@@ -371,16 +372,15 @@ A：父 POM 已改为导入 `spring-cloud-dependencies` BOM（当前 **2025.0.3*
 
 **Q5：JWT 密钥怎么配？**
 A：`security.jwt.randomSecret: true` 每次启动随机生成（开发方便）；生产建议 `randomSecret: false` + 固定 `security.jwt.secret`，
-并设置 `security.jwt.expiredTime`（**单位：秒**，默认 0）。
+并设置 `security.jwt.expiredTime`（**单位：秒**，默认 3600）。
 
 **Q6：`@RepeatRequest` 加了没生效？**
-A：`web` 模块中 `RepeatRequestAspect` 的 `@Bean` 注册**当前处于注释状态**（`WebConfiguration` 中已注释），
-需业务方自行声明该 Bean（见 `sample` 的 `SampleWebConfiguration`）后注解才生效。
+A：配置 `wymix.web.repeat-request.enabled=true` 或自行声明 RepeatRequestAspect Bean。
 另外该切面**仅在 Controller 方法上有效**（非 Controller 只打 warn 日志不做拦截），
 去重键为「类+方法+参数」且存放在 `HttpSession` 中，因此**只在同一个会话内去重**。
 
 **Q7：为什么只引入了 `web` 就跳登录页？**
-A：`web` 的 pom 直接 compile 依赖 `security`，后者默认开启（`security.enabled` `matchIfMissing = true`）。
+A：仅 web 不启用安全；检查是否显式/传递引入 security，安全模块默认开启。
 不需要认证时显式配置 `security.enabled: false`，或提供 `UserDetailsService` Bean 并配置 `security.ignoreUrls` 放行。
 
 ---

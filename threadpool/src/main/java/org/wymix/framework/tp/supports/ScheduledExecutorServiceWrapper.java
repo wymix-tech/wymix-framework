@@ -4,7 +4,6 @@ import com.alibaba.ttl.threadpool.TtlExecutors;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -16,110 +15,152 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrapper implements ExecutorWrapper, ScheduledExecutorService {
+public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrapper
+        implements ExecutorWrapper, ScheduledExecutorService {
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     private final Object mutex = new Object();
 
-    public ScheduledExecutorServiceWrapper(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
-        super(corePoolSize, corePoolSize, 0, TimeUnit.SECONDS, null, threadFactory, rejectedExecutionHandler);
-        this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(corePoolSize, threadFactory, new RejectedExecutionHandlerWrapper(rejectedExecutionHandler, this.rejectedCount)) {
-            @Override
-            public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
-                count.increment();
-                return super.schedule(new RunnableWrapper(command, finished, cost, successCount), delay, unit);
-            }
-
-            @Override
-            public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
-                count.increment();
-                return super.schedule(() -> {
-                    long cur = System.currentTimeMillis();
-                    try {
-                        V v = callable.call();
-                        successCount.increment();
-                        return v;
-                    } finally {
-                        cost.add(System.currentTimeMillis() - cur);
-                        finished.increment();
+    public ScheduledExecutorServiceWrapper(
+            int corePoolSize,
+            ThreadFactory threadFactory,
+            RejectedExecutionHandler rejectedExecutionHandler) {
+        super(
+                corePoolSize,
+                corePoolSize,
+                0,
+                TimeUnit.SECONDS,
+                null,
+                threadFactory,
+                rejectedExecutionHandler);
+        this.scheduledThreadPoolExecutor =
+                new ScheduledThreadPoolExecutor(
+                        corePoolSize,
+                        threadFactory,
+                        (command, pool) -> {
+                            rejectedCount.increment();
+                            try {
+                                rejectedExecutionHandler.rejectedExecution(command, pool);
+                            } finally {
+                                if (command instanceof Future<?> future) future.cancel(false);
+                            }
+                        }) {
+                    @Override
+                    protected <V> java.util.concurrent.RunnableScheduledFuture<V> decorateTask(
+                            Runnable runnable,
+                            java.util.concurrent.RunnableScheduledFuture<V> task) {
+                        return new TrackedScheduledFuture<>(task);
                     }
 
-                }, delay, unit);
-            }
-
-            @Override
-            public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
-                count.increment();
-                return super.scheduleAtFixedRate(new RunnableWrapper(command, finished, cost, successCount), initialDelay, period, unit);
-            }
-
-            @Override
-            public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
-                count.increment();
-                return super.scheduleWithFixedDelay(new RunnableWrapper(command, finished, cost, successCount), initialDelay, delay, unit);
-            }
-        };
-        this.executorService = TtlExecutors.getTtlScheduledExecutorService(this.scheduledThreadPoolExecutor);
+                    @Override
+                    protected <V> java.util.concurrent.RunnableScheduledFuture<V> decorateTask(
+                            Callable<V> callable,
+                            java.util.concurrent.RunnableScheduledFuture<V> task) {
+                        return new TrackedScheduledFuture<>(task);
+                    }
+                };
+        this.scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
+        this.executorService =
+                TtlExecutors.getTtlScheduledExecutorService(this.scheduledThreadPoolExecutor);
     }
 
-    private ScheduledExecutorServiceWrapper(int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit timeUnit, BlockingQueue<Runnable> queue, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
-        super(corePoolSize, maxPoolSize, keepAliveTime, timeUnit, queue, threadFactory, rejectedExecutionHandler);
-        this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(corePoolSize, threadFactory, new RejectedExecutionHandlerWrapper(rejectedExecutionHandler, this.rejectedCount)) {
-            @Override
-            public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
-                count.increment();
-                return super.schedule(new RunnableWrapper(command, finished, cost, successCount), delay, unit);
-            }
+    private final class TrackedScheduledFuture<V>
+            implements java.util.concurrent.RunnableScheduledFuture<V> {
+        private final java.util.concurrent.RunnableScheduledFuture<V> task;
+        private final java.util.concurrent.atomic.AtomicBoolean terminal =
+                new java.util.concurrent.atomic.AtomicBoolean();
 
-            @Override
-            public <V> ScheduledFuture<V> schedule(Callable<V> callable, long delay, TimeUnit unit) {
-                count.increment();
-                return super.schedule(() -> {
-                    long cur = System.currentTimeMillis();
-                    try {
-                        V v = callable.call();
-                        successCount.increment();
-                        return v;
-                    } finally {
-                        cost.add(System.currentTimeMillis() - cur);
-                        finished.increment();
-                    }
+        TrackedScheduledFuture(java.util.concurrent.RunnableScheduledFuture<V> task) {
+            this.task = task;
+            if (!task.isPeriodic()) count.increment();
+        }
 
-                }, delay, unit);
+        @Override
+        public void run() {
+            if (task.isCancelled()) return;
+            if (task.isPeriodic()) count.increment();
+            long start = System.nanoTime();
+            task.run();
+            if (!task.isPeriodic() && !terminal.compareAndSet(false, true)) return;
+            try {
+                if (task.isDone()) task.get();
+                successCount.increment();
+            } catch (java.util.concurrent.CancellationException ex) {
+                cancelledCount.increment();
+            } catch (ExecutionException ex) {
+                failedCount.increment();
+            } catch (InterruptedException ex) {
+                Thread.currentThread().interrupt();
+                failedCount.increment();
+            } finally {
+                cost.add(TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - start));
+                finished.increment();
             }
+        }
 
-            @Override
-            public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
-                count.increment();
-                return super.scheduleAtFixedRate(new RunnableWrapper(command, finished, cost, successCount), initialDelay, period, unit);
+        @Override
+        public boolean cancel(boolean interrupt) {
+            boolean changed = task.cancel(interrupt);
+            if (changed) {
+                cancelledCount.increment();
+                if (!task.isPeriodic() && terminal.compareAndSet(false, true)) finished.increment();
+                scheduledThreadPoolExecutor.remove(this);
             }
+            return changed;
+        }
 
-            @Override
-            public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
-                count.increment();
-                return super.scheduleWithFixedDelay(new RunnableWrapper(command, finished, cost, successCount), initialDelay, delay, unit);
-            }
-        };
-        this.executorService = TtlExecutors.getTtlScheduledExecutorService(this.scheduledThreadPoolExecutor);
+        @Override
+        public boolean isPeriodic() {
+            return task.isPeriodic();
+        }
+
+        @Override
+        public boolean isCancelled() {
+            return task.isCancelled();
+        }
+
+        @Override
+        public boolean isDone() {
+            return task.isDone();
+        }
+
+        @Override
+        public V get() throws InterruptedException, ExecutionException {
+            return task.get();
+        }
+
+        @Override
+        public V get(long timeout, TimeUnit unit)
+                throws InterruptedException, ExecutionException, TimeoutException {
+            return task.get(timeout, unit);
+        }
+
+        @Override
+        public long getDelay(TimeUnit unit) {
+            return task.getDelay(unit);
+        }
+
+        @Override
+        public int compareTo(java.util.concurrent.Delayed other) {
+            return task.compareTo(
+                    other
+                                    instanceof
+                                    ScheduledExecutorServiceWrapper.TrackedScheduledFuture<?>
+                                            tracked
+                            ? tracked.task
+                            : other);
+        }
+    }
+
+    @Override
+    public long remaining() {
+        return standby() + running();
+    }
+
+    @Override
+    public boolean finished() {
+        return remaining() == 0;
     }
 
     @Override
@@ -135,24 +176,36 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
     @Override
     public void setCorePoolSize(int corePoolSize) {
         synchronized (mutex) {
+            this.scheduledThreadPoolExecutor.setCorePoolSize(corePoolSize);
             this.corePoolSize = corePoolSize;
             this.maxPoolSize = corePoolSize;
-            this.scheduledThreadPoolExecutor.setCorePoolSize(corePoolSize);
         }
     }
 
     @Override
     public void setMaxPoolSize(int maxPoolSize) {
         synchronized (mutex) {
-            this.corePoolSize = maxPoolSize;
-            this.maxPoolSize = maxPoolSize;
-            this.scheduledThreadPoolExecutor.setMaximumPoolSize(maxPoolSize);
+            setCorePoolSize(maxPoolSize);
         }
     }
 
     @Override
     public void setKeepAliveTime(long keepAliveTime, TimeUnit timeUnit) {
+        synchronized (mutex) {
+            scheduledThreadPoolExecutor.setKeepAliveTime(keepAliveTime, timeUnit);
+            this.keepAliveTime = keepAliveTime;
+            this.timeUnit = timeUnit;
+        }
+    }
 
+    @Override
+    public void allowCoreThreadTimeOut(boolean allow) {
+        scheduledThreadPoolExecutor.allowCoreThreadTimeOut(allow);
+    }
+
+    @Override
+    public void prestartAllCoreThreads(boolean prestart) {
+        if (prestart) scheduledThreadPoolExecutor.prestartAllCoreThreads();
     }
 
     @Override
@@ -162,7 +215,9 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
 
     @Override
     public List<Runnable> shutdownNow() {
-        return this.executorService.shutdownNow();
+        List<Runnable> queued = this.executorService.shutdownNow();
+        for (Runnable task : queued) if (task instanceof Future<?> future) future.cancel(false);
+        return queued;
     }
 
     @Override
@@ -196,28 +251,37 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+            throws InterruptedException {
         return this.executorService.invokeAll(tasks);
     }
 
     @Override
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(
+            Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+            throws InterruptedException {
         return this.executorService.invokeAll(tasks, timeout, unit);
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
+            throws InterruptedException, ExecutionException {
         return this.executorService.invokeAny(tasks);
     }
 
     @Override
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+            throws InterruptedException, ExecutionException, TimeoutException {
         return this.executorService.invokeAny(tasks, timeout, unit);
     }
 
     @Override
     public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
-        return ((ScheduledExecutorService) this.executorService).schedule(command, delay, unit);
+        return ((ScheduledExecutorService) this.executorService)
+                .schedule(
+                        runnableDecorator == null ? command : runnableDecorator.decorate(command),
+                        delay,
+                        unit);
     }
 
     @Override
@@ -226,12 +290,24 @@ public class ScheduledExecutorServiceWrapper extends AbstractExecutorServiceWrap
     }
 
     @Override
-    public ScheduledFuture<?> scheduleAtFixedRate(Runnable command, long initialDelay, long period, TimeUnit unit) {
-        return ((ScheduledExecutorService) this.executorService).scheduleAtFixedRate(command, initialDelay, period, unit);
+    public ScheduledFuture<?> scheduleAtFixedRate(
+            Runnable command, long initialDelay, long period, TimeUnit unit) {
+        return ((ScheduledExecutorService) this.executorService)
+                .scheduleAtFixedRate(
+                        runnableDecorator == null ? command : runnableDecorator.decorate(command),
+                        initialDelay,
+                        period,
+                        unit);
     }
 
     @Override
-    public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command, long initialDelay, long delay, TimeUnit unit) {
-        return ((ScheduledExecutorService) this.executorService).scheduleWithFixedDelay(command, initialDelay, delay, unit);
+    public ScheduledFuture<?> scheduleWithFixedDelay(
+            Runnable command, long initialDelay, long delay, TimeUnit unit) {
+        return ((ScheduledExecutorService) this.executorService)
+                .scheduleWithFixedDelay(
+                        runnableDecorator == null ? command : runnableDecorator.decorate(command),
+                        initialDelay,
+                        delay,
+                        unit);
     }
 }

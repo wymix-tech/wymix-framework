@@ -161,20 +161,16 @@ public class CacheManagerConfiguration {
     @SuppressWarnings("unchecked")
     private static com.github.benmanes.caffeine.cache.Weigher<Object, Object> newWeightedWeigher(String weigherClass) {
         String trimmed = weigherClass.trim();
-        // 类名来自配置文件，限制包前缀白名单，避免配置被污染时加载并实例化 classpath 上任意类
-        // 同时接受当前包名 org.wymix.* 与迁移前的历史包名 com.wymix.*，避免旧配置升级后直接失效
-        if (!trimmed.startsWith("org.wymix.") && !trimmed.startsWith("com.wymix.")
-                && !trimmed.startsWith("com.github.benmanes.")) {
-            throw new IllegalStateException(
-                    "weigher 不在允许的包范围内（仅支持 org.wymix.* / com.wymix.* 或 com.github.benmanes.*）");
-        }
         Object instance;
         try {
-            Class<?> clazz = Class.forName(trimmed);
+            Class<?> clazz = Class.forName(trimmed, false, CacheManagerConfiguration.class.getClassLoader());
+            if (!com.github.benmanes.caffeine.cache.Weigher.class.isAssignableFrom(clazz)) {
+                throw new IllegalStateException("weigher 必须实现 Weigher: " + trimmed);
+            }
             instance = clazz.getDeclaredConstructor().newInstance();
         } catch (Exception ex) {
             throw new IllegalStateException("无法实例化 weigher（需提供 public 无参构造，"
-                    + "且类名需在允许的包范围内）", ex);
+                    + "必须实现 Weigher）", ex);
         }
         if (!(instance instanceof com.github.benmanes.caffeine.cache.Weigher)) {
             throw new IllegalStateException("weigher 必须实现 com.github.benmanes.caffeine.cache.Weigher"

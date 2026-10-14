@@ -1,6 +1,6 @@
 # wymix_dev 快速开发框架
 
-> 企业级 Java 快速开发框架 · 基于 Spring Boot 3.5.8 + Java 17 · Maven 多模块架构
+> Java 业务开发框架（新项目推荐 MyBatis） · 基于 Spring Boot 3.5.8 + Java 17 · Maven 多模块架构
 >
 > Maven 坐标：`org.wymix.framework:dev_parent:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
 
@@ -26,10 +26,11 @@ dev_parent
 │   ├── threadpool       线程池管理模块
 │   └── common           通用类封装模块
 ├── 核心层
-│   └── core             框架核心（启动/异步/Feign/邮件）
+│   ├── core_api         轻量公共契约（保留原 API 包名）
+│   └── core             可选运行时能力（启动/异步/Feign/邮件）
 ├── 数据层
 │   ├── repository       数据访问抽象层（ORM 无关）
-│   ├── jpa_repository   基于 JPA 的数据库交互模块
+│   ├── jpa_repository   已弃用，兼容维护
 │   ├── mybatis_repository  基于 MyBatis 的数据库交互模块
 │   ├── dynamic_datasource  动态数据源模块
 │   └── data_migration   数据迁移模块
@@ -58,6 +59,7 @@ dev_parent
 | utils | [utils/README.md](./utils/README.md) |
 | threadpool | [threadpool/README.md](./threadpool/README.md) |
 | common | [common/README.md](./common/README.md) |
+| core_api | [core_api/README.md](./core_api/README.md) |
 | core | [core/README.md](./core/README.md) |
 | repository | [repository/README.md](./repository/README.md) |
 | jpa_repository | [jpa_repository/README.md](./jpa_repository/README.md) |
@@ -95,8 +97,9 @@ dev_parent
 </dependencies>
 ```
 
-> `web` 的 pom 直接 compile 依赖 `security`，**仅引入 `web` 即会默认开启安全装配**
-> （`security.enabled` 默认 `matchIfMissing = true`）。暂不需要认证时请显式配置 `security.enabled: false`。
+> `web` 不再传递启用认证。需要认证时显式引入 `security`，并提供至少 32 UTF-8 字节的 `security.jwt.secret`。需要 Feign/框架调度时另行引入 `core`。
+>
+> JPA 已弃用，迁移见 [JPA_MIGRATION.md](jpa_repository/JPA_MIGRATION.md)。本次修复与兼容变化见 [REVIEW_REPAIR.md](docs/REVIEW_REPAIR.md)。
 
 ### 2. 创建启动类
 

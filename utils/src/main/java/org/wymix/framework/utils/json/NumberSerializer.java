@@ -15,6 +15,12 @@ import java.math.BigDecimal;
 public class NumberSerializer extends com.fasterxml.jackson.databind.ser.std.NumberSerializer {
 
     private static final long serialVersionUID = 1L;
+    private static final BigDecimal STRING_THRESHOLD = new BigDecimal("100000000000000");
+
+    private static boolean requiresString(Number value) {
+        if (value == null || value instanceof Double || value instanceof Float) return false;
+        return new BigDecimal(value.toString()).abs().compareTo(STRING_THRESHOLD) > 0;
+    }
 
     public NumberSerializer(Class<? extends Number> rawType) {
         super(rawType);
@@ -23,8 +29,7 @@ public class NumberSerializer extends com.fasterxml.jackson.databind.ser.std.Num
     @Override
     public void serialize(Number value, JsonGenerator g, SerializerProvider provider)
             throws IOException {
-        if (value != null
-                && new BigDecimal(value.toString()).compareTo(new BigDecimal("100000000000000")) > 0) {
+        if (requiresString(value)) {
             g.writeString(value.toString());
         } else {
             super.serialize(value, g, provider);
@@ -41,8 +46,7 @@ public class NumberSerializer extends com.fasterxml.jackson.databind.ser.std.Num
     public void serializeWithType(Number value, JsonGenerator g, SerializerProvider provider,
                                   TypeSerializer typeSer)
             throws IOException {
-        if (value != null
-                && new BigDecimal(value.toString()).compareTo(new BigDecimal("100000000000000")) > 0) {
+        if (requiresString(value)) {
             WritableTypeId typeIdDef = typeSer.writeTypePrefix(g,
                     typeSer.typeId(value, JsonToken.VALUE_STRING));
             serialize(value, g, provider);

@@ -1,10 +1,12 @@
 # decentralization_discovery 去中心化服务发现模块
 
+> **当前版本兼容变化**：请先阅读 [评审修复与接入说明](../docs/REVIEW_REPAIR.md)。新项目推荐 MyBatis，JPA 仅兼容维护。
+
 > 配置驱动的无注册中心服务发现：集群成员由 `decentralization.discovery.service.<svc>` 显式列出，免去 Eureka / Nacos 等外部依赖，也不做任何网络自动发现。
 
 ## 模块说明
 
-`decentralization_discovery` 提供去中心化的服务发现能力：集群成员完全由配置指定，实例启动后按配置地址向对端登记（`nodeRegister`），对端同时反向登记本实例；在此基础上内置节点注册、Leader 选举、心跳保活与广播事件机制，无需独立的注册中心。适用于内网小规模、对运维成本敏感的场景。
+`decentralization_discovery` 提供去中心化的服务发现能力：集群成员完全由配置指定，实例启动后携带集群凭证按配置地址向对端登记（`nodeRegister`），对端同时反向登记本实例；在此基础上内置节点注册、Leader 选举、心跳保活与广播事件机制，无需独立的注册中心。适用于内网小规模、对运维成本敏感的场景。
 
 ### 节点来源（不做自动发现）
 
@@ -35,6 +37,7 @@
 |--------|------|--------|
 | `decentralization.discovery.enable` | 是否启用去中心化发现（关闭则整个模块不装配） | `false` |
 | `decentralization.discovery.namespace` | 节点命名空间（写入 `NodeInfo.namespace`，用于区分环境/集群） | — |
+| `decentralization.discovery.shared-secret` | 必填，至少 32 UTF-8 字节；所有节点一致，作为独立集群凭证 | — |
 | `decentralization.discovery.service.<svc>` | 服务名 → 实例地址列表（List\<String\>，形如 `10.0.0.1:8080`），**集群成员的唯一来源** | — |
 | `decentralization.discovery.heartbeat.periodInSeconds` | 心跳周期（秒，`HeartbeatService` 调度间隔；由 `@Value` 读取，非 `DecentralizedDiscoveryProperties` 绑定字段） | `30` |
 
@@ -98,6 +101,7 @@
 decentralization:
   discovery:
     enable: true
+    shared-secret: ${DISCOVERY_SHARED_SECRET}
     namespace: wymix
     service:
       user-service:

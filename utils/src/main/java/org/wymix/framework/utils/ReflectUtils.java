@@ -91,24 +91,31 @@ public class ReflectUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> Class<T> getSuperClassGenericType(final Class<?> clazz, final int index) {
-        Type genType = clazz.getGenericSuperclass();
-        Class<?> superClass = clazz;
-        while (!(genType instanceof ParameterizedType)) {
-            if (superClass == Object.class) {
-                return (Class<T>) Object.class;
+        Class<?> current = clazz;
+        while (current != null) {
+            if (current.getGenericSuperclass() instanceof ParameterizedType) {
+                return getSuperClassGenericType(clazz, current.getSuperclass(), index);
             }
-            superClass = superClass.getSuperclass();
-            genType = superClass.getGenericSuperclass();
+            current = current.getSuperclass();
         }
-        Type[] params = ((ParameterizedType) genType).getActualTypeArguments();
-        if (index >= params.length || index < 0) {
-            return (Class<T>) Object.class;
+        return (Class<T>) Object.class;
+    }
+
+    /** Resolve parameters of the specified framework base, through any intermediate classes. */
+    @SuppressWarnings("unchecked")
+    public static <T> Class<T> getSuperClassGenericType(Class<?> clazz, Class<?> baseClass, int index) {
+        if (index < 0) return (Class<T>) Object.class;
+        org.springframework.core.ResolvableType type = org.springframework.core.ResolvableType.forClass(clazz).as(baseClass);
+        if (index >= type.getGenerics().length) return (Class<T>) Object.class;
+        return (Class<T>) type.getGeneric(index).resolve(Object.class);
+    }
+
+    public static <T> T newInstance(Class<?> clazz, Class<?> baseClass, int index) {
+        try {
+            return (T) getSuperClassGenericType(clazz, baseClass, index).getDeclaredConstructor().newInstance();
+        } catch (ReflectiveOperationException ex) {
+            throw new IllegalArgumentException("Cannot instantiate the resolved framework type", ex);
         }
-        if (!(params[index] instanceof Class) && params[index] instanceof ParameterizedType) {
-            ParameterizedType pType = (ParameterizedType) params[index];
-            return (Class<T>) pType.getRawType();
-        }
-        return (Class<T>) params[index];
     }
 
     /**

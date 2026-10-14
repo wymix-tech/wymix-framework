@@ -22,14 +22,21 @@ public class ExecutorServiceWrapper extends AbstractExecutorServiceWrapper imple
 
     public ExecutorServiceWrapper(int corePoolSize, int maxPoolSize, long keepAliveTime, TimeUnit timeUnit, BlockingQueue<Runnable> queue, ThreadFactory threadFactory, RejectedExecutionHandler rejectedExecutionHandler) {
         super(corePoolSize, maxPoolSize, keepAliveTime, timeUnit, queue, threadFactory, rejectedExecutionHandler);
-        this.threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, timeUnit, queue, threadFactory, new RejectedExecutionHandlerWrapper(rejectedExecutionHandler, this.rejectedCount)) {
-            @Override
-            public void execute(Runnable command) {
-                if (runnableDecorator != null) {
-                    command = runnableDecorator.decorate(command);
-                }
+        this.threadPoolExecutor = new ThreadPoolExecutor(corePoolSize, maxPoolSize, keepAliveTime, timeUnit, queue, threadFactory,
+                (command, pool) -> {
+                    rejectedCount.increment();
+                    RunnableWrapper tracked = (RunnableWrapper) command;
+                    try { rejectedExecutionHandler.rejectedExecution(command, pool); }
+                    finally {
+                        if (!tracked.started()) { count.decrement(); tracked.discard(); }
+                    }
+                }) {
+            @Override public void execute(Runnable command) {
+                Runnable original = com.alibaba.ttl.TtlRunnable.unwrap(command);
+                Future<?> future = original instanceof Future<?> f ? f : null;
+                if (runnableDecorator != null) command = runnableDecorator.decorate(command);
                 count.increment();
-                super.execute(new RunnableWrapper(command, finished, cost, successCount));
+                super.execute(new RunnableWrapper(command, future, finished, cost, successCount, failedCount, cancelledCount));
             }
         };
 
@@ -40,25 +47,25 @@ public class ExecutorServiceWrapper extends AbstractExecutorServiceWrapper imple
     @Override
     public void setCorePoolSize(int corePoolSize) {
         synchronized (mutex) {
-            this.corePoolSize = corePoolSize;
             this.threadPoolExecutor.setCorePoolSize(corePoolSize);
+            this.corePoolSize = corePoolSize;
         }
     }
 
     @Override
     public void setMaxPoolSize(int maxPoolSize) {
         synchronized (mutex) {
-            this.maxPoolSize = maxPoolSize;
             this.threadPoolExecutor.setMaximumPoolSize(maxPoolSize);
+            this.maxPoolSize = maxPoolSize;
         }
     }
 
     @Override
     public void setKeepAliveTime(long keepAliveTime, TimeUnit timeUnit) {
         synchronized (mutex) {
+            this.threadPoolExecutor.setKeepAliveTime(keepAliveTime, timeUnit);
             this.keepAliveTime = keepAliveTime;
             this.timeUnit = timeUnit;
-            this.threadPoolExecutor.setKeepAliveTime(keepAliveTime, timeUnit);
         }
     }
 
@@ -69,7 +76,13 @@ public class ExecutorServiceWrapper extends AbstractExecutorServiceWrapper imple
 
     @Override
     public List<Runnable> shutdownNow() {
-        return this.executorService.shutdownNow();
+        List<Runnable> queued = this.executorService.shutdownNow();
+        for (Runnable task : queued) {
+            if (task instanceof RunnableWrapper tracked && !tracked.started()) {
+                tracked.discard(); cancelledCount.increment(); finished.increment();
+            }
+        }
+        return queued;
     }
 
     @Override

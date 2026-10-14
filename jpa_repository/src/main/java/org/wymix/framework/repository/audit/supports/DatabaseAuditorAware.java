@@ -6,6 +6,7 @@ import org.springframework.data.domain.AuditorAware;
 
 import java.util.Optional;
 
+@Deprecated(since = "3.0", forRemoval = false)
 public class DatabaseAuditorAware implements AuditorAware<String> {
 
     @Override
