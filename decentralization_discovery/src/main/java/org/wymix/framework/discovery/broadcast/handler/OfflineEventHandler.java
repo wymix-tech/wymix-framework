@@ -10,6 +10,7 @@
  */
 package org.wymix.framework.discovery.broadcast.handler;
 
+import org.wymix.framework.core.feign.supports.NodeInfo;
 import org.wymix.framework.discovery.enums.SystemTopic;
 import org.wymix.framework.discovery.supports.ElectionService;
 import org.wymix.framework.discovery.supports.NodeRegistry;
@@ -34,7 +35,9 @@ public class OfflineEventHandler implements EventHandler<String> {
 
     @Override
     public void handle(String payload) {
-        boolean isLeader = NodeRegistry.leader().instanceName().equals(payload);
+        NodeInfo leader = NodeRegistry.leader();
+        // Leader 可能尚未选出或已被清除，不能直接取 instanceName()
+        boolean isLeader = leader != null && leader.instanceName().equals(payload);
         NodeRegistry.signOut(payload);
         if (isLeader) {
             electionService.electLeader(false);

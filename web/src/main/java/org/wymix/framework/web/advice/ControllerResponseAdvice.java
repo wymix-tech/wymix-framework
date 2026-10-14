@@ -9,8 +9,10 @@ import org.wymix.framework.utils.StringUtils;
 import org.wymix.framework.web.i18n.MessageResourceHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 import org.springframework.core.MethodParameter;
+import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -42,14 +44,48 @@ public class ControllerResponseAdvice implements ResponseBodyAdvice<Object> {
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    /**
+     * actuator 端点的基础路径，用于判断哪些请求不该被统一包装（默认 /actuator，可被
+     * {@code management.endpoints.web.base-path} 覆盖）。
+     */
+    @Value("${management.endpoints.web.base-path:/actuator}")
+    private String actuatorBasePath;
+
     @InitBinder
     public void initBinder(WebDataBinder binder) {
         binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
     }
 
+    /**
+     * 是否参与统一响应包装。
+     *
+     * <p><b>actuator 端点必须排除</b>：它们有 Spring Boot 定义的固定响应协议，且常被程序
+     * （如节点间 Feign 调用、监控系统）直接反序列化。原实现按 {@code declaringClass} 包名是否含
+     * {@code actuator} 判断，而 Boot 3 的 MVC handler 与业务自定义的 {@code @Endpoint}
+     * 都不满足该条件，导致 actuator 响应被套上 {@code {"statusCode":..,"payload":..}} 外壳，
+     * 去中心化发现的节点间调用因此全部反序列化失败。改按请求路径判断。
+     */
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
+        if (isActuatorRequest()) {
+            return false;
+        }
         return !StringUtils.containsAny(returnType.getDeclaringClass().getName(), "springdoc", "actuator");
+    }
+
+    /**
+     * 当前请求是否访问 actuator 端点。
+     */
+    private boolean isActuatorRequest() {
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        if (!(attributes instanceof ServletRequestAttributes)) {
+            return false;
+        }
+        String uri = ((ServletRequestAttributes) attributes).getRequest().getRequestURI();
+        if (uri == null) {
+            return false;
+        }
+        return uri.equals(actuatorBasePath) || uri.startsWith(actuatorBasePath + "/");
     }
 
     @Override

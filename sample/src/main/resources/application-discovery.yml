@@ -4,9 +4,9 @@
 decentralization:
   discovery:
     enable: true
-    # 命名空间，用于组播服务类型 _<namespace>._tcp.local.
+    # 节点命名空间（写入 NodeInfo.namespace，用于区分环境/集群）
     namespace: sample
-    # 服务名 -> 节点地址列表
+    # 服务名 -> 节点地址列表（集群成员的唯一来源，形如 host:port，不要写 http:// 前缀）
     service:
       sample:
-        - http://127.0.0.1:8080
+        - 127.0.0.1:8080

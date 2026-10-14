@@ -3,7 +3,7 @@
 > 本文件自包含，整段复制给 AI 即可执行（以本仓库为工作区）。
 
 ## 角色
-严谨的技术文档审校工程师，熟悉 Spring Boot 3.x 自动装配、mDNS/JmDNS 服务发现与分布式节点协调机制。
+严谨的技术文档审校工程师，熟悉 Spring Boot 3.x 自动装配、配置驱动的服务发现与分布式节点协调机制（Leader 选举、心跳保活）。
 
 ## 目标
 核对 `decentralization_discovery` 的 README 中关于「依赖引入、配置前缀、自动装配、Leader 选举与心跳保活」的描述，是否与**当前源码**一致。不一致处**一律以源码为准**修订 README。禁止为迁就文档而修改代码。
@@ -16,9 +16,9 @@
 
 ## 模块概况（初步定位用，不是事实基准）
 - Maven 坐标：`org.wymix.framework:decentralization_discovery:${revision}`；父 pom `dev_parent:3.0.0-SNAPSHOT`；Java 17；Spring Boot 3.5.8
-- 模块职责：基于 JmDNS（mDNS）的去中心化服务发现——局域网内广播/发现服务实例，内置节点注册、Leader 选举、心跳保活与广播事件
+- 模块职责：配置驱动的去中心化服务发现——集群成员由 `decentralization.discovery.service.<svc>` 显式配置（**不做网络自动发现**，原 JmDNS/mDNS 已移除），内置节点注册、Leader 选举、心跳保活与广播事件
 - 内部依赖：`core`
-- 外部依赖：`spring-boot-starter-actuator`（排除 logging）、`feign-httpclient 13.1`、`jmdns 3.5.12`（**optional**）
+- 外部依赖：`spring-boot-starter-actuator`（排除 logging）、`feign-httpclient 13.1`（无 optional 依赖）
 - 自动装配注册：`AutoConfiguration.imports` → `org.wymix.framework.discovery.configuration.DecentralizedDiscoveryConfiguration`
 - README 声明的配置前缀：`decentralization.discovery`
 - 源码包根：`org.wymix.framework.discovery`
@@ -28,12 +28,12 @@
 ### A 接入与依赖
 1. `groupId` / `artifactId` / `version` 占位符与 `pom.xml` 实际坐标一致
 2. README 声明的 JDK / Spring Boot 版本与 pom 一致
-3. **README 是否说明 JmDNS 为 `optional` 依赖，需业务方自行引入才生效**；README 是否说明仅适用于局域网/内网场景的限制
+3. **README 是否说明「无 optional 依赖、不做自动发现」**；是否写明节点只来自 `service.<svc>` 配置与其它实例主动 `nodeRegister`
 4. 「引入即生效 / 需开关」的表述与 `AutoConfiguration.imports` 注册方式一致；确认无 `spring.factories`
 
 ### B 自动装配与生效条件
 5. README 装配类清单完整：`DecentralizedDiscoveryConfiguration` 全限定名正确，且无遗漏的装配类（节点注册、Leader 选举、心跳等可能有独立配置类）
-6. `decentralization.discovery.enable`（README 称默认 `false`）是否真实存在，**注意字段名是 `enable` 还是 `enabled`**；核对 `@ConditionalOnProperty` 的 `havingValue` 与 `matchIfMissing`；是否存在 `@ConditionalOnClass(JmDNS)`（README 称「类路径无 JmDNS 均不装配」）
+6. `decentralization.discovery.enable`（README 称默认 `false`）是否真实存在，**注意字段名是 `enable` 还是 `enabled`**；核对 `@ConditionalOnProperty` 的 `havingValue` 与 `matchIfMissing`；确认已无 `@ConditionalOnClass(JmDNS)` 残留
 7. Properties 类的 `prefix`、字段名、类型、默认值与 README 配置表逐条一致
 8. 配置项完整性：漏列 / 多余 / 改名 / 默认值不符；特别注意 `service.<svc>` 的类型（`List<String>` 还是逗号分隔字符串）与 `<svc>` 取值规则
 
@@ -53,8 +53,8 @@
 
 ## 本模块重点核对项（易错点）
 - **`enable` vs `enabled`**：README 写 `decentralization.discovery.enable`（非常规命名），必须与 Properties 字段名逐字核对，不要顺手改成 `enabled`。
-- **JmDNS optional 依赖**：若 README 未说明需显式引入 `jmdns`，应补充；`enable=false` 时是否连 Bean 都不创建，需核对条件注解组合。
-- **服务名空间拼接规则**：README 称拼为 `_<namespace>._tcp.local.`，需核对模板是否含额外前缀/后缀、大小写处理。
+- **无 optional 依赖**：模块已移除 JmDNS，不应再有「需显式引入 `jmdns`」类表述；`enable=false` 时是否连 Bean 都不创建，需核对条件注解组合。
+- **命名空间用途**：`namespace` 仅写入 `NodeInfo.namespace`（区分环境/集群），不再拼 mDNS 服务类型，README 若仍写 `_<ns>._tcp.local.` 应修订。
 - **Leader 选举实现真实性**：这是最容易与实际不符的断言，必须找到具体实现类才能保留描述；仅有接口无实现时应如实说明。
 - **心跳保活周期**：是否可配置（若有周期类配置项，README 配置表是否遗漏）、默认多少秒。
 - **发现结果的缓存与刷新**：是否有本地缓存、刷新间隔、失效处理；README 若声称「实时发现」需核对。
