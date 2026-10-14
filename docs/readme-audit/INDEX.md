@@ -31,29 +31,29 @@ L6  data_migration ──→ jpa_repository, mybatis_repository
 
 | 序号 | 模块 | 内部依赖 | 提示词文件 | 完成 |
 |------|------|----------|-----------|------|
-| 01 | `travelsky_dev_utils` | — | [01-travelsky_dev_utils.md](./01-travelsky_dev_utils.md) | ☑ |
-| 02 | `travelsky_dev_threadpool` | — | [02-travelsky_dev_threadpool.md](./02-travelsky_dev_threadpool.md) | ☑ |
-| 03 | `travelsky_dev_common` | utils | [03-travelsky_dev_common.md](./03-travelsky_dev_common.md) | ☑ |
-| 04 | `travelsky_dev_cache` | utils | [04-travelsky_dev_cache.md](./04-travelsky_dev_cache.md) | ☑ |
-| 05 | `travelsky_dev_core` | common, threadpool | [05-travelsky_dev_core.md](./05-travelsky_dev_core.md) | ☑ |
-| 06 | `travelsky_dev_repository` | core | [06-travelsky_dev_repository.md](./06-travelsky_dev_repository.md) | ☑ |
-| 07 | `travelsky_dev_jpa_repository` | repository | [07-travelsky_dev_jpa_repository.md](./07-travelsky_dev_jpa_repository.md) | ☑ |
-| 08 | `travelsky_dev_mybatis_repository` | repository | [08-travelsky_dev_mybatis_repository.md](./08-travelsky_dev_mybatis_repository.md) | ☑ |
-| 09 | `travelsky_dev_security` | core | [09-travelsky_dev_security.md](./09-travelsky_dev_security.md) | ☑ |
-| 10 | `travelsky_dev_monitor` | core | [10-travelsky_dev_monitor.md](./10-travelsky_dev_monitor.md) | ☑ |
-| 11 | `travelsky_dev_decentralization_discovery` | core | [11-travelsky_dev_decentralization_discovery.md](./11-travelsky_dev_decentralization_discovery.md) | ☑ |
-| 12 | `travelsky_dev_web` | core, security | [12-travelsky_dev_web.md](./12-travelsky_dev_web.md) | ☑ |
-| 13 | `travelsky_dev_dynamic_datasource` | repository | [13-travelsky_dev_dynamic_datasource.md](./13-travelsky_dev_dynamic_datasource.md) | ☑ |
-| 14 | `travelsky_dev_data_migration` | jpa_repository, mybatis_repository | [14-travelsky_dev_data_migration.md](./14-travelsky_dev_data_migration.md) | ☑ |
-| 15 | `travelsky_dev_test` | — | [15-travelsky_dev_test.md](./15-travelsky_dev_test.md) | ☑ |
-| 16 | `travelsky_dev_ai` | — | [16-travelsky_dev_ai.md](./16-travelsky_dev_ai.md) | ☑ |
+| 01 | `utils` | — | [01-utils.md](./01-utils.md) | ☑ |
+| 02 | `threadpool` | — | [02-threadpool.md](./02-threadpool.md) | ☑ |
+| 03 | `common` | utils | [03-common.md](./03-common.md) | ☑ |
+| 04 | `cache` | utils | [04-cache.md](./04-cache.md) | ☑ |
+| 05 | `core` | common, threadpool | [05-core.md](./05-core.md) | ☑ |
+| 06 | `repository` | core | [06-repository.md](./06-repository.md) | ☑ |
+| 07 | `jpa_repository` | repository | [07-jpa_repository.md](./07-jpa_repository.md) | ☑ |
+| 08 | `mybatis_repository` | repository | [08-mybatis_repository.md](./08-mybatis_repository.md) | ☑ |
+| 09 | `security` | core | [09-security.md](./09-security.md) | ☑ |
+| 10 | `monitor` | core | [10-monitor.md](./10-monitor.md) | ☑ |
+| 11 | `decentralization_discovery` | core | [11-decentralization_discovery.md](./11-decentralization_discovery.md) | ☑ |
+| 12 | `web` | core, security | [12-web.md](./12-web.md) | ☑ |
+| 13 | `dynamic_datasource` | repository | [13-dynamic_datasource.md](./13-dynamic_datasource.md) | ☑ |
+| 14 | `data_migration` | jpa_repository, mybatis_repository | [14-data_migration.md](./14-data_migration.md) | ☑ |
+| 15 | `test` | — | [15-test.md](./15-test.md) | ☑ |
+| 16 | `ai` | — | [16-ai.md](./16-ai.md) | ☑ |
 
 ## 全仓库通用基线（各模块提示词已内置，供人工抽查）
 
 | 项 | 实际值 |
 |----|--------|
-| groupId | `com.travelsky.base` |
-| 父 pom | `travelsky_dev_parent3`，version `${revision}` = `3.0.0-SNAPSHOT` |
+| groupId | `org.wymix.framework` |
+| 父 pom | `dev_parent`，version `${revision}` = `3.0.0-SNAPSHOT` |
 | Java | 17 |
 | Spring Boot | 3.5.8 |
 | 自动装配注册 | Spring Boot 3 规范：`META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`；`EnvironmentPostProcessor` / `ApplicationListener` 仍走 `META-INF/spring.factories` |

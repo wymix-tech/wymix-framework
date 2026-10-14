@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 
 /**
- * travelsky_dev_cache 示例：标准的 Spring Cache 注解用法。
+ * cache 示例：标准的 Spring Cache 注解用法。
  *
  * <p>cache 模块已通过 {@code @EnableCaching} 开启缓存并注册了自定义 KeyGenerator
  * （key = 应用名:CACHE:类名:方法名:参数），具体 CacheManager 由 classpath 上的实现决定，

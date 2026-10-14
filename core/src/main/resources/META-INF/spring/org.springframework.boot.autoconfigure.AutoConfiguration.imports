@@ -1,0 +1,2 @@
+org.wymix.framework.core.configuration.CoreConfiguration
+org.wymix.framework.core.configuration.AsyncScheduleAutoConfiguration

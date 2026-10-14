@@ -22,22 +22,22 @@
 
 | 模块 | 示例入口 | 演示点 |
 |------|----------|--------|
-| `travelsky_dev_core` | `demo/core/*` · `DemoMessageSender` · `DemoAsyncTask` · `DemoScheduledTask` | `ApplicationContextHolder` 静态取 Bean / 按类型收集 SPI、`MessageService` 消息门面 + `MessageSenderService` SPI、`@Async` 异步、`@Scheduled` 调度 |
-| `travelsky_dev_common` | `demo/common/*` | `ResultVO` 统一响应与字段级错误、`DevQueryVO` 过滤 DSL、`Page` 分页与 `Page#map`、`UserContextHolder` 登录上下文、`BusinessException` / `LoginException` / `SystemConstant` |
-| `travelsky_dev_utils` | `demo/utils/*` | `JsonUtils`、`GlobalIdGenerator`、`StringUtils`、`DateUtils` / `LocalDateTimeUtils`、`BeanUtils`、`CompressUtil`、`UUID`、`NetUtils` / `HttpUtils`、`ReflectUtils`、`SafeConcurrentHashMap` |
-| `travelsky_dev_web` | `demo/web/*` | `ControllerResponseAdvice` 自动包装响应、`MessageResourceHelper` 国际化、`RequestContextHolder` + TraceId 链路 ID、Bean Validation 参数校验、`SlowRequestAspect` 慢请求、`@RepeatRequest` 防重提交 |
-| `travelsky_dev_security` | `demo/security/*` · `secure/*` · `SecurityConfiguration` | JWT 签发/校验、表单登录、`PasswordEncoder`、受保护端点（`/secure/**` 不在白名单）、登出与黑名单 |
-| `travelsky_dev_cache` | `demo/cache/*` · `CacheDemoService` | `@Cacheable`/`@CachePut`/`@CacheEvict`（sample 选用 Caffeine） |
-| `travelsky_dev_threadpool` | `demo/threadpool/*` | 按 `thread-pool.*` 自动注册命名线程池（普通池 + 调度池）、`ExecutorWrapper` 运行期观测与动态调参、`ThreadPoolHolder` |
-| `travelsky_dev_mybatis_repository` | `SampleUserDao` / `SampleUserService` / `SampleUserController` · `demo/repository/*` · `demo/changelog/*` | `BaseRepository` CRUD、`AbstractBaseServiceImpl` 全量 API、`PageHelper` 分页、`@DataPermission` + `PermissionSqlInjector` 数据权限、`@DataChangeLog` 变更日志 |
-| `travelsky_dev_jpa_repository` | `src/main/jpa/java`（`-P jpa`） | JPA 版 Entity / `JpaRepository` / `@EnableJpaRepositories` / `@EntityScan`，与 MyBatis 侧同一套 `BaseService` 契约 |
-| `travelsky_dev_repository` | `SampleUserEntity` · `DataSourceConfiguration` | `AbstractAuditEntity` 审计字段自动填充、`DataChangeLogEventListener` 覆写、`DevQueryVO` 操作符速查 |
-| `travelsky_dev_data_migration` | `demo/dataMigration/*` · `DemoDataMigrationListener` | `@DataMigration` 实体、`DataChangeLogEvent` 监听与迁移回调统计 |
-| `travelsky_dev_dynamic_datasource` | `demo/dynamicDatasource/*` · `DynamicDatasourceDemoService` | `@DynamicDatasource` 注解切库、`DynamicDataSourceContextHolder` 编程式切库 |
-| `travelsky_dev_decentralization_discovery` | `demo/discovery/*` | 节点信息查询（需 `discovery` profile，见「已知限制」） |
-| `travelsky_dev_monitor` | `demo/monitor/*` · `MonitorApplicationStartedEventListener`（自动注册） | Actuator/Prometheus 默认值注入、`/actuator/**` 放行、开放端点清单查询 |
-| `travelsky_dev_test` | `src/test/java/.../SampleMySqlContainer`、`SampleUserDaoTest` | Testcontainers 容器基类 + `@DataSet` 数据编排 |
-| `travelsky_dev_ai` | — | 空壳占位模块，暂无自动装配内容，仅保留坐标 |
+| `core` | `demo/core/*` · `DemoMessageSender` · `DemoAsyncTask` · `DemoScheduledTask` | `ApplicationContextHolder` 静态取 Bean / 按类型收集 SPI、`MessageService` 消息门面 + `MessageSenderService` SPI、`@Async` 异步、`@Scheduled` 调度 |
+| `common` | `demo/common/*` | `ResultVO` 统一响应与字段级错误、`DevQueryVO` 过滤 DSL、`Page` 分页与 `Page#map`、`UserContextHolder` 登录上下文、`BusinessException` / `LoginException` / `SystemConstant` |
+| `utils` | `demo/utils/*` | `JsonUtils`、`GlobalIdGenerator`、`StringUtils`、`DateUtils` / `LocalDateTimeUtils`、`BeanUtils`、`CompressUtil`、`UUID`、`NetUtils` / `HttpUtils`、`ReflectUtils`、`SafeConcurrentHashMap` |
+| `web` | `demo/web/*` | `ControllerResponseAdvice` 自动包装响应、`MessageResourceHelper` 国际化、`RequestContextHolder` + TraceId 链路 ID、Bean Validation 参数校验、`SlowRequestAspect` 慢请求、`@RepeatRequest` 防重提交 |
+| `security` | `demo/security/*` · `secure/*` · `SecurityConfiguration` | JWT 签发/校验、表单登录、`PasswordEncoder`、受保护端点（`/secure/**` 不在白名单）、登出与黑名单 |
+| `cache` | `demo/cache/*` · `CacheDemoService` | `@Cacheable`/`@CachePut`/`@CacheEvict`（sample 选用 Caffeine） |
+| `threadpool` | `demo/threadpool/*` | 按 `thread-pool.*` 自动注册命名线程池（普通池 + 调度池）、`ExecutorWrapper` 运行期观测与动态调参、`ThreadPoolHolder` |
+| `mybatis_repository` | `SampleUserDao` / `SampleUserService` / `SampleUserController` · `demo/repository/*` · `demo/changelog/*` | `BaseRepository` CRUD、`AbstractBaseServiceImpl` 全量 API、`PageHelper` 分页、`@DataPermission` + `PermissionSqlInjector` 数据权限、`@DataChangeLog` 变更日志 |
+| `jpa_repository` | `src/main/jpa/java`（`-P jpa`） | JPA 版 Entity / `JpaRepository` / `@EnableJpaRepositories` / `@EntityScan`，与 MyBatis 侧同一套 `BaseService` 契约 |
+| `repository` | `SampleUserEntity` · `DataSourceConfiguration` | `AbstractAuditEntity` 审计字段自动填充、`DataChangeLogEventListener` 覆写、`DevQueryVO` 操作符速查 |
+| `data_migration` | `demo/dataMigration/*` · `DemoDataMigrationListener` | `@DataMigration` 实体、`DataChangeLogEvent` 监听与迁移回调统计 |
+| `dynamic_datasource` | `demo/dynamicDatasource/*` · `DynamicDatasourceDemoService` | `@DynamicDatasource` 注解切库、`DynamicDataSourceContextHolder` 编程式切库 |
+| `decentralization_discovery` | `demo/discovery/*` | 节点信息查询（需 `discovery` profile，见「已知限制」） |
+| `monitor` | `demo/monitor/*` · `MonitorApplicationStartedEventListener`（自动注册） | Actuator/Prometheus 默认值注入、`/actuator/**` 放行、开放端点清单查询 |
+| `test` | `src/test/java/.../SampleMySqlContainer`、`SampleUserDaoTest` | Testcontainers 容器基类 + `@DataSet` 数据编排 |
+| `ai` | — | 空壳占位模块，暂无自动装配内容，仅保留坐标 |
 
 ## 配置文件
 
@@ -143,7 +143,7 @@ mvn -f sample/pom.xml clean package -DskipTests -P jpa -P '!mybatis'
   需将 Spring Cloud 升级到与 Boot 3.5 匹配的 2025.x 版本后方可启用；示例 `demo/discovery/*` 已按同一开关条件装配，届时自动生效。
   因此 `rpc/Test1Api`、`Test2Api` 目前仅保留接口定义，未注入到任何 Controller。
 - **`dynamicDatasource` profile 需要真实数据库**：配置中的 MySQL 地址与 `ENC()` 密文为占位值，需替换为实际环境后方可启动。
-- **数据权限能力仅 MyBatis 侧提供**：`@DataPermission` / `PermissionSqlInjector` 位于 `travelsky_dev_mybatis_repository`，
+- **数据权限能力仅 MyBatis 侧提供**：`@DataPermission` / `PermissionSqlInjector` 位于 `mybatis_repository`，
   JPA 版 `SampleUserService#findAllWithDataPermission` 仅返回全量数据。
 - **测试类 `SampleUserDaoTest` 默认 `@Disabled`**：依赖本地 Docker 运行 Testcontainers，确认环境就绪后移除注解即可。
 

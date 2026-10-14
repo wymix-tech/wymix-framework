@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# travelsky_dev 环境安装 / 编译验证脚本（Linux / macOS / Git Bash）
+# wymix_dev 环境安装 / 编译验证脚本（Linux / macOS / Git Bash）
 # Windows 原生 CMD / PowerShell 请在 WSL 或 Git Bash 下运行本脚本。
 #
 # 职责：环境准备（JDK / Maven，官网下载到项目内 .tools/，不改动系统）→

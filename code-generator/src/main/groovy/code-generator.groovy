@@ -28,7 +28,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity;
+import org.wymix.framework.repository.mybatis.audit.domain.AbstractAuditEntity;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -45,7 +45,7 @@ public class ${classNamePrefix}Entity extends AbstractAuditEntity implements Ser
 
     def vo = """package ${basePackage}.vo;
 
-import com.travelsky.base.common.vo.AbstractAuditVO;
+import org.wymix.framework.common.vo.AbstractAuditVO;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -81,7 +81,7 @@ public class ${classNamePrefix}VO extends AbstractAuditVO implements Serializabl
 
     def dao = """package  ${basePackage}.dao;
 
-import com.travelsky.base.repository.mybatis.api.BaseRepository;
+import org.wymix.framework.repository.mybatis.api.BaseRepository;
 import  ${basePackage}.entity.${classNamePrefix}Entity;
 
 public interface ${classNamePrefix}Dao extends BaseRepository<${classNamePrefix}Entity, ${idType}> {
@@ -91,8 +91,8 @@ public interface ${classNamePrefix}Dao extends BaseRepository<${classNamePrefix}
 
     def service = """package ${basePackage}.service;
 
-import com.travelsky.base.core.api.BaseService;
-import com.travelsky.base.repository.mybatis.api.AbstractBaseServiceImpl;
+import org.wymix.framework.core.api.BaseService;
+import org.wymix.framework.repository.mybatis.api.AbstractBaseServiceImpl;
 import ${basePackage}.dao.${classNamePrefix}Dao;
 import ${basePackage}.entity.${classNamePrefix}Entity;
 import org.springframework.stereotype.Service;
@@ -108,8 +108,8 @@ public class ${classNamePrefix}Service extends AbstractBaseServiceImpl<${classNa
 
     def controller = """package ${basePackage}.web;
 
-import com.travelsky.base.web.api.BaseController;
-import com.travelsky.base.web.api.impl.AbstractBaseController;
+import org.wymix.framework.web.api.BaseController;
+import org.wymix.framework.web.api.impl.AbstractBaseController;
 import ${basePackage}.entity.${classNamePrefix}Entity;
 import ${basePackage}.vo.${classNamePrefix}VO ;
 import ${basePackage}.service.${classNamePrefix}Service;

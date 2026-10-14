@@ -1,17 +1,17 @@
 package com.swcares.sample.demo.utils;
 
-import com.travelsky.base.utils.BeanUtils;
-import com.travelsky.base.utils.CompressUtil;
-import com.travelsky.base.utils.DateUtils;
-import com.travelsky.base.utils.GlobalIdGenerator;
-import com.travelsky.base.utils.HttpUtils;
-import com.travelsky.base.utils.LocalDateTimeUtils;
-import com.travelsky.base.utils.NetUtils;
-import com.travelsky.base.utils.ReflectUtils;
-import com.travelsky.base.utils.StringUtils;
-import com.travelsky.base.utils.UUID;
-import com.travelsky.base.utils.json.JsonUtils;
-import com.travelsky.base.utils.map.SafeConcurrentHashMap;
+import org.wymix.framework.utils.BeanUtils;
+import org.wymix.framework.utils.CompressUtil;
+import org.wymix.framework.utils.DateUtils;
+import org.wymix.framework.utils.GlobalIdGenerator;
+import org.wymix.framework.utils.HttpUtils;
+import org.wymix.framework.utils.LocalDateTimeUtils;
+import org.wymix.framework.utils.NetUtils;
+import org.wymix.framework.utils.ReflectUtils;
+import org.wymix.framework.utils.StringUtils;
+import org.wymix.framework.utils.UUID;
+import org.wymix.framework.utils.json.JsonUtils;
+import org.wymix.framework.utils.map.SafeConcurrentHashMap;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
@@ -28,7 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * travelsky_dev_utils 示例：覆盖模块内全部工具类入口。
+ * utils 示例：覆盖模块内全部工具类入口。
  */
 @RestController
 @RequestMapping("demo/utils")
@@ -92,7 +92,7 @@ public class UtilsDemoController {
 
     @GetMapping("compress")
     @Operation(summary = "CompressUtil GZIP + Base64 压缩/解压")
-    public Map<String, Object> compress(@RequestParam(defaultValue = "travelsky_dev 框架压缩工具示例 payload") String raw) throws Exception {
+    public Map<String, Object> compress(@RequestParam(defaultValue = "wymix_dev 框架压缩工具示例 payload") String raw) throws Exception {
         String compressed = CompressUtil.compress(raw);
         Map<String, Object> result = new LinkedHashMap<>();
         result.put("rawLength", raw.length());

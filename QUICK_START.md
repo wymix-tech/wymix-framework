@@ -1,9 +1,9 @@
-# TravelSky Dev Framework 快速上手指南
+# Wymix Dev Framework 快速上手指南
 
 > 15 分钟跑通一个基于本框架的 CRUD 服务
 
 > **事实基准**：本文出现冲突时，以各模块 `README.md` 与模块源码为准。当前版本：`revision=3.0.0-SNAPSHOT`，
-> 父 POM `travelsky_dev_parent3:3.0.0-SNAPSHOT`，Spring Boot `3.5.8`，Java 17。
+> 父 POM `dev_parent:3.0.0-SNAPSHOT`，Spring Boot `3.5.8`，Java 17。
 
 ---
 
@@ -30,37 +30,37 @@
 <dependencies>
     <!-- Web 层：统一响应、CRUD 基类、TraceId、Long 精度、i18n、慢请求 -->
     <dependency>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_web</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>web</artifactId>
         <version>${revision}</version>
     </dependency>
 
     <!-- 持久化：二选一 -->
     <!-- MyBatis-Plus 路线 -->
     <dependency>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_mybatis_repository</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>mybatis_repository</artifactId>
         <version>${revision}</version>
     </dependency>
     <!-- 或 JPA 路线 -->
     <!--
     <dependency>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_jpa_repository</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>jpa_repository</artifactId>
         <version>${revision}</version>
     </dependency>
     -->
 
     <!-- 安全（可选） -->
     <dependency>
-        <groupId>com.travelsky.base</groupId>
-        <artifactId>travelsky_dev_security</artifactId>
+        <groupId>org.wymix.framework</groupId>
+        <artifactId>security</artifactId>
         <version>${revision}</version>
     </dependency>
 </dependencies>
 ```
 
-> 引入 `web` 会自动传递 `security` 与 `core`（`web` 的 pom 直接 compile 依赖 `travelsky_dev_security`，后者再带入其余基础模块）；
+> 引入 `web` 会自动传递 `security` 与 `core`（`web` 的 pom 直接 compile 依赖 `security`，后者再带入其余基础模块）；
 > 因此**仅引入 `web` 即会激活安全装配**（默认 `matchIfMissing = true`），若暂不需要认证，请显式配置 `security.enabled: false`。
 > 引入持久化模块会自动传递 `repository` / `common` / `utils`。无需手动引基础层。
 
@@ -73,7 +73,7 @@
 ### 3.1 实体（继承审计基类）
 
 ```java
-import com.travelsky.base.repository.mybatis.audit.domain.AbstractAuditEntity;
+import org.wymix.framework.repository.mybatis.audit.domain.AbstractAuditEntity;
 
 @Data
 @EqualsAndHashCode(callSuper = true)   // 继承基类时建议显式 callSuper = true
@@ -92,7 +92,7 @@ public class SampleUserEntity extends AbstractAuditEntity implements Serializabl
 
 > 审计字段（createdBy/createdTime/lastModifiedBy/lastModifiedTime）由
 > `AbstractAuditEntity` + `AuditFieldFillHandler` 自动填充。
-> `@DataChangeLog` 可按需叠加，用于记录变更日志（见 `travelsky_dev_repository` README）。
+> `@DataChangeLog` 可按需叠加，用于记录变更日志（见 `repository` README）。
 
 ### 3.2 VO
 
@@ -108,7 +108,7 @@ public class SampleUserVO implements Serializable {
 ### 3.3 Dao / Service
 
 ```java
-import com.travelsky.base.repository.mybatis.api.BaseRepository;
+import org.wymix.framework.repository.mybatis.api.BaseRepository;
 
 // Dao：继承框架 BaseRepository（本身扩展自 MyBatis-Plus BaseMapper），无需再写 @Mapper 之外的代码
 // （@Mapper 或 @MapperScan 扫描二者必须满足其一，sample 中由 DataSourceConfiguration 的 @MapperScan 处理）
@@ -121,8 +121,8 @@ public class SampleUserService
 }
 ```
 
-> `3.x` 起业务方基类位于 `com.travelsky.base.repository.mybatis.*` 子包，旧包路径
-> `com.travelsky.base.repository.api` 已移除。
+> `3.x` 起业务方基类位于 `org.wymix.framework.repository.mybatis.*` 子包，旧包路径
+> `org.wymix.framework.repository.api` 已移除。
 
 ### 3.4 Controller（继承即获得标准 CRUD 端点）
 
@@ -192,7 +192,7 @@ security:
     expiredTime: 86400     # 单位：秒（示例配置）
 ```
 
-启用安全：引入 `travelsky_dev_security`（`web` 已传递引入）后，提供
+启用安全：引入 `security`（`web` 已传递引入）后，提供
 `UserDetailsService` Bean 即自动生效，**无需继承任何配置类**
 （见 `sample/src/main/java/com/swcares/sample/configuration/SecurityConfiguration`）。
 可通过声明 `SecurityCustomizer` Bean 定制 `HttpSecurity`。
@@ -222,7 +222,7 @@ public class SecurityConfiguration {
 ### 4.3 线程池（`application.yml`）
 
 ```yaml
-travelsky:
+wymix:
   threadpool:
     enabled: true      # 默认 true
 thread-pool:
@@ -279,7 +279,7 @@ curl -G 'http://localhost:8080/sampleUser' \
 | `limit` | Long | 20（单页上限由分页插件限制为 10000） |
 
 完整 filter 语法见根目录 `FILTER_USAGE_GUIDE.md`（前端版）与
-`travelsky_dev_mybatis_repository/DevQueryVO用法.md`（后端版）。
+`mybatis_repository/DevQueryVO用法.md`（后端版）。
 
 ---
 
@@ -287,15 +287,15 @@ curl -G 'http://localhost:8080/sampleUser' \
 
 | 想要的能力 | 操作 |
 |-----------|------|
-| Swagger 文档 | 引入 `travelsky_dev_web` 即自动装配（`swagger.enabled: false` 关闭）；放行 UI 路径加 `swagger.web.enabled: true`，UI 默认路径 `/doc.html` |
-| 监控指标 | 引入 `travelsky_dev_monitor`（自动放行 `/actuator/**` 并注入 Prometheus 默认值，开关 `travelsky.monitor.enabled`） |
-| 本地缓存 | 引入 `travelsky_dev_cache` **且自行引入 `caffeine` 依赖**（模块中该依赖为 `optional`，不传递）+ 按需配置 `caffeine.cache.<name>.*` |
-| 多数据源 | 引入 `travelsky_dev_dynamic_datasource` + 自行引入 JDBC 驱动与 HikariCP + 配置 `dynamic.datasource.enabled: true` 与 `primary`、`items` |
-| 去中心化发现 | 引入 `travelsky_dev_decentralization_discovery` + 自行引入 JmDNS（`optional`）+ `decentralization.discovery.enable: true`（当前受 Spring Cloud 版本限制，见 FAQ Q5） |
-| 异步/定时 | 引入 `travelsky_dev_core` 即自动生效（`async.enabled=false` 可关闭异步/调度装配，`travelsky.core.enabled=false` 关闭基础装配） |
+| Swagger 文档 | 引入 `web` 即自动装配（`swagger.enabled: false` 关闭）；放行 UI 路径加 `swagger.web.enabled: true`，UI 默认路径 `/doc.html` |
+| 监控指标 | 引入 `monitor`（自动放行 `/actuator/**` 并注入 Prometheus 默认值，开关 `wymix.monitor.enabled`） |
+| 本地缓存 | 引入 `cache` **且自行引入 `caffeine` 依赖**（模块中该依赖为 `optional`，不传递）+ 按需配置 `caffeine.cache.<name>.*` |
+| 多数据源 | 引入 `dynamic_datasource` + 自行引入 JDBC 驱动与 HikariCP + 配置 `dynamic.datasource.enabled: true` 与 `primary`、`items` |
+| 去中心化发现 | 引入 `decentralization_discovery` + 自行引入 JmDNS（`optional`）+ `decentralization.discovery.enable: true`（当前受 Spring Cloud 版本限制，见 FAQ Q5） |
+| 异步/定时 | 引入 `core` 即自动生效（`async.enabled=false` 可关闭异步/调度装配，`wymix.core.enabled=false` 关闭基础装配） |
 | 数据权限 | MyBatis 侧：`@EnableDataPermission(basePackages=...)` + Service 方法加 `@DataPermission(injectors = {XxxInjector.class})`（JPA 侧不提供） |
-| 变更日志 / 迁移 | 实体加 `@DataChangeLog`（可选 `@DataMigration`）+ `data.changelog.basePackages` + 引入 `travelsky_dev_data_migration` |
-| 测试容器 | 引入 `travelsky_dev_test`（`test` scope）+ 继承 `AbstractMySqlContainer` 等基类 |
+| 变更日志 / 迁移 | 实体加 `@DataChangeLog`（可选 `@DataMigration`）+ `data.changelog.basePackages` + 引入 `data_migration` |
+| 测试容器 | 引入 `test`（`test` scope）+ 继承 `AbstractMySqlContainer` 等基类 |
 | 防重复提交 | 自行声明 `RepeatRequestAspect` Bean，再在 Controller 方法上加 `@RepeatRequest`（框架默认未注册该切面，见 FAQ Q6） |
 
 ---
@@ -363,7 +363,7 @@ A：能。`Caffeine` 为 `optional` 依赖且在装配上带 `@ConditionalOnClas
 
 **Q4：Spring Cloud 版本报警告 / Feign 不生效？**
 A：父 POM 锁定的 `spring-cloud-starter-openfeign` 为 `3.1.3`（Spring Cloud 2021.x），与 Spring Boot 3.5.8 存在版本落差，
-Boot 3 不会加载该版本的 `spring.factories` 自动装配。已知影响：`travelsky_dev_decentralization_discovery`
+Boot 3 不会加载该版本的 `spring.factories` 自动装配。已知影响：`decentralization_discovery`
 依赖 Spring Cloud OpenFeign 的 `FeignContext`，启用 `decentralization.discovery.enable=true` 会报
 `required a bean of type 'FeignContext' that could not be found`。建议对齐到与 Boot 3.5 匹配的 Spring Cloud 2025.x。
 
@@ -378,7 +378,7 @@ A：`web` 模块中 `RepeatRequestAspect` 的 `@Bean` 注册**当前处于注释
 去重键为「类+方法+参数」且存放在 `HttpSession` 中，因此**只在同一个会话内去重**。
 
 **Q7：为什么只引入了 `web` 就跳登录页？**
-A：`web` 的 pom 直接 compile 依赖 `travelsky_dev_security`，后者默认开启（`security.enabled` `matchIfMissing = true`）。
+A：`web` 的 pom 直接 compile 依赖 `security`，后者默认开启（`security.enabled` `matchIfMissing = true`）。
 不需要认证时显式配置 `security.enabled: false`，或提供 `UserDetailsService` Bean 并配置 `security.ignoreUrls` 放行。
 
 ---

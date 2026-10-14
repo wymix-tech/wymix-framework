@@ -1,10 +1,10 @@
 package com.swcares.sample.demo.core;
 
 import com.swcares.sample.service.SampleUserService;
-import com.travelsky.base.core.context.ApplicationContextHolder;
-import com.travelsky.base.core.dto.Message;
-import com.travelsky.base.core.message.MessageSenderService;
-import com.travelsky.base.core.message.MessageService;
+import org.wymix.framework.core.context.ApplicationContextHolder;
+import org.wymix.framework.core.dto.Message;
+import org.wymix.framework.core.message.MessageSenderService;
+import org.wymix.framework.core.message.MessageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,7 +20,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 /**
- * travelsky_dev_core 示例：应用上下文持有、消息门面 + SPI、异步执行、定时任务。
+ * core 示例：应用上下文持有、消息门面 + SPI、异步执行、定时任务。
  */
 @RestController
 @RequestMapping("demo/core")

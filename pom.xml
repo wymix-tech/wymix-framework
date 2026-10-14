@@ -10,30 +10,30 @@
         <version>3.5.8</version>
     </parent>
 
-    <groupId>com.travelsky.base</groupId>
-    <artifactId>travelsky_dev_parent3</artifactId>
+    <groupId>org.wymix.framework</groupId>
+    <artifactId>dev_parent</artifactId>
     <version>${revision}</version>
 
     <packaging>pom</packaging>
-    <description>Travelsky Dev Framework</description>
+    <description>Wymix Dev Framework</description>
 
     <modules>
-        <module>travelsky_dev_core</module>
-        <module>travelsky_dev_common</module>
-        <module>travelsky_dev_repository</module>
-        <module>travelsky_dev_jpa_repository</module>
-        <module>travelsky_dev_mybatis_repository</module>
-        <module>travelsky_dev_utils</module>
-        <module>travelsky_dev_web</module>
-        <module>travelsky_dev_test</module>
-        <module>travelsky_dev_cache</module>
-        <module>travelsky_dev_security</module>
-        <module>travelsky_dev_monitor</module>
-        <module>travelsky_dev_threadpool</module>
-        <module>travelsky_dev_data_migration</module>
-        <module>travelsky_dev_decentralization_discovery</module>
-        <module>travelsky_dev_dynamic_datasource</module>
-        <module>travelsky_dev_ai</module>
+        <module>core</module>
+        <module>common</module>
+        <module>repository</module>
+        <module>jpa_repository</module>
+        <module>mybatis_repository</module>
+        <module>utils</module>
+        <module>web</module>
+        <module>test</module>
+        <module>cache</module>
+        <module>security</module>
+        <module>monitor</module>
+        <module>threadpool</module>
+        <module>data_migration</module>
+        <module>decentralization_discovery</module>
+        <module>dynamic_datasource</module>
+        <module>ai</module>
     </modules>
 
     <properties>
@@ -47,83 +47,83 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_core</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>core</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_utils</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>utils</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_common</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>common</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_repository</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>repository</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_jpa_repository</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>jpa_repository</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_mybatis_repository</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>mybatis_repository</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_dynamic_datasource</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>dynamic_datasource</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_web</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>web</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_test</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>test</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_cache</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>cache</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_security</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>security</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_monitor</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>monitor</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_threadpool</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>threadpool</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_data_migration</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>data_migration</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_decentralization_discovery</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>decentralization_discovery</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>
-                <groupId>com.travelsky.base</groupId>
-                <artifactId>travelsky_dev_ai</artifactId>
+                <groupId>org.wymix.framework</groupId>
+                <artifactId>ai</artifactId>
                 <version>${revision}</version>
             </dependency>
             <dependency>

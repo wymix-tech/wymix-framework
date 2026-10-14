@@ -3,9 +3,9 @@ package com.swcares.sample;
 import com.swcares.sample.container.SampleMySqlContainer;
 import com.swcares.sample.entity.SampleUserEntity;
 import com.swcares.sample.service.SampleUserService;
-import com.travelsky.base.test.annotations.DataSet;
-import com.travelsky.base.test.configuration.JunitConfiguration;
-import com.travelsky.base.test.enums.Operation;
+import org.wymix.framework.test.annotations.DataSet;
+import org.wymix.framework.test.configuration.JunitConfiguration;
+import org.wymix.framework.test.enums.Operation;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * travelsky_dev_test 示例：容器化数据库 + {@code @DataSet} 数据编排。
+ * test 示例：容器化数据库 + {@code @DataSet} 数据编排。
  *
  * <p>{@link DataSet} 由 {@link JunitConfiguration} 中的 {@code DataSetSupportListener} 解析，
  * setup 在测试前造数、teardown 在测试后清理。

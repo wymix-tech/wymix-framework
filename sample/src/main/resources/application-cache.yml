@@ -1,4 +1,4 @@
-# travelsky_dev_cache 示例配置
+# cache 示例配置
 # 关闭缓存：cache.enabled=false
 cache:
   enabled: true

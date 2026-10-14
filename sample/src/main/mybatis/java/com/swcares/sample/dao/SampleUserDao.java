@@ -1,7 +1,7 @@
 package com.swcares.sample.dao;
 
 import com.swcares.sample.entity.SampleUserEntity;
-import com.travelsky.base.repository.mybatis.api.BaseRepository;
+import org.wymix.framework.repository.mybatis.api.BaseRepository;
 
 public interface SampleUserDao extends BaseRepository<SampleUserEntity,Long> {
 }

@@ -1,7 +1,7 @@
 package com.swcares.sample.configuration;
 
-import com.travelsky.base.common.context.IgnoreUrlContext;
-import com.travelsky.base.web.aop.RepeatRequestAspect;
+import org.wymix.framework.common.context.IgnoreUrlContext;
+import org.wymix.framework.web.aop.RepeatRequestAspect;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;

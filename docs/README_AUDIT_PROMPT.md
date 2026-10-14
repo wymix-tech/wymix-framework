@@ -101,23 +101,23 @@
 
 | 占位符 | 示例值 |
 |--------|--------|
-| `{{MODULE_DIR}}` | `travelsky_dev_cache` |
-| `{{README_PATH}}` | `travelsky_dev_cache/README.md` |
+| `{{MODULE_DIR}}` | `cache` |
+| `{{README_PATH}}` | `cache/README.md` |
 
 替换后示例开头：
 
 ```
 ## 本次范围（严格限定）
-- 组件目录：travelsky_dev_cache
-- 待核对/修订文档：travelsky_dev_cache/README.md
+- 组件目录：cache
+- 待核对/修订文档：cache/README.md
 ```
 
 ## 本仓库待处理模块
 
-`travelsky_dev_ai`、`travelsky_dev_cache`、`travelsky_dev_common`、`travelsky_dev_core`、
-`travelsky_dev_data_migration`、`travelsky_dev_decentralization_discovery`、`travelsky_dev_dynamic_datasource`、
-`travelsky_dev_jpa_repository`、`travelsky_dev_monitor`、`travelsky_dev_mybatis_repository`、
-`travelsky_dev_repository`、`travelsky_dev_security`、`travelsky_dev_test`、`travelsky_dev_threadpool`、
-`travelsky_dev_utils`、`travelsky_dev_web`
+`ai`、`cache`、`common`、`core`、
+`data_migration`、`decentralization_discovery`、`dynamic_datasource`、
+`jpa_repository`、`monitor`、`mybatis_repository`、
+`repository`、`security`、`test`、`threadpool`、
+`utils`、`web`
 
 建议按依赖层级自底向上推进（`utils`/`core`/`common` 先做），每完成一个模块提交一次改动，便于回滚与评审。

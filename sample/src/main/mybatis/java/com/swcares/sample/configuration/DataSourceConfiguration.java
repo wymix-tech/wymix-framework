@@ -1,8 +1,8 @@
 package com.swcares.sample.configuration;
 
-import com.travelsky.base.repository.datachangelog.dto.DataChangeLogDTO;
-import com.travelsky.base.repository.datachangelog.listener.DataChangeLogEventListener;
-import com.travelsky.base.repository.datapermission.annotations.EnableDataPermission;
+import org.wymix.framework.repository.datachangelog.dto.DataChangeLogDTO;
+import org.wymix.framework.repository.datachangelog.listener.DataChangeLogEventListener;
+import org.wymix.framework.repository.datapermission.annotations.EnableDataPermission;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
