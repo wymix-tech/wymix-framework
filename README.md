@@ -1,6 +1,6 @@
 # wymix_dev 快速开发框架
 
-> Java 业务开发框架（新项目推荐 MyBatis） · 基于 Spring Boot 3.5.8 + Java 17 · Maven 多模块架构
+> Java 业务开发框架（新项目推荐 MyBatis） · 基于 Spring Boot 3.5.16 + Java 17 · Maven 多模块架构
 >
 > Maven 坐标：`org.wymix.framework:dev_parent:${revision}`，当前 `<revision>` = `3.0.0-SNAPSHOT`
 
